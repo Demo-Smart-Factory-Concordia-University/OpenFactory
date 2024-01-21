@@ -1,0 +1,92 @@
+# Runs a single brocker Kafka cluster
+# Ref: https://developer.confluent.io/quickstart/kafka-docker/
+
+version: '3.9'
+
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    networks:
+      - factory-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: broker
+    expose:
+      - 29092
+    ports:
+    # To learn about configuring Kafka for access across networks see
+    # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+    networks:
+      - factory-net
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092     
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      
+  ksqldb-server:
+    image: confluentinc/ksqldb-server:0.29.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      broker:
+         condition: service_healthy
+    healthcheck:
+      test: nc -z localhost 8088 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    ports:
+      - "8088:8088"
+    networks:
+      - factory-net
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: broker:29092
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+
+  ksqldb-cli:
+    # To run interactively:
+    # docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+    image: confluentinc/ksqldb-cli:0.29.0
+    container_name: ksqldb-cli
+    environment:
+      - KSQL_START_SCRIPTS=${KSQL_START_SCRIPTS}
+    volumes:
+      - "./scripts:/home/appuser/scripts"
+    networks:
+      - factory-net
+    depends_on:
+      broker:
+         condition: service_healthy
+      ksqldb-server:
+         condition: service_healthy
+    entrypoint: bash -c "source ./scripts/start_ksql.sh; tail -F anything"
+    tty: true
+
+
+networks:
+
+  factory-net:
+    name: factory-net
+    driver: bridge
