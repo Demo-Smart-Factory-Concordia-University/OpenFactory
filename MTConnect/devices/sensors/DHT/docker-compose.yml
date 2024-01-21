@@ -1,0 +1,27 @@
+# DHT sensor
+
+version: '3'
+
+services:
+
+  dht-agent:
+    image: rwuthric/mtcagent
+    container_name: mtc-dht-001-agent
+    environment:
+      - ADAPTER_IP=${ADAPTER_IP}
+      - ADAPTER_PORT=${ADAPTER_PORT}
+    volumes:
+      - "./mtconnect:/home/agent/mtconnect"
+    expose:
+      - 5000
+    ports: 
+      - "${PUBLIC_PORT}:5000"
+    networks:
+      - factory-net
+    command: mtcagent run mtconnect/agent.cfg
+
+networks:
+
+    factory-net:
+      name: neurobotia-net
+      driver: bridge
