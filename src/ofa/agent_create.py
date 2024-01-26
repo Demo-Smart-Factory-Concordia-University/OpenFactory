@@ -59,6 +59,7 @@ def agent_create(yaml_config_file, db_engine):
                                      detach=True,
                                      name=cfg['UUID'].lower() + '-agent',
                                      environment=[f"MTC_AGENT_UUID={cfg['UUID'].upper()}-AGENT",
+                                                  f"ADAPTER_UUID={cfg['UUID'].upper()}",
                                                   f"ADAPTER_IP={adapter_cfg['IP']}",
                                                   f"ADAPTER_PORT={adapter_cfg['PORT']}"],
                                      ports={'5000/tcp': agent_cfg['PORT']},
