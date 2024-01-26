@@ -55,8 +55,7 @@ def stop(agent_uuid):
                 nargs=1)
 def rm(agent_uuid):
     """ Remove an MTConnect agent with UUID AGENT_UUID """
-    print(agent_uuid)
-    pass
+    ofa.agent_rm(agent_uuid, db_engine)
 
 
 @click.command()
