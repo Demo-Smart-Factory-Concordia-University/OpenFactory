@@ -1,0 +1,16 @@
+# DHT sensor
+
+UUID: DHT-001
+
+agent:
+  UUID: DHT-001-AGENT
+  VIRTUAL_HOST: mtc-dht-001-agent
+  PORT: 3000
+  DEVICES: MTConnect/devices/sensors/DHT/mtconnect/device.xml
+
+adapter:
+  UUID: DHT-001
+  IP: 10.0.0.218
+  PORT: 7878
+
+network: factory-net
