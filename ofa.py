@@ -1,11 +1,7 @@
 import click
 from sqlalchemy import create_engine
 
-from src.ofa.agent_create import agent_create
-from src.ofa.agent_start import agent_start
-from src.ofa.agent_stop import agent_stop
-from src.ofa.agent_run import agent_run
-from src.ofa.agent_ls import agent_ls
+import src.ofa as ofa
 
 
 @click.group()
@@ -26,7 +22,7 @@ def agent():
                 nargs=1)
 def create(yaml_config_file):
     """ Create an MTConnect agent based on a yaml configuration file """
-    agent_create(yaml_config_file, db_engine)
+    ofa.agent_create(yaml_config_file, db_engine)
 
 
 @click.command()
@@ -35,7 +31,7 @@ def create(yaml_config_file):
                 nargs=1)
 def run(yaml_config_file):
     """ Create and run an MTConnect agent based on a yaml configuration file """
-    agent_run(yaml_config_file, db_engine)
+    ofa.agent_run(yaml_config_file, db_engine)
 
 
 @click.command()
@@ -43,7 +39,7 @@ def run(yaml_config_file):
                 nargs=1)
 def start(agent_uuid):
     """ Start an MTConnect agent with UUID AGENT_UUID """
-    agent_start(agent_uuid, db_engine)
+    ofa.agent_start(agent_uuid, db_engine)
 
 
 @click.command()
@@ -51,7 +47,7 @@ def start(agent_uuid):
                 nargs=1)
 def stop(agent_uuid):
     """ Stop an MTConnect agent with UUID AGENT_UUID """
-    agent_stop(agent_uuid, db_engine)
+    ofa.agent_stop(agent_uuid, db_engine)
 
 
 @click.command()
@@ -66,7 +62,7 @@ def rm(agent_uuid):
 @click.command()
 def ls():
     """ List MTConnect agents """
-    agent_ls(db_engine)
+    ofa.agent_ls(db_engine)
 
 
 @click.command()
