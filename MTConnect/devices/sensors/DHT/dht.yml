@@ -4,7 +4,6 @@ UUID: DHT-001
 
 agent:
   UUID: DHT-001-AGENT
-  VIRTUAL_HOST: mtc-dht-001-agent
   PORT: 3000
   DEVICES: MTConnect/devices/sensors/DHT/mtconnect/device.xml
 
