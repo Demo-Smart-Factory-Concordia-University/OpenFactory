@@ -8,7 +8,7 @@
 
 <MTConnectDevices>
   <Devices>
-    <Device uuid="DHT-001" id="dht" name="ESP8266-DHT">
+    <Device uuid="DHT-GEN" id="dht" name="ESP8266-DHT">
 
       <!-- General information -->
       <Description>
