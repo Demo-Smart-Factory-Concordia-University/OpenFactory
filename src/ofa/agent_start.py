@@ -10,7 +10,7 @@ def agent_start(agent_uuid, db_engine):
     agents = select(Agent).where(Agent.uuid == agent_uuid)
     for agent in session.scalars(agents):
         if agent.external:
-            print("This is an extrnal agent. It cannot be started by OpenFactory")
+            print("This is an external agent. It cannot be started by OpenFactory")
             return
         client = docker.from_env()
         container = client.containers.get(agent.agent_url)
