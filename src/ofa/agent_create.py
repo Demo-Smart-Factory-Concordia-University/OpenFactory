@@ -55,6 +55,7 @@ def agent_create(yaml_config_file, db_engine):
     client = docker.from_env()
 
     # create agent container
+    client.images.pull("rwuthric/mtcagent")
     agent = client.containers.create("rwuthric/mtcagent",
                                      detach=True,
                                      name=cfg['UUID'].lower() + '-agent',
