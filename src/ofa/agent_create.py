@@ -29,12 +29,13 @@ def _copy_files(container, src):
 
 
 def _insert_agent_to_db(db_engine, uuid):
-    """ insert agent to OpenFact data base """
+    """ insert agent to OpenFactory data base """
 
     with Session(db_engine) as session:
         agent = Agent(
             uuid=uuid.upper() + '-AGENT',
             external=False,
+            agent_port=5000,
             agent_url=uuid.lower() + '-agent',
             producer_url='',
         )
