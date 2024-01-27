@@ -4,7 +4,7 @@ UUID: DHT-001
 
 agent:
   PORT: 3000
-  DEVICES: MTConnect/devices/sensors/DHT/dht.xml
+  DEVICES: dht.xml
   adapter:
     IP: 10.0.0.218
     PORT: 7878

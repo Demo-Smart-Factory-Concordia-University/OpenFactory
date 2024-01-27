@@ -68,6 +68,12 @@ def agent_create(yaml_config_file, db_engine):
                                      command='mtcagent run agent.cfg',
                                      network=cfg['network'])
 
-    _copy_files(agent, agent_cfg['DEVICES'])
+    # compute device file absolute path
+    if os.path.isabs(agent_cfg['DEVICES']):
+        device_file = agent_cfg['DEVICES']
+    else:
+        device_file = os.path.join(os.path.dirname(yaml_config_file), agent_cfg['DEVICES'])
+
+    _copy_files(agent, device_file)
     _insert_agent_to_db(db_engine, cfg['UUID'])
     return agent
