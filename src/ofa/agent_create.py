@@ -5,6 +5,7 @@ import tarfile
 from tempfile import TemporaryDirectory
 from sqlalchemy.orm import Session
 
+import config.config as config
 from src.models.agents import Agent
 
 
@@ -56,8 +57,8 @@ def agent_create(yaml_config_file, db_engine):
     client = docker.from_env()
 
     # create agent container
-    client.images.pull("rwuthric/mtcagent")
-    agent = client.containers.create("rwuthric/mtcagent",
+    client.images.pull(config.MTCONNECT_AGENT_IMAGE)
+    agent = client.containers.create(config.MTCONNECT_AGENT_IMAGE,
                                      detach=True,
                                      name=cfg['UUID'].lower() + '-agent',
                                      environment=[f"MTC_AGENT_UUID={cfg['UUID'].upper()}-AGENT",

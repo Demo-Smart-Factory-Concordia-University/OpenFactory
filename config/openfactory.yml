@@ -1,0 +1,11 @@
+# OpenFactory configuration
+
+# OpenFactory Database
+SQL_ALCHEMY_CONN: sqlite:///openfact.db
+
+# Kafka-Cluster
+KAFKA_BROKER: broker:29092
+
+# Docker Images
+MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
+MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer

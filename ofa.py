@@ -1,6 +1,7 @@
 import click
 from sqlalchemy import create_engine
 
+import config.config as config
 import src.ofa as ofa
 
 
@@ -92,5 +93,5 @@ agent.add_command(detach)
 
 
 if __name__ == '__main__':
-    db_engine = create_engine("sqlite:///openfact.db")
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     main()
