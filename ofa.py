@@ -65,15 +65,19 @@ def ls():
 
 
 @click.command()
-def attach(count, name):
+@click.argument('agent_uuid',
+                nargs=1)
+def attach(agent_uuid):
     """ Attach an MTConnect agent """
-    pass
+    ofa.agent_attach(agent_uuid, db_engine)
 
 
 @click.command()
-def dettach(count, name):
-    """ Dettach an MTConnect agent """
-    pass
+@click.argument('agent_uuid',
+                nargs=1)
+def detach(agent_uuid):
+    """ Detach an MTConnect agent """
+    ofa.agent_detach(agent_uuid, db_engine)
 
 
 main.add_command(agent)
@@ -84,7 +88,7 @@ agent.add_command(stop)
 agent.add_command(rm)
 agent.add_command(ls)
 agent.add_command(attach)
-agent.add_command(dettach)
+agent.add_command(detach)
 
 
 if __name__ == '__main__':
