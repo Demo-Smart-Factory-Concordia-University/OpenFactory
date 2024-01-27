@@ -5,9 +5,8 @@ UUID: ZAIX-001
 agent:
   PORT: 3001
   DEVICES: MTConnect/devices/cnc/ZAIX/zaix.xml
-
-adapter:
-  IP: 10.0.0.7
-  PORT: 7879
+  adapter:
+    IP: 10.0.0.7
+    PORT: 7879
 
 network: factory-net

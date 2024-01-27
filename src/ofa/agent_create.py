@@ -51,7 +51,7 @@ def agent_create(yaml_config_file, db_engine):
         cfg = yaml.safe_load(stream)
 
     agent_cfg = cfg['agent']
-    adapter_cfg = cfg['adapter']
+    adapter_cfg = agent_cfg['adapter']
 
     client = docker.from_env()
 
