@@ -1,0 +1,23 @@
+# Example with several devices
+
+devices:
+
+  dht-001:
+    UUID: DHT-001
+    agent:
+      PORT: 3000
+      DEVICE_XML: sensors/DHT/dht.xml
+      adapter:
+        IP: 10.0.0.218
+        PORT: 7878
+        
+  zaix-001:
+    UUID: ZAIX-001
+    agent:
+      PORT: 3001
+      DEVICE_XML: cnc/ZAIX/zaix.xml
+      adapter:
+        IP: 10.0.0.7
+        PORT: 7879
+
+network: factory-net

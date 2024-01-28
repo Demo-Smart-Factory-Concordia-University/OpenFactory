@@ -1,12 +1,16 @@
 # ZAIX Single Axis Device
 
-UUID: ZAIX-001
+devices:
 
-agent:
-  PORT: 3001
-  DEVICES: zaix.xml
-  adapter:
-    IP: 10.0.0.7
-    PORT: 7879
+  zaix-001:
+
+    UUID: ZAIX-001
+
+    agent:
+      PORT: 3001
+      DEVICE_XML: zaix.xml
+      adapter:
+        IP: 10.0.0.7
+        PORT: 7879
 
 network: factory-net

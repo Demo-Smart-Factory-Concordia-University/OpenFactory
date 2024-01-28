@@ -44,37 +44,43 @@ def _insert_agent_to_db(db_engine, uuid):
         session.commit()
 
 
-def agent_create(yaml_config_file, db_engine):
+def agent_create(yaml_config_file, db_engine, run=False):
     """ Create an MTConnect agent based on a yaml configuration file """
+
+    # pull agent image
+    client = docker.from_env()
+    client.images.pull(config.MTCONNECT_AGENT_IMAGE)
 
     # Load yaml description file
     with open(yaml_config_file, 'r') as stream:
         cfg = yaml.safe_load(stream)
 
-    agent_cfg = cfg['agent']
-    adapter_cfg = agent_cfg['adapter']
+    for dev in cfg['devices']:
+        device = cfg['devices'][dev]
+        agent_cfg = device['agent']
+        adapter_cfg = agent_cfg['adapter']
 
-    client = docker.from_env()
+        agent = client.containers.create(config.MTCONNECT_AGENT_IMAGE,
+                                         detach=True,
+                                         name=device['UUID'].lower() + '-agent',
+                                         environment=[f"MTC_AGENT_UUID={device['UUID'].upper()}-AGENT",
+                                                      f"ADAPTER_UUID={device['UUID'].upper()}",
+                                                      f"ADAPTER_IP={adapter_cfg['IP']}",
+                                                      f"ADAPTER_PORT={adapter_cfg['PORT']}"],
+                                         ports={'5000/tcp': agent_cfg['PORT']},
+                                         command='mtcagent run agent.cfg',
+                                         network=cfg['network'])
 
-    # create agent container
-    client.images.pull(config.MTCONNECT_AGENT_IMAGE)
-    agent = client.containers.create(config.MTCONNECT_AGENT_IMAGE,
-                                     detach=True,
-                                     name=cfg['UUID'].lower() + '-agent',
-                                     environment=[f"MTC_AGENT_UUID={cfg['UUID'].upper()}-AGENT",
-                                                  f"ADAPTER_UUID={cfg['UUID'].upper()}",
-                                                  f"ADAPTER_IP={adapter_cfg['IP']}",
-                                                  f"ADAPTER_PORT={adapter_cfg['PORT']}"],
-                                     ports={'5000/tcp': agent_cfg['PORT']},
-                                     command='mtcagent run agent.cfg',
-                                     network=cfg['network'])
+        # compute device file absolute path
+        if os.path.isabs(agent_cfg['DEVICE_XML']):
+            device_file = agent_cfg['DEVICE_XML']
+        else:
+            device_file = os.path.join(os.path.dirname(yaml_config_file), agent_cfg['DEVICE_XML'])
 
-    # compute device file absolute path
-    if os.path.isabs(agent_cfg['DEVICES']):
-        device_file = agent_cfg['DEVICES']
-    else:
-        device_file = os.path.join(os.path.dirname(yaml_config_file), agent_cfg['DEVICES'])
+        _copy_files(agent, device_file)
+        _insert_agent_to_db(db_engine, device['UUID'])
+        print("Created", device['UUID'].upper() + "-AGENT")
 
-    _copy_files(agent, device_file)
-    _insert_agent_to_db(db_engine, cfg['UUID'])
-    return agent
+        if run:
+            agent.start()
+            print("Started", device['UUID'].upper() + "-AGENT")

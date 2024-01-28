@@ -1,12 +1,16 @@
 # DHT sensor
 
-UUID: DHT-001
+devices:
 
-agent:
-  PORT: 3000
-  DEVICES: dht.xml
-  adapter:
-    IP: 10.0.0.218
-    PORT: 7878
+  dht-001:
+
+    UUID: DHT-001
+
+    agent:
+      PORT: 3000
+      DEVICE_XML: dht.xml
+      adapter:
+        IP: 10.0.0.218
+        PORT: 7878
 
 network: factory-net
