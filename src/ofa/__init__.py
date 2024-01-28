@@ -6,3 +6,5 @@ from src.ofa.agent_run import agent_run
 from src.ofa.agent_ls import agent_ls
 from src.ofa.agent_attach import agent_attach
 from src.ofa.agent_detach import agent_detach
+
+import src.ofa.device as device

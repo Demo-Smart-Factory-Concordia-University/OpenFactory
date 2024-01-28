@@ -81,6 +81,30 @@ def detach(agent_uuid):
     ofa.agent_detach(agent_uuid, db_engine)
 
 
+@click.group
+def device():
+    """ Manage MTConnect devices """
+    pass
+
+
+@click.command(name='down')
+@click.argument('yaml_config_file',
+                type=click.Path(exists=True),
+                nargs=1)
+def device_down(yaml_config_file):
+    """ Stop and remove devices """
+    ofa.device.down(yaml_config_file, db_engine)
+
+
+@click.command(name='up')
+@click.argument('yaml_config_file',
+                type=click.Path(exists=True),
+                nargs=1)
+def device_up(yaml_config_file):
+    """ Create and start devices """
+    ofa.device.up(yaml_config_file, db_engine)
+
+
 main.add_command(agent)
 agent.add_command(create)
 agent.add_command(run)
@@ -90,6 +114,10 @@ agent.add_command(rm)
 agent.add_command(ls)
 agent.add_command(attach)
 agent.add_command(detach)
+
+main.add_command(device)
+device.add_command(device_down)
+device.add_command(device_up)
 
 
 if __name__ == '__main__':
