@@ -23,12 +23,19 @@ class Agent(Base):
     producer_url: Mapped[str] = mapped_column(String(30))
 
     @hybrid_property
+    def container(self):
+        """ Container of agent """
+        if self.external:
+            return ""
+        return self.uuid.lower()
+
+    @hybrid_property
     def status(self):
         """ Status of agent """
         if self.external:
             return "TO BE DONE"
         client = docker.from_env()
-        container = client.containers.get(self.agent_url)
+        container = client.containers.get(self.uuid.lower())
         return container.attrs['State']['Status']
 
     @hybrid_property
