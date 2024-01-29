@@ -17,68 +17,68 @@ def agent():
     pass
 
 
-@click.command()
+@click.command(name='create')
 @click.argument('yaml_config_file',
                 type=click.Path(exists=True),
                 nargs=1)
-def create(yaml_config_file):
+def agent_create(yaml_config_file):
     """ Create an MTConnect agent based on a yaml configuration file """
-    ofa.agent_create(yaml_config_file, db_engine)
+    ofa.agent.create(yaml_config_file, db_engine)
 
 
-@click.command()
+@click.command(name='run')
 @click.argument('yaml_config_file',
                 type=click.Path(exists=True),
                 nargs=1)
-def run(yaml_config_file):
+def agent_run(yaml_config_file):
     """ Create and run an MTConnect agent based on a yaml configuration file """
-    ofa.agent_run(yaml_config_file, db_engine)
+    ofa.agent.run(yaml_config_file, db_engine)
 
 
-@click.command()
+@click.command(name='start')
 @click.argument('agent_uuid',
                 nargs=1)
-def start(agent_uuid):
+def agent_start(agent_uuid):
     """ Start an MTConnect agent with UUID AGENT_UUID """
-    ofa.agent_start(agent_uuid, db_engine)
+    ofa.agent.start(agent_uuid, db_engine)
 
 
-@click.command()
+@click.command(name='stop')
 @click.argument('agent_uuid',
                 nargs=1)
-def stop(agent_uuid):
+def agent_stop(agent_uuid):
     """ Stop an MTConnect agent with UUID AGENT_UUID """
-    ofa.agent_stop(agent_uuid, db_engine)
+    ofa.agent.stop(agent_uuid, db_engine)
 
 
-@click.command()
+@click.command(name='rm')
 @click.argument('agent_uuid',
                 nargs=1)
-def rm(agent_uuid):
+def agent_rm(agent_uuid):
     """ Remove an MTConnect agent with UUID AGENT_UUID """
-    ofa.agent_rm(agent_uuid, db_engine)
+    ofa.agent.rm(agent_uuid, db_engine)
 
 
-@click.command()
-def ls():
+@click.command(name='ls')
+def agent_ls():
     """ List MTConnect agents """
-    ofa.agent_ls(db_engine)
+    ofa.agent.ls(db_engine)
 
 
-@click.command()
+@click.command(name='attach')
 @click.argument('agent_uuid',
                 nargs=1)
-def attach(agent_uuid):
+def agent_attach(agent_uuid):
     """ Attach an MTConnect agent """
-    ofa.agent_attach(agent_uuid, db_engine)
+    ofa.agent.attach(agent_uuid, db_engine)
 
 
-@click.command()
+@click.command(name='detach')
 @click.argument('agent_uuid',
                 nargs=1)
-def detach(agent_uuid):
+def agent_detach(agent_uuid):
     """ Detach an MTConnect agent """
-    ofa.agent_detach(agent_uuid, db_engine)
+    ofa.agent.detach(agent_uuid, db_engine)
 
 
 @click.group
@@ -106,14 +106,14 @@ def device_up(yaml_config_file):
 
 
 main.add_command(agent)
-agent.add_command(create)
-agent.add_command(run)
-agent.add_command(start)
-agent.add_command(stop)
-agent.add_command(rm)
-agent.add_command(ls)
-agent.add_command(attach)
-agent.add_command(detach)
+agent.add_command(agent_create)
+agent.add_command(agent_run)
+agent.add_command(agent_start)
+agent.add_command(agent_stop)
+agent.add_command(agent_rm)
+agent.add_command(agent_ls)
+agent.add_command(agent_attach)
+agent.add_command(agent_detach)
 
 main.add_command(device)
 device.add_command(device_down)

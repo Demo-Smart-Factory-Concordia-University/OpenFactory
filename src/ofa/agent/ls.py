@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from src.models.agents import Agent
 
 
-def agent_ls(db_engine):
+def ls(db_engine):
     """ List MTConnect agents defined in OpenFactory """
     session = Session(db_engine)
     agents = select(Agent)

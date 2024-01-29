@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from src.models.agents import Agent
 
 
-def agent_rm(agent_uuid, db_engine):
+def rm(agent_uuid, db_engine):
     """ Removes an MTConnect agent defined in OpenFactory """
     session = Session(db_engine)
     agents = select(Agent).where(Agent.uuid == agent_uuid)

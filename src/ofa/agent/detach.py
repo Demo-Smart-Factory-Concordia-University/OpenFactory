@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from src.models.agents import Agent
 
 
-def agent_detach(agent_uuid, db_engine):
+def detach(agent_uuid, db_engine):
     """ Detach a Kafka producer from an MTConnect agent """
 
     session = Session(db_engine)

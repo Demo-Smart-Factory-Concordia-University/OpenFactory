@@ -7,7 +7,7 @@ import config.config as config
 from src.models.agents import Agent
 
 
-def agent_attach(agent_uuid, db_engine):
+def attach(agent_uuid, db_engine):
     """ Attach a Kafka producer to an MTConnect agent """
 
     session = Session(db_engine)

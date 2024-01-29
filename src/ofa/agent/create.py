@@ -44,7 +44,7 @@ def _insert_agent_to_db(db_engine, uuid):
         session.commit()
 
 
-def agent_create(yaml_config_file, db_engine, run=False):
+def create(yaml_config_file, db_engine, run=False):
     """ Create an MTConnect agent based on a yaml configuration file """
 
     # pull agent image
