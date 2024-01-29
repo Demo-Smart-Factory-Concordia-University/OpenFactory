@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 import config.config as config
 from src.models.agents import Agent
+import src.ofa as ofa
 
 
 def _copy_files(container, src):
@@ -44,7 +45,7 @@ def _insert_agent_to_db(db_engine, uuid):
         session.commit()
 
 
-def create(yaml_config_file, db_engine, run=False):
+def create(yaml_config_file, db_engine, run=False, attach=False):
     """ Create an MTConnect agent based on a yaml configuration file """
 
     # pull agent image
@@ -84,3 +85,6 @@ def create(yaml_config_file, db_engine, run=False):
         if run:
             agent.start()
             print("Started", device['UUID'].upper() + "-AGENT")
+
+        if attach:
+            ofa.agent.attach(device['UUID'].upper() + "-AGENT", db_engine)
