@@ -1,8 +1,11 @@
+SET 'auto.offset.reset' = 'earliest';
+
 -- MTConnect Devices data streams and tables
 CREATE STREAM devices_stream (
         device_uuid VARCHAR KEY,
         id VARCHAR,
-        value VARCHAR
+        value VARCHAR,
+        tag VARCHAR
     ) WITH (
         KAFKA_TOPIC = 'mtc_devices',
         PARTITIONS = 1,
