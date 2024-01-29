@@ -26,7 +26,7 @@ jobs:
           context: .
           file: ./docker/ubuntu/Dockerfile
           push: true
-          tags: rwuthric/mtcagent
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mtcagent
           build-args: |
               UID=${{ vars.FACTORY_USER_UID }}
               GID=${{ vars.FACTORY_USER_GID }}
