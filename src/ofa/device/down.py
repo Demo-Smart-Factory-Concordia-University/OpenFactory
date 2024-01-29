@@ -11,5 +11,7 @@ def down(yaml_config_file, db_engine):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        ofa.agent.stop(device['UUID'].upper() + "-AGENT", db_engine)
-        ofa.agent.rm(device['UUID'].upper() + "-AGENT", db_engine)
+        agent_uuid = device['UUID'].upper() + "-AGENT"
+        ofa.agent.detach(agent_uuid, db_engine)
+        ofa.agent.stop(agent_uuid, db_engine)
+        ofa.agent.rm(agent_uuid, db_engine)
