@@ -14,7 +14,7 @@ def attach(agent_uuid, db_engine):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one()[0]
 
-    client = docker.from_env()
+    client = docker.DockerClient(base_url="ssh://" + agent.agent_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
 
     producer_url = agent_uuid.lower().replace("-agent", "-producer")

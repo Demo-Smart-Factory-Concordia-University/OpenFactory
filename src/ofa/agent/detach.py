@@ -11,8 +11,10 @@ def detach(agent_uuid, db_engine):
     session = Session(db_engine)
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one()[0]
+    if agent.producer_url == '':
+        return
 
-    client = docker.from_env()
+    client = docker.DockerClient(base_url="ssh://" + agent.agent_url)
     kafka_producer = client.containers.get(agent.producer_url)
     kafka_producer.stop()
     kafka_producer.remove()

@@ -14,8 +14,8 @@ def rm(agent_uuid, db_engine):
             if agent.status == 'running':
                 print("You cannot remove a running agent. Stop it first.")
                 return
-            client = docker.from_env()
-            container = client.containers.get(agent.agent_url)
+            client = docker.DockerClient(base_url="ssh://" + agent.agent_url)
+            container = client.containers.get(agent.container)
             container.remove()
         session.delete(agent)
         print("Removed ", agent_uuid)

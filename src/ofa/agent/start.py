@@ -12,7 +12,7 @@ def start(agent_uuid, db_engine):
         if agent.external:
             print("This is an external agent. It cannot be started by OpenFactory")
             return
-        client = docker.from_env()
-        container = client.containers.get(agent.agent_url)
+        client = docker.DockerClient(base_url="ssh://" + agent.agent_url)
+        container = client.containers.get(agent.container)
         container.start()
         print("Started ", agent_uuid)

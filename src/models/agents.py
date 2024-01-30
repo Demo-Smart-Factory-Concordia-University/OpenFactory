@@ -34,7 +34,7 @@ class Agent(Base):
         """ Status of agent """
         if self.external:
             return "TO BE DONE"
-        client = docker.from_env()
+        client = docker.DockerClient(base_url="ssh://" + self.agent_url)
         container = client.containers.get(self.uuid.lower())
         return container.attrs['State']['Status']
 

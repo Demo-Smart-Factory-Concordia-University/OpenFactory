@@ -4,6 +4,7 @@ devices:
 
   dht-001:
     UUID: DHT-001
+    NODE: 10.0.0.7
     agent:
       PORT: 3000
       DEVICE_XML: sensors/DHT/dht.xml
@@ -13,6 +14,7 @@ devices:
         
   zaix-001:
     UUID: ZAIX-001
+    NODE: 10.0.0.7
     agent:
       PORT: 3001
       DEVICE_XML: cnc/ZAIX/zaix.xml
