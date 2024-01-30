@@ -5,6 +5,7 @@ devices:
   dht-001:
 
     UUID: DHT-001
+    NODE: localhost
 
     agent:
       PORT: 3000

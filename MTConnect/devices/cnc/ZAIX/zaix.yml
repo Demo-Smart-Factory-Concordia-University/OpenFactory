@@ -5,6 +5,7 @@ devices:
   zaix-001:
 
     UUID: ZAIX-001
+    NODE: localhost
 
     agent:
       PORT: 3001
