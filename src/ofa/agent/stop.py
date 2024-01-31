@@ -16,7 +16,7 @@ def stop(agent_uuid, db_engine):
         if not agent.status == 'running':
             return
         # send agent_avail=UNAVAILABLE via MTConnect agent
-        url = f"http://localhost:{agent.agent_port}/Agent"
+        url = f"http://{agent.agent_url}:{agent.agent_port}/Agent"
         requests.post(url, data={'agent_avail': 'UNAVAILABLE'})
         # stop agent
         client = docker.DockerClient(base_url="ssh://" + agent.agent_url)

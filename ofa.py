@@ -12,6 +12,30 @@ def main():
 
 
 @click.group
+def infra():
+    """ Manage OpenFactory infrastructure """
+    pass
+
+
+@click.command(name='up')
+@click.argument('yaml_config_file',
+                type=click.Path(exists=True),
+                nargs=1)
+def infra_up(yaml_config_file):
+    """ Setup OpenFactory infrastructure """
+    ofa.infra.up(yaml_config_file)
+
+
+@click.command(name='down')
+@click.argument('yaml_config_file',
+                type=click.Path(exists=True),
+                nargs=1)
+def infra_down(yaml_config_file):
+    """ Tear down OpenFactory infrastructure """
+    ofa.infra.down(yaml_config_file)
+
+
+@click.group
 def agent():
     """ Manage MTConnect agents """
     pass
@@ -104,6 +128,10 @@ def device_up(yaml_config_file):
     """ Create and start devices """
     ofa.device.up(yaml_config_file, db_engine)
 
+
+main.add_command(infra)
+infra.add_command(infra_up)
+infra.add_command(infra_down)
 
 main.add_command(agent)
 agent.add_command(agent_create)

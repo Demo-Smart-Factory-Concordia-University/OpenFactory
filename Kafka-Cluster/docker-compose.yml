@@ -89,4 +89,4 @@ networks:
 
   factory-net:
     name: factory-net
-    driver: bridge
+    external: true

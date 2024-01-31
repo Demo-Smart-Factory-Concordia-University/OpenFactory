@@ -58,8 +58,9 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
         adapter_cfg = agent_cfg['adapter']
         client = docker.DockerClient(base_url="ssh://" + device['NODE'])
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
-        network = client.networks.get(cfg['network'])
-        docker_gateway = network.attrs['IPAM']['Config'][0]['Gateway']
+        # network = client.networks.get(cfg['network'])
+        # docker_gateway = network.attrs['IPAM']['Config'][0]['Gateway']
+        docker_gateway = '172.17.0.1'
 
         agent = client.containers.create(config.MTCONNECT_AGENT_IMAGE,
                                          detach=True,
@@ -72,6 +73,20 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
                                          ports={'5000/tcp': agent_cfg['PORT']},
                                          command='mtcagent run agent.cfg',
                                          network=cfg['network'])
+
+        """
+        agent = client.services.create(config.MTCONNECT_AGENT_IMAGE,
+                                       name=device['UUID'].lower() + '-agent',
+                                       constraints=['node.hostname==' + device['UUID'].lower() + '-agent'],
+                                       endpoint_spec=docker.types.EndpointSpec(ports={5000:  agent_cfg['PORT']}),
+                                       env=[f"MTC_AGENT_UUID={device['UUID'].upper()}-AGENT",
+                                            f"ADAPTER_UUID={device['UUID'].upper()}",
+                                            f"ADAPTER_IP={adapter_cfg['IP']}",
+                                            f"ADAPTER_PORT={adapter_cfg['PORT']}",
+                                            f"DOCKER_GATEWAY={docker_gateway}"],
+                                       command='mtcagent run agent.cfg',
+                                       networks=[cfg['network']])
+        """
 
         # compute device file absolute path
         if os.path.isabs(agent_cfg['DEVICE_XML']):
