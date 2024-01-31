@@ -56,7 +56,7 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
         device = cfg['devices'][dev]
         agent_cfg = device['agent']
         adapter_cfg = agent_cfg['adapter']
-        client = docker.DockerClient(base_url="ssh://" + device['NODE'])
+        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'])
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
         # network = client.networks.get(cfg['network'])
         # docker_gateway = network.attrs['IPAM']['Config'][0]['Gateway']

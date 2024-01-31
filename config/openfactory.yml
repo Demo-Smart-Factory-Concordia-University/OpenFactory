@@ -1,5 +1,8 @@
 # OpenFactory configuration
 
+# OpenFactory User
+OPENFACTORY_USER: openfactory
+
 # OpenFactory Database
 SQL_ALCHEMY_CONN: sqlite:///openfact.db
 

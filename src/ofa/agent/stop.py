@@ -2,6 +2,8 @@ import docker
 import requests
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+import config.config as config
 from src.models.agents import Agent
 
 
@@ -19,7 +21,7 @@ def stop(agent_uuid, db_engine):
         url = f"http://{agent.agent_url}:{agent.agent_port}/Agent"
         requests.post(url, data={'agent_avail': 'UNAVAILABLE'})
         # stop agent
-        client = docker.DockerClient(base_url="ssh://" + agent.agent_url)
+        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url)
         container = client.containers.get(agent.container)
         container.stop()
         print("Stopped ", agent_uuid)
