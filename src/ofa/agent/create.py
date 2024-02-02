@@ -23,6 +23,7 @@ def _validate(device, db_engine, client):
             print("An agent with UUID", device['UUID'].upper() + '-AGENT', "exists already")
             print("Agent was not created")
             return False
+    return True
 
 
 def _copy_files(container, src):
