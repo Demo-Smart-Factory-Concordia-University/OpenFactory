@@ -3,11 +3,26 @@ import yaml
 import os
 import tarfile
 from tempfile import TemporaryDirectory
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import config.config as config
 from src.models.agents import Agent
 import src.ofa as ofa
+
+
+def _validate(device, db_engine, client):
+    """ Validate that device and container do not exist """
+    if [cont for cont in client.containers.list() if cont.name == device['UUID'].lower() + '-agent']:
+        print("A container", device['UUID'].lower() + '-agent', "exists already")
+        print("Agent was not created")
+        return False
+    with Session(db_engine) as session:
+        query = select(Agent).where(Agent.uuid == device['UUID'].upper() + '-AGENT')
+        if session.execute(query).scalar():
+            print("An agent with UUID", device['UUID'].upper() + '-AGENT', "exists already")
+            print("Agent was not created")
+            return False
 
 
 def _copy_files(container, src):
@@ -57,6 +72,9 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
         agent_cfg = device['agent']
         adapter_cfg = agent_cfg['adapter']
         client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'])
+        if not _validate(device, db_engine, client):
+            client.close()
+            continue
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
         # network = client.networks.get(cfg['network'])
         # docker_gateway = network.attrs['IPAM']['Config'][0]['Gateway']
@@ -73,20 +91,6 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
                                          ports={'5000/tcp': agent_cfg['PORT']},
                                          command='mtcagent run agent.cfg',
                                          network=cfg['network'])
-
-        """
-        agent = client.services.create(config.MTCONNECT_AGENT_IMAGE,
-                                       name=device['UUID'].lower() + '-agent',
-                                       constraints=['node.hostname==' + device['UUID'].lower() + '-agent'],
-                                       endpoint_spec=docker.types.EndpointSpec(ports={5000:  agent_cfg['PORT']}),
-                                       env=[f"MTC_AGENT_UUID={device['UUID'].upper()}-AGENT",
-                                            f"ADAPTER_UUID={device['UUID'].upper()}",
-                                            f"ADAPTER_IP={adapter_cfg['IP']}",
-                                            f"ADAPTER_PORT={adapter_cfg['PORT']}",
-                                            f"DOCKER_GATEWAY={docker_gateway}"],
-                                       command='mtcagent run agent.cfg',
-                                       networks=[cfg['network']])
-        """
 
         # compute device file absolute path
         if os.path.isabs(agent_cfg['DEVICE_XML']):
