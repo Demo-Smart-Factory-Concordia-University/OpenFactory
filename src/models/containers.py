@@ -1,5 +1,6 @@
 import docker
 from typing import List
+from sqlalchemy import event
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
@@ -10,7 +11,9 @@ from .base import Base
 
 
 class DockerContainer(Base):
-    """ Docker container """
+    """
+    Docker container
+    """
 
     __tablename__ = "docker_container"
 
@@ -51,9 +54,35 @@ class DockerContainer(Base):
         docker_client.close()
         return cont
 
+    def start(self):
+        """ Start Docker container """
+        docker_client = docker.DockerClient(base_url=self.docker_url)
+        container = docker_client.containers.get(self.name)
+        container.start()
+        docker_client.close()
+
+    def stop(self):
+        """ Stop Docker container """
+        docker_client = docker.DockerClient(base_url=self.docker_url)
+        container = docker_client.containers.get(self.name)
+        container.stop()
+        docker_client.close()
+
+
+@event.listens_for(DockerContainer, 'after_delete')
+def dockerContainer_after_delete(mapper, connection, target):
+    """ Removes Docker container when database object is deleted """
+    docker_client = docker.DockerClient(base_url=target.docker_url)
+    container = docker_client.containers.get(target.name)
+    container.stop()
+    container.remove()
+    docker_client.close()
+
 
 class EnvVar(Base):
-    """ Environment variables for a Docker container """
+    """
+    Environment variables for a Docker container
+    """
 
     __tablename__ = "container_envVars"
 
@@ -68,7 +97,9 @@ class EnvVar(Base):
 
 
 class Port(Base):
-    """ Port for a Docker container """
+    """
+    Port for a Docker container
+    """
 
     __tablename__ = "container_ports"
 

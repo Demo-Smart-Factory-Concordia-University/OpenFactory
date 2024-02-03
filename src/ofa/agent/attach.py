@@ -21,6 +21,7 @@ def attach(agent_uuid, db_engine):
 
     client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
+    client.close()
 
     # obtain network of agent container
     query = select(DockerContainer).where(DockerContainer.name == agent_uuid.lower())
@@ -46,10 +47,9 @@ def attach(agent_uuid, db_engine):
     )
     session.add_all([container])
     session.commit()
-    kafka_producer = container.create()
-    kafka_producer.start()
+    container.create()
+    container.start()
 
     query = update(Agent).where(Agent.uuid == agent_uuid).values(producer_url=producer_url)
     session.execute(query)
     session.commit()
-    client.close()
