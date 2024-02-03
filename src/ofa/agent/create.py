@@ -51,13 +51,6 @@ def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
     """ insert agent to OpenFactory data base and create Docker container of agent """
 
     with Session(db_engine) as session:
-        agent = Agent(
-            uuid=device['UUID'].upper() + '-AGENT',
-            external=False,
-            agent_port=device['agent']['PORT'],
-            agent_url=device['NODE'],
-            producer_url='',
-        )
 
         container = DockerContainer(
             docker_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'],
@@ -77,7 +70,15 @@ def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
             command='mtcagent run agent.cfg',
         )
 
-        session.add_all([agent, container])
+        agent = Agent(
+            uuid=device['UUID'].upper() + '-AGENT',
+            external=False,
+            agent_port=device['agent']['PORT'],
+            agent_url=device['NODE'],
+            agent_container=container
+        )
+
+        session.add_all([container, agent])
         session.commit()
         agent = container.create()
 

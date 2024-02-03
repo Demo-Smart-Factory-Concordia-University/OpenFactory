@@ -1,11 +1,33 @@
 import docker
 from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Table
 from sqlalchemy.ext.hybrid import hybrid_property
-from .base import Base
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
+from .base import Base
+from .containers import DockerContainer
+
+
+agent_container_table = Table(
+    "agent_container_association",
+    Base.metadata,
+    Column('agent_id', ForeignKey('mtc_agents.id')),
+    Column('container_id', ForeignKey('docker_container.id')),
+)
+
+
+agent_producer_table = Table(
+    "agent_producer_association",
+    Base.metadata,
+    Column('agent_id', ForeignKey('mtc_agents.id')),
+    Column('producer_id', ForeignKey('docker_container.id')),
+)
 
 
 class Agent(Base):
@@ -16,7 +38,8 @@ class Agent(Base):
     external = mapped_column(Boolean, default=False)
     agent_port = mapped_column(Integer())
     agent_url: Mapped[str] = mapped_column(String(30))
-    producer_url: Mapped[str] = mapped_column(String(30))
+    agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table)
+    producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table)
 
     @hybrid_property
     def container(self):
