@@ -1,3 +1,4 @@
+import docker
 from typing import List
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
@@ -14,10 +15,13 @@ class DockerContainer(Base):
     __tablename__ = "docker_container"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    docker_url: Mapped[str] = mapped_column(String(20),
+                                            default='unix://var/run/docker.sock')
     image: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(20))
     network: Mapped[str] = mapped_column(String(20))
-    command: Mapped[str] = mapped_column(String(40), default='')
+    command: Mapped[str] = mapped_column(String(40),
+                                         default='')
     environment: Mapped[List["EnvVar"]] = relationship(back_populates="container",
                                                        cascade="all, delete-orphan")
     ports: Mapped[List["Port"]] = relationship(back_populates="container",
@@ -26,7 +30,7 @@ class DockerContainer(Base):
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
 
-    def create(self, docker_client):
+    def create(self):
         """ Create Docker container """
 
         ports_dict = {}
@@ -36,13 +40,16 @@ class DockerContainer(Base):
         for var in self.environment:
             env.append(f"{var.variable}={var.value}")
 
-        return docker_client.containers.create(self.image,
+        docker_client = docker.DockerClient(base_url=self.docker_url)
+        cont = docker_client.containers.create(self.image,
                                                name=self.name,
                                                detach=True,
                                                environment=env,
                                                ports=ports_dict,
                                                command=self.command,
                                                network=self.network)
+        docker_client.close()
+        return cont
 
 
 class EnvVar(Base):

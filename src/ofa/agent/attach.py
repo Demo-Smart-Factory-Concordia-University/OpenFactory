@@ -26,13 +26,14 @@ def attach(agent_uuid, db_engine):
     query = select(DockerContainer).where(DockerContainer.name == agent_uuid.lower())
     agent_cont = session.execute(query).one_or_none()
     if agent_cont is None:
-        print("Agent", agent_uuid, "has no exiisting container")
+        print("Agent", agent_uuid, "has no existing container")
         client.close()
         return
     agent_cont = agent_cont[0]
 
     producer_url = agent_uuid.lower().replace("-agent", "-producer")
     container = DockerContainer(
+        docker_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url,
         image=config.MTCONNECT_PRODUCER_IMAGE,
         name=producer_url,
         environment=[
@@ -45,7 +46,7 @@ def attach(agent_uuid, db_engine):
     )
     session.add_all([container])
     session.commit()
-    kafka_producer = container.create(client)
+    kafka_producer = container.create()
     kafka_producer.start()
 
     query = update(Agent).where(Agent.uuid == agent_uuid).values(producer_url=producer_url)

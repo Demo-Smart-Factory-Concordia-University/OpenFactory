@@ -60,6 +60,7 @@ def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
         )
 
         container = DockerContainer(
+            docker_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'],
             image=config.MTCONNECT_AGENT_IMAGE,
             name=device['UUID'].lower() + '-agent',
             ports=[
@@ -78,7 +79,7 @@ def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
 
         session.add_all([agent, container])
         session.commit()
-        agent = container.create(docker_client)
+        agent = container.create()
 
     # compute device file absolute path
     if os.path.isabs(device['agent']['DEVICE_XML']):
