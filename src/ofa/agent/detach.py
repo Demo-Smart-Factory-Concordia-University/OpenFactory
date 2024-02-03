@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 import config.config as config
 from src.models.agents import Agent
+from src.models.containers import DockerContainer
 
 
 def detach(agent_uuid, db_engine):
@@ -21,6 +22,11 @@ def detach(agent_uuid, db_engine):
     kafka_producer = client.containers.get(agent.producer_url)
     kafka_producer.stop()
     kafka_producer.remove()
+    client.close()
+
+    query = select(DockerContainer).where(DockerContainer.name == agent.producer_url)
+    kafka_producer_containter = session.execute(query).one()[0]
+    session.delete(kafka_producer_containter)
 
     query = update(Agent).where(Agent.uuid == agent_uuid).values(producer_url='')
     session.execute(query)

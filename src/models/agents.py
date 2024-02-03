@@ -3,13 +3,9 @@ from sqlalchemy import Boolean
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase
+from .base import Base
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class Agent(Base):
