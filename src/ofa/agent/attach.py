@@ -1,6 +1,7 @@
 import docker
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from pyksql.ksql import KSQL
 
 import config.config as config
 from src.models.agents import Agent
@@ -20,6 +21,15 @@ def attach(agent_uuid, db_engine):
     if agent.agent_container is None:
         print("Agent", agent_uuid, "has no existing container")
         return
+
+    # Create ksqlDB table for device handeld by the agent
+    ksql = KSQL(config.KSQLDB)
+    ksql._statement_query(f"""CREATE TABLE {agent.device_uuid.replace('-', '_')} AS
+                                  SELECT id,
+                                         LATEST_BY_OFFSET(value) AS value
+                                  FROM devices_stream
+                                  WHERE device_uuid = '{agent.device_uuid}'
+                                  GROUP BY id;""")
 
     client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)

@@ -115,5 +115,6 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
 
         if attach:
             ofa.agent.attach(device['UUID'].upper() + "-AGENT", db_engine)
+            print("Attached", device['UUID'].upper() + "-AGENT")
 
         client.close()

@@ -42,6 +42,11 @@ class Agent(Base):
     producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table)
 
     @hybrid_property
+    def device_uuid(self):
+        """ Device UUID handeld by agent """
+        return self.uuid.upper().replace('-AGENT', '')
+
+    @hybrid_property
     def container(self):
         """ Container of agent """
         if self.external:
