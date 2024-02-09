@@ -24,7 +24,7 @@ def attach(agent_uuid, db_engine):
 
     # Create ksqlDB table for device handeld by the agent
     ksql = KSQL(config.KSQLDB)
-    ksql._statement_query(f"""CREATE TABLE {agent.device_uuid.replace('-', '_')} AS
+    ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.device_uuid.replace('-', '_')} AS
                                   SELECT id,
                                          LATEST_BY_OFFSET(value) AS value
                                   FROM devices_stream
