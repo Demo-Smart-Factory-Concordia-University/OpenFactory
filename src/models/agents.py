@@ -65,7 +65,7 @@ class Agent(Base):
     @hybrid_property
     def attached(self):
         """ kafka producer attached or not """
-        if self.producer_url:
+        if self.producer_container:
             return "yes"
         else:
             return "no"
