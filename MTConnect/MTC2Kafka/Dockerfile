@@ -10,6 +10,8 @@ ARG GID=1200
 
 RUN groupadd --gid $GID $UNAME
 RUN useradd --create-home --uid $UID --gid $GID $UNAME
+RUN apt-get update
+RUN apt-get -y install git
 
 # kafka-python library
 RUN pip install git+https://github.com/rwuthric/python-mtc2kafka.git --upgrade
