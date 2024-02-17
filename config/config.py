@@ -1,5 +1,9 @@
 import yaml
 import os
+from dotenv import load_dotenv
+
+# load environment variables
+load_dotenv('.ofaenv')
 
 # load configuration file
 with open('config/openfactory.yml', 'r') as stream:
