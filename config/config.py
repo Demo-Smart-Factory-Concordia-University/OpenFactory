@@ -1,17 +1,5 @@
-import yaml
-import os
-from dotenv import load_dotenv
+from openfactory.utils import load_yaml
 
-# load environment variables
-load_dotenv('.ofaenv')
-
-# load configuration file
-with open('config/openfactory.yml', 'r') as stream:
-    cfg = yaml.safe_load(stream)
-
-# parse environment variables
-for key in cfg:
-    cfg[key] = os.path.expandvars(cfg[key])
 
 # assign variables
-globals().update(cfg)
+globals().update(load_yaml('config/openfactory.yml'))
