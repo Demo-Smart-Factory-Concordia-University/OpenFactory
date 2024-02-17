@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 import config.config as config
 import openfactory.ofa as ofa
 from openfactory.models.agents import Agent
+from openfactory.models.nodes import Node
 from openfactory.models.containers import DockerContainer, EnvVar, Port
 
 
@@ -47,13 +48,23 @@ def _copy_files(container, src):
     tmp_dir.cleanup()
 
 
-def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
+def _create_agent(db_engine, device, network, yaml_config_file):
     """ insert agent to OpenFactory data base and create Docker container of agent """
 
     with Session(db_engine) as session:
 
+        query = select(Node).where(Node.node_name == device['NODE'])
+        node = session.execute(query).one()[0]
+
+        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip)
+        if not _validate(device, db_engine, client):
+            client.close()
+            return None
+        client.images.pull(config.MTCONNECT_AGENT_IMAGE)
+        client.close()
+
         container = DockerContainer(
-            docker_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'],
+            docker_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip,
             image=config.MTCONNECT_AGENT_IMAGE,
             name=device['UUID'].lower() + '-agent',
             ports=[
@@ -74,7 +85,7 @@ def _create_agent(db_engine, device, network, docker_client, yaml_config_file):
             uuid=device['UUID'].upper() + '-AGENT',
             external=False,
             agent_port=device['agent']['PORT'],
-            agent_url=device['NODE'],
+            node_id=node.id,
             agent_container=container
         )
 
@@ -100,13 +111,9 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + device['NODE'])
-        if not _validate(device, db_engine, client):
-            client.close()
+        agent = _create_agent(db_engine, device, cfg['network'], yaml_config_file)
+        if agent is None:
             continue
-        client.images.pull(config.MTCONNECT_AGENT_IMAGE)
-
-        agent = _create_agent(db_engine, device, cfg['network'], client, yaml_config_file)
         print("Created", device['UUID'].upper() + "-AGENT")
 
         if run:
@@ -116,5 +123,3 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
         if attach:
             ofa.agent.attach(device['UUID'].upper() + "-AGENT", db_engine)
             print("Attached", device['UUID'].upper() + "-AGENT")
-
-        client.close()

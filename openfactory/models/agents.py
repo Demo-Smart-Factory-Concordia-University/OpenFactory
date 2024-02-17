@@ -12,6 +12,9 @@ from sqlalchemy.orm import relationship
 
 from .base import Base
 from .containers import DockerContainer
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .node import Node
 
 
 agent_container_table = Table(
@@ -31,15 +34,25 @@ agent_producer_table = Table(
 
 
 class Agent(Base):
+    """
+    MTConnect Agent
+    """
+
     __tablename__ = "mtc_agents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[str] = mapped_column(String(30))
     external = mapped_column(Boolean, default=False)
     agent_port = mapped_column(Integer())
-    agent_url: Mapped[str] = mapped_column(String(30))
+    node_id = mapped_column(ForeignKey("ofa_nodes.id"))
+    node: Mapped["Node"] = relationship(back_populates="agents")
     agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table)
     producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table)
+
+    @hybrid_property
+    def agent_url(self):
+        """ URL of node where agent is running """
+        return self.node.node_ip
 
     @hybrid_property
     def device_uuid(self):
