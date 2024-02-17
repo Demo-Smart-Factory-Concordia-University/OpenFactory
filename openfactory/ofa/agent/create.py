@@ -7,9 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import config.config as config
-import src.ofa as ofa
-from src.models.agents import Agent
-from src.models.containers import DockerContainer, EnvVar, Port
+import openfactory.ofa as ofa
+from openfactory.models.agents import Agent
+from openfactory.models.containers import DockerContainer, EnvVar, Port
 
 
 def _validate(device, db_engine, client):

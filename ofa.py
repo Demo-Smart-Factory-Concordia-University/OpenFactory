@@ -2,7 +2,7 @@ import click
 from sqlalchemy import create_engine
 
 import config.config as config
-import src.ofa as ofa
+import openfactory.ofa as ofa
 
 
 @click.group()

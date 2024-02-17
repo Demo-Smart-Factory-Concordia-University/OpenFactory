@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
 
 import config.config as config
-from src.models.agents import Agent
-from src.models.containers import DockerContainer, EnvVar
+from openfactory.models.agents import Agent
+from openfactory.models.containers import DockerContainer, EnvVar
 
 
 def attach(agent_uuid, db_engine):

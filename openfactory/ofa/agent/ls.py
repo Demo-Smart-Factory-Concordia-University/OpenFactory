@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from src.models.agents import Agent
+from openfactory.models.agents import Agent
 
 
 def ls(db_engine):

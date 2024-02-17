@@ -1,5 +1,5 @@
 import yaml
-import src.ofa as ofa
+import openfactory.ofa as ofa
 
 
 def down(yaml_config_file, db_engine):

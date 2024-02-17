@@ -2,8 +2,8 @@ import requests
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.models.agents import Agent
-from src.models.containers import DockerContainer
+from openfactory.models.agents import Agent
+from openfactory.models.containers import DockerContainer
 
 
 def stop(agent_uuid, db_engine):
