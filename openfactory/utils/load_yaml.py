@@ -1,5 +1,7 @@
 import yaml
 import os
+import json
+import ast
 from dotenv import load_dotenv
 
 
@@ -16,7 +18,5 @@ def load_yaml(yaml_file):
         cfg = yaml.safe_load(stream)
 
     # parse environment variables
-    for key in cfg:
-        cfg[key] = os.path.expandvars(cfg[key])
-
-    return cfg
+    cfg_str = json.dumps(cfg)
+    return ast.literal_eval(os.path.expandvars(cfg_str))

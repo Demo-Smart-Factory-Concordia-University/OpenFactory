@@ -1,6 +1,5 @@
 import docker
-import yaml
-
+from openfactory.utils import load_yaml
 import config.config as config
 
 
@@ -8,8 +7,7 @@ def up(yaml_config_file):
     """ Setup OpenFactory infrastructure """
 
     # Load yaml description file
-    with open(yaml_config_file, 'r') as stream:
-        infra = yaml.safe_load(stream)
+    infra = load_yaml(yaml_config_file)
 
     client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + infra['manager'])
     client.swarm.init(advertise_addr=infra['manager'])

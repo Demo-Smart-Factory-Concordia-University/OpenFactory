@@ -1,6 +1,5 @@
 import docker
-import yaml
-
+from openfactory.utils import load_yaml
 import config.config as config
 
 
@@ -8,8 +7,7 @@ def down(yaml_config_file):
     """ Tear down OpenFactory infrastructure """
 
     # Load yaml description file
-    with open(yaml_config_file, 'r') as stream:
-        infra = yaml.safe_load(stream)
+    infra = load_yaml(yaml_config_file)
 
     for node, host in infra['nodes'].items():
         print("Removing", node)

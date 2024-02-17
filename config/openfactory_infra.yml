@@ -1,0 +1,9 @@
+# OpenFactory Infrastructure definition
+
+network: factory-net
+
+manager: ${MANAGER_IP}
+
+nodes:
+
+   node1: ${NODE1_IP}
