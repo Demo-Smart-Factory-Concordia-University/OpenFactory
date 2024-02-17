@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:3.10-slim
 LABEL author="Rolf Wuthrich" 
 LABEL organisation="Concordia University"
 LABEL description="Docker image for Kafka producer"
