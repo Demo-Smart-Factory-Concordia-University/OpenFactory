@@ -1,10 +1,16 @@
+import click
+from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+import config.config as config
 from openfactory.models.agents import Agent
 
 
-def ls(db_engine):
+@click.command(name='ls')
+def ls():
     """ List MTConnect agents defined in OpenFactory """
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     session = Session(db_engine)
     agents = select(Agent)
     print('UUID            URL             PORT     STATUS         ATTACHED')

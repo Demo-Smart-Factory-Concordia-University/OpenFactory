@@ -1,13 +1,17 @@
+import click
 import requests
+from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+import config.config as config
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer
 
 
-def stop(agent_uuid, db_engine):
+def stop(agent_uuid):
     """ Stop an MTConnect agent defined in OpenFactory """
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     session = Session(db_engine)
     agents = select(Agent).where(Agent.uuid == agent_uuid)
     for agent in session.scalars(agents):
@@ -26,3 +30,10 @@ def stop(agent_uuid, db_engine):
         agent_cont = session.execute(query).one()
         agent_cont[0].stop()
         print("Stopped", agent_uuid)
+
+
+@click.command(name='stop')
+@click.argument('agent_uuid', nargs=1)
+def click_stop(agent_uuid):
+    """ Stop an MTConnect agent defined in OpenFactory """
+    stop(agent_uuid)

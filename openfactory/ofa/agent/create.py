@@ -1,8 +1,10 @@
+import click
 import docker
 import yaml
 import os
 import tarfile
 from tempfile import TemporaryDirectory
+from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -102,8 +104,10 @@ def _create_agent(db_engine, device, network, yaml_config_file):
     return agent
 
 
-def create(yaml_config_file, db_engine, run=False, attach=False):
+def create(yaml_config_file, run=False, attach=False):
     """ Create an MTConnect agent based on a yaml configuration file """
+
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
 
     # Load yaml description file
     with open(yaml_config_file, 'r') as stream:
@@ -121,5 +125,13 @@ def create(yaml_config_file, db_engine, run=False, attach=False):
             print("Started", device['UUID'].upper() + "-AGENT")
 
         if attach:
-            ofa.agent.attach(device['UUID'].upper() + "-AGENT", db_engine)
+            ofa.agent.attach(device['UUID'].upper() + "-AGENT")
             print("Attached", device['UUID'].upper() + "-AGENT")
+
+
+@click.command(name='create')
+@click.argument('yaml_config_file', type=click.Path(exists=True),
+                nargs=1)
+def click_create(yaml_config_file):
+    """ Create an MTConnect agent based on a yaml configuration file """
+    create(yaml_config_file, run=False, attach=False)

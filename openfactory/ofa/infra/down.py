@@ -1,4 +1,6 @@
+import click
 import docker
+from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from openfactory.utils import load_yaml
@@ -6,9 +8,14 @@ from openfactory.models.nodes import Node
 import config.config as config
 
 
-def down(yaml_config_file, db_engine):
+@click.command(name='down')
+@click.argument('yaml_config_file',
+                type=click.Path(exists=True),
+                nargs=1)
+def down(yaml_config_file):
     """ Tear down OpenFactory infrastructure """
 
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     session = Session(db_engine)
 
     # Load yaml description file

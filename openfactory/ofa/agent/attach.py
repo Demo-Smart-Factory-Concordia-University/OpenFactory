@@ -1,4 +1,6 @@
+import click
 import docker
+from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
@@ -8,9 +10,10 @@ from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 
 
-def attach(agent_uuid, db_engine):
+def attach(agent_uuid):
     """ Attach a Kafka producer to an MTConnect agent """
 
+    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     session = Session(db_engine)
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one_or_none()
@@ -56,3 +59,10 @@ def attach(agent_uuid, db_engine):
     agent.producer_url = producer_url
     agent.producer_container = container
     session.commit()
+
+
+@click.command(name='attach')
+@click.argument('agent_uuid', nargs=1)
+def click_attach(agent_uuid):
+    """ Attach a Kafka producer to an MTConnect agent """
+    attach(agent_uuid)
