@@ -3,7 +3,7 @@ import openfactory.ofa as ofa
 
 
 @click.group()
-def main():
+def cli():
     """ Administrative tool for OpenFactory """
     pass
 
@@ -26,11 +26,11 @@ def device():
     pass
 
 
-main.add_command(infra)
+cli.add_command(infra)
 infra.add_command(ofa.infra.up)
 infra.add_command(ofa.infra.down)
 
-main.add_command(agent)
+cli.add_command(agent)
 agent.add_command(ofa.agent.ls)
 agent.add_command(ofa.agent.click_create)
 agent.add_command(ofa.agent.run)
@@ -40,10 +40,10 @@ agent.add_command(ofa.agent.click_rm)
 agent.add_command(ofa.agent.click_attach)
 agent.add_command(ofa.agent.click_detach)
 
-main.add_command(device)
+cli.add_command(device)
 device.add_command(ofa.device.up)
 device.add_command(ofa.device.down)
 
 
 if __name__ == '__main__':
-    main()
+    cli()
