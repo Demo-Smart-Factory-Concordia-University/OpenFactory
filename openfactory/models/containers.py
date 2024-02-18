@@ -21,7 +21,7 @@ class DockerContainer(Base):
     docker_url: Mapped[str] = mapped_column(String(20),
                                             default='unix://var/run/docker.sock')
     image: Mapped[str] = mapped_column(String(40))
-    name: Mapped[str] = mapped_column(String(20))
+    name: Mapped[str] = mapped_column(String(20), unique=True)
     network: Mapped[str] = mapped_column(String(20))
     command: Mapped[str] = mapped_column(String(40),
                                          default='')

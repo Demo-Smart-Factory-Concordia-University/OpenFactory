@@ -41,7 +41,7 @@ class Agent(Base):
     __tablename__ = "mtc_agents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    uuid: Mapped[str] = mapped_column(String(30))
+    uuid: Mapped[str] = mapped_column(String(30), unique=True)
     external = mapped_column(Boolean, default=False)
     agent_port = mapped_column(Integer())
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))

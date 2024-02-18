@@ -17,6 +17,6 @@ class Node(Base):
     __tablename__ = "ofa_nodes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    node_name: Mapped[str] = mapped_column(String(20))
+    node_name: Mapped[str] = mapped_column(String(20), unique=True)
     node_ip: Mapped[str] = mapped_column(String(14))
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")

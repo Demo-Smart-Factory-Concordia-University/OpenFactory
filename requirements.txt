@@ -6,3 +6,4 @@ sqlalchemy
 flake8
 git+https://github.com/rwuthric/PyKSQL.git
 python-dotenv
+PyGithub
