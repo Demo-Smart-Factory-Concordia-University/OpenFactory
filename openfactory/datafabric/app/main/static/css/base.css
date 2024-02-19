@@ -1,0 +1,15 @@
+.app-wrapper {
+    display: flex;
+    flex-grow: 1;
+    padding: 5px;
+}
+
+body {
+    background: #fafafa;
+    height: 100%;
+}
+
+main {
+    padding: 5px;
+    width: 100%;
+}

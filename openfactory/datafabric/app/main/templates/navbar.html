@@ -1,0 +1,32 @@
+<!-- templates/navbar.html -->
+
+<!-- Navigation bar on top -->
+<nav class="navbar navbar-expand-md sticky-top navbar-dark" style="background-color: #962B09;">
+  <a class="navbar-brand" href="{{ url_for('main.index') }}">DataFabric</a>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarMenus" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarMenus">
+    <ul class="navbar-nav active">
+      <li class="nav-item">
+          <a class="nav-link" style="color: #FFFFFF" href="{{ url_for('main.index') }}">Home</a>
+      </li>
+    </ul>
+
+    <ul class="navbar-nav active ml-auto">
+      <li class="nav-item">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Bob Bil
+          </a>
+          <div class="dropdown-menu dropdown-menu-lg-right" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="{{ url_for('main.index') }}">Settings</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="{{ url_for('main.index') }}">Log Out</a>
+          </div>
+      </li>
+    </ul>
+  </div>
+
+</nav>
