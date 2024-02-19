@@ -20,3 +20,6 @@ class Node(Base):
     node_name: Mapped[str] = mapped_column(String(20), unique=True)
     node_ip: Mapped[str] = mapped_column(String(14))
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")
+
+    def __repr__(self):
+        return f"{self.node_name} ({self.node_ip})"
