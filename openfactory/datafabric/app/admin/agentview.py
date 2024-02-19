@@ -2,6 +2,9 @@ from flask_admin.contrib.sqla import ModelView
 
 
 class AgentView(ModelView):
+    """
+    Admin View for Agent Model
+    """
     form_columns = ['uuid', 'agent_port', 'node']
     column_list = ['uuid', 'device_uuid', 'agent_port', 'container', 'node', 'status']
     column_labels = {'uuid': 'Agent UUID',
