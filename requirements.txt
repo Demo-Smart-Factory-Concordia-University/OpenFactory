@@ -7,3 +7,9 @@ flake8
 git+https://github.com/rwuthric/PyKSQL.git
 python-dotenv
 PyGithub
+
+# DataFabric WebApp
+flask
+flask-sqlalchemy
+flask-admin
+
