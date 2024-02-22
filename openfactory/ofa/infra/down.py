@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from openfactory.utils import load_yaml
 from openfactory.models.nodes import Node
-import config.config as config
+import openfactory.config as config
 
 
 @click.command(name='down')

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from openfactory.utils import load_yaml
 from openfactory.models.nodes import Node
-import config.config as config
+import openfactory.config as config
 
 
 @click.command(name='up')
@@ -21,32 +21,29 @@ def up(yaml_config_file):
     infra = load_yaml(yaml_config_file)
 
     print("Setting up manager")
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + infra['manager'])
-    client.swarm.init(advertise_addr=infra['manager'])
-    token = client.swarm.attrs['JoinTokens']['Worker']
     node = Node(
         node_name='manager',
         node_ip=infra['manager']
     )
     session.add_all([node])
+    session.commit()
 
     # create overlay network
     print("Create network")
+    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + infra['manager'])
     client.networks.create(infra['network'],
                            driver='overlay',
                            attachable=True)
+    client.close()
 
     # attach nodes to swarm cluster
     for node, host in infra['nodes'].items():
         print("Attaching ", node)
-        rem_client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + host)
-        rem_client.swarm.join([infra['manager']], join_token=token)
-        rem_client.close()
         node = Node(
             node_name=node,
             node_ip=host
         )
         session.add_all([node])
+        session.commit()
 
-    session.commit()
-    client.close()
+    session.close()
