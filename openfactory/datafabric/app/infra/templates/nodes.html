@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+  <h2>Nodes</h2>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover table-sm ">
+      <thead class="table-light">
+        <tr style="background-color: #b0d3d5; padding: 5px">
+           <th scope="col">ID</th>
+           <th scope="col">Node name</th>
+           <th scope="col">Node IP</th>
+           <th scope="col">Node Status</th> 
+        </tr>
+      </thead>
+    
+      <tbody>
+        <tr style="transform: rotate(0);">
+        {% for node in nodes %}
+        <tr onclick="window.location='#';">
+          <th scope="row"><a href="#" class="streched-link">{{ node.id }}</th>
+          <td>{{ node.node_name }}</td>
+          <td>{{ node.node_ip }}</td>
+          <td>{{ node.status }}</td>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+  </div>
+{% endblock app_content %}
