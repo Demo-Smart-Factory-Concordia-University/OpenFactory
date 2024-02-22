@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
 
-import config.config as config
+import openfactory.config as config
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 

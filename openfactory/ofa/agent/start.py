@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import config.config as config
+import openfactory.config as config
 from openfactory.models.agents import Agent
 
 
