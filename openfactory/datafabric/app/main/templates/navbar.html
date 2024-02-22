@@ -13,17 +13,21 @@
       <li class="nav-item">
           <a class="nav-link" style="color: #FFFFFF" href="{{ url_for('main.index') }}">Home</a>
       </li>
+      <li class="nav-item">
+          <a class="nav-link" style="color: #FFFFFF" href="{{ url_for('infra.nodes') }}">Nodes</a>
+      </li>
     </ul>
 
     <ul class="navbar-nav active ml-auto">
       <li class="nav-item">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              Bob Bil
+              {{ current_user.fullname }}
           </a>
           <div class="dropdown-menu dropdown-menu-lg-right" aria-labelledby="navbarDropdown">
               <a class="dropdown-item" href="{{ url_for('main.index') }}">Settings</a>
+              <a class="dropdown-item" href="{{ url_for('admin.index') }}">Admin</a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="{{ url_for('main.index') }}">Log Out</a>
+              <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Log Out</a>
           </div>
       </li>
     </ul>

@@ -1,3 +1,3 @@
-from app import create_app
+from openfactory.datafabric.app import create_app
 
 app = create_app()

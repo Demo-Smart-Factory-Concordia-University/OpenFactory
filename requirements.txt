@@ -12,4 +12,5 @@ PyGithub
 flask
 flask-sqlalchemy
 flask-admin
-
+flask-login
+flask-wtf
