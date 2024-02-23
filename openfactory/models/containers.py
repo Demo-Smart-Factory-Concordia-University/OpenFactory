@@ -4,6 +4,7 @@ from sqlalchemy import event
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -32,6 +33,15 @@ class DockerContainer(Base):
 
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
+
+    @hybrid_property
+    def status(self):
+        """ Status of container """
+        client = docker.DockerClient(base_url=self.docker_url)
+        container = client.containers.get(self.name)
+        status = container.attrs['State']['Status']
+        client.close()
+        return status
 
     def create(self):
         """ Create Docker container """
