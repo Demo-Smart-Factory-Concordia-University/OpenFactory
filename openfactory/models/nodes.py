@@ -38,7 +38,7 @@ class Node(Base):
     @hybrid_property
     def status(self):
         """ Returns status of swarm node """
-        client = docker.DockerClient(base_url="ssh://openfactory@127.0.0.1")
+        client = docker.DockerClient(base_url=self.manager.docker_url)
         n = client.nodes.get(self.docker_node_id)
         stat = n.attrs['Status']['State']
         client.close()
