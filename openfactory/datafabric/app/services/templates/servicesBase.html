@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+  <!-- Two columns layout -->
+  <div class="container-fullwidth" style="padding: 10px;">
+    <div class="row">
+    
+      <!-- Sidebar -->
+      <div class="col-lg-2" >
+        {% include 'sidebar.html' %}
+      </div>
+
+      <!-- Main content -->
+      <div class="col-lg-10">
+        {% block content %}
+        {% endblock content %}
+      </div>
+  
+    </div>
+  </div>
+
+{% endblock app_content %}

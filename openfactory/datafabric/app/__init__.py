@@ -39,6 +39,10 @@ def create_app(config_class=Config):
     from openfactory.datafabric.app.infra import bp as infra_blueprint
     app.register_blueprint(infra_blueprint, url_prefix='/infra')
 
+    # services blueprint
+    from openfactory.datafabric.app.services import bp as services_blueprint
+    app.register_blueprint(services_blueprint, url_prefix='/services')
+
     # admin app
     admin.init_app(app)
     admin.add_view(AgentView(Agent, db.session))

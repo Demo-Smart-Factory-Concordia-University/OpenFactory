@@ -1,0 +1,22 @@
+#sidebar {
+    padding: 10px;
+    min-width: 210px;
+    max-width: 210px;
+    #min-height: 100vh;
+    #background: #962B09;
+    #color: #FFFFFF;
+}
+
+
+#sidebar ul p {
+    #color: #fff;
+    padding: 10px;
+}
+
+
+#sidebar ul li a {
+    padding: 10px;
+    #font-size: 1.1em;
+    display: block;
+    #color: #FFFFFF;
+}

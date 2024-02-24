@@ -1,0 +1,32 @@
+{% extends "servicesBase.html" %}
+
+{% block content %}
+  <h4>Agents</h4>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover table-sm ">
+      <thead class="table-light">
+        <tr style="background-color: #b0d3d5; padding: 5px">
+           <th scope="col">UUID</th>
+           <th scope="col">Agent url</th>
+           <th scope="col">Agent Port</th>
+           <th scope="col">Agent Status</th> 
+        </tr>
+      </thead>
+    
+      <tbody>
+        <tr style="transform: rotate(0);">
+        {% for agent in agents %}
+        <tr>
+          <th><a href="#">{{ agent.uuid }}</th>
+          <td>{{ agent.agent_url }}</td>
+          <td>{{ agent.agent_port }}</td>
+          <td>{{ agent.status }}</td>
+        </tr>   
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+  </div>
+{% endblock content %}
