@@ -12,7 +12,7 @@ from .containers.containers_view import ContainerList
 @login_required
 def home():
     return render_template('servicesBase.html',
-                           title='Home')
+                           title='Services')
 
 
 bp.add_url_rule("/agents", view_func=AgentList.as_view("agents"))
