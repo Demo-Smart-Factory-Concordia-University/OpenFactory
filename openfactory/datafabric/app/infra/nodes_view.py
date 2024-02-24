@@ -19,4 +19,4 @@ class NodesList(View):
     def dispatch_request(self):
         query = select(Node)
         nodes = db.session.scalars(query)
-        return render_template("nodes.html", nodes=nodes, title='Nodes')
+        return render_template("infra/nodes/nodes_list.html", nodes=nodes, title='Nodes')
