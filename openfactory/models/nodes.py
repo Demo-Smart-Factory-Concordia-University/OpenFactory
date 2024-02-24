@@ -35,11 +35,22 @@ class Node(Base):
 
     @hybrid_property
     def status(self):
+        """ Returns status of swarm node """
         client = docker.DockerClient(base_url="ssh://openfactory@127.0.0.1")
         n = client.nodes.get(self.docker_node_id)
         stat = n.attrs['Status']['State']
         client.close()
         return stat
+
+    @hybrid_property
+    def manager(self):
+        """ Returns swarm manager """
+        db_engine = create_engine(config.SQL_ALCHEMY_CONN)
+        session = Session(db_engine)
+        query = select(Node).where(Node.node_name == "manager")
+        manager = session.execute(query).first()
+        session.close()
+        return manager[0]
 
 
 @event.listens_for(Node, 'before_insert')
@@ -58,12 +69,8 @@ def add_docker_node_id(mapper, connection, target):
         client.close()
         return
 
-    # finds swarm manager
-    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-    session = Session(db_engine)
-    query = select(Node).where(Node.node_name == "manager")
-    manager = session.execute(query).first()
-    manager = manager[0]
+    # gets manager token
+    manager = target.manager
     target.network = manager.network
     client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + manager.node_ip)
     token = client.swarm.attrs['JoinTokens']['Worker']
@@ -78,4 +85,3 @@ def add_docker_node_id(mapper, connection, target):
             target.docker_node_id = n.attrs['ID']
     client.close()
     node_client.close()
-    session.close()
