@@ -19,6 +19,6 @@ class AgentList(View):
     def dispatch_request(self):
         query = select(Agent)
         agents = db.session.scalars(query)
-        return render_template("agents/agents_list.html",
+        return render_template("services/agents/agents_list.html",
                                agents=agents,
                                title='Agents')

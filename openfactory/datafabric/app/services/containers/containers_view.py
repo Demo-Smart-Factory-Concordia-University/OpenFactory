@@ -19,6 +19,6 @@ class ContainerList(View):
     def dispatch_request(self):
         query = select(DockerContainer)
         containers = db.session.scalars(query)
-        return render_template("containers/containers_list.html",
+        return render_template("services/containers/containers_list.html",
                                containers=containers,
                                title='Containers')

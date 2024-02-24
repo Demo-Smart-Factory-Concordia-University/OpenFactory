@@ -11,7 +11,7 @@ from .containers.containers_view import ContainerList
 @bp.route('/')
 @login_required
 def home():
-    return render_template('servicesBase.html',
+    return render_template('services/servicesBase.html',
                            title='Services')
 
 
