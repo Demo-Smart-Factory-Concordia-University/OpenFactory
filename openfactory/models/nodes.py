@@ -28,6 +28,8 @@ class Node(Base):
     network: Mapped[str] = mapped_column(String(20))
     node_ip: Mapped[str] = mapped_column(String(14), unique=True)
     docker_node_id: Mapped[str] = mapped_column(String(30))
+    docker_url: Mapped[str] = mapped_column(String(40),
+                                            default='unix://var/run/docker.sock')
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")
 
     def __repr__(self):
@@ -61,7 +63,8 @@ def add_docker_node_id(mapper, connection, target):
 
     # Checks if node is the swarm manager
     if target.node_name == "manager":
-        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip)
+        target.docker_url = "ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip
+        client = docker.DockerClient(base_url=target.docker_url)
         target.docker_node_id = client.swarm.init(advertise_addr=target.node_ip)
         client.networks.create(target.network,
                                driver='overlay',
@@ -72,11 +75,12 @@ def add_docker_node_id(mapper, connection, target):
     # gets manager token
     manager = target.manager
     target.network = manager.network
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + manager.node_ip)
+    client = docker.DockerClient(base_url=manager.docker_url)
     token = client.swarm.attrs['JoinTokens']['Worker']
 
     # create node on swarm
-    node_client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip)
+    target.docker_url = "ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip
+    node_client = docker.DockerClient(base_url=target.docker_url)
     node_client.swarm.join([manager.node_ip], join_token=token)
 
     # finds and adds docker id of node
