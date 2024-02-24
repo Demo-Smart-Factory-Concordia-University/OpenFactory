@@ -13,7 +13,5 @@ from openfactory.models.nodes import Node
 bp = Blueprint('services', __name__,
                template_folder='templates' )
 
-# Register models to admin app
-#admin.add_view(ModelView(Node, db.session))
 
 from . import routes
