@@ -10,6 +10,7 @@
            <th scope="col">ID</th>
            <th scope="col">Node name</th>
            <th scope="col">Node IP</th>
+           <th scope="col">Network</th>
            <th scope="col">Node Status</th> 
         </tr>
       </thead>
@@ -21,6 +22,7 @@
           <th scope="row"><a href="#" class="streched-link">{{ node.id }}</th>
           <td>{{ node.node_name }}</td>
           <td>{{ node.node_ip }}</td>
+          <td>{{ node.network }}</td>
           <td>{{ node.status }}</td>
         {% endfor %}
       </tbody>

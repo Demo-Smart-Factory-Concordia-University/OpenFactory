@@ -25,6 +25,7 @@ class Node(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     node_name: Mapped[str] = mapped_column(String(20), unique=True)
+    network: Mapped[str] = mapped_column(String(20))
     node_ip: Mapped[str] = mapped_column(String(14), unique=True)
     docker_node_id: Mapped[str] = mapped_column(String(30))
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")
@@ -51,6 +52,9 @@ def add_docker_node_id(mapper, connection, target):
     if target.node_name == "manager":
         client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip)
         target.docker_node_id = client.swarm.init(advertise_addr=target.node_ip)
+        client.networks.create(target.network,
+                               driver='overlay',
+                               attachable=True)
         client.close()
         return
 
@@ -60,6 +64,7 @@ def add_docker_node_id(mapper, connection, target):
     query = select(Node).where(Node.node_name == "manager")
     manager = session.execute(query).first()
     manager = manager[0]
+    target.network = manager.network
     client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + manager.node_ip)
     token = client.swarm.attrs['JoinTokens']['Worker']
 

@@ -1,5 +1,4 @@
 import click
-import docker
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from openfactory.utils import load_yaml
@@ -20,21 +19,14 @@ def up(yaml_config_file):
     # Load yaml description file
     infra = load_yaml(yaml_config_file)
 
-    print("Setting up manager")
+    print("Setting up manager and network")
     node = Node(
         node_name='manager',
-        node_ip=infra['manager']
+        node_ip=infra['manager'],
+        network=infra['network']
     )
     session.add_all([node])
     session.commit()
-
-    # create overlay network
-    print("Create network")
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + infra['manager'])
-    client.networks.create(infra['network'],
-                           driver='overlay',
-                           attachable=True)
-    client.close()
 
     # attach nodes to swarm cluster
     for node, host in infra['nodes'].items():
