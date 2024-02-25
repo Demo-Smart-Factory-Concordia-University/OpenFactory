@@ -23,10 +23,8 @@ class DockerContainer(Base):
     __tablename__ = "docker_container"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    node_id = mapped_column(ForeignKey("ofa_nodes.id")).exit
+    node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="containers")
-    docker_url: Mapped[str] = mapped_column(String(20),
-                                            default='unix://var/run/docker.sock')
     image: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(20), unique=True)
     network: Mapped[str] = mapped_column(String(20))
@@ -39,6 +37,11 @@ class DockerContainer(Base):
 
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
+
+    @hybrid_property
+    def docker_url(self):
+        """ docker_url from node on which container is deployed """
+        return self.node.docker_url
 
     @hybrid_property
     def status(self):
@@ -64,10 +67,10 @@ class DockerContainer(Base):
         docker_client.close()
 
 
-@event.listens_for(DockerContainer, 'before_insert')
-def dockerContainer_before_insert(mapper, connection, target):
+@event.listens_for(DockerContainer, 'after_insert')
+def dockerContainer_after_insert(mapper, connection, target):
     """
-    Create Docker container when database object is inserted
+    Create Docker container after a database object is inserted
     """
     ports_dict = {}
     for p in target.ports:

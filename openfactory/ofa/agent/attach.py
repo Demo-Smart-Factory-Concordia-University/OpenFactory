@@ -38,12 +38,11 @@ def attach(agent_uuid):
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
     client.close()
 
-    producer_url = agent_uuid.lower().replace("-agent", "-producer")
     container = DockerContainer(
-        docker_url=agent.node.docker_url,
         node_id=agent.node.id,
+        node=agent.node,
         image=config.MTCONNECT_PRODUCER_IMAGE,
-        name=producer_url,
+        name=agent_uuid.lower().replace("-agent", "-producer"),
         environment=[
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
@@ -56,7 +55,6 @@ def attach(agent_uuid):
     session.commit()
     container.start()
 
-    agent.producer_url = producer_url
     agent.producer_container = container
     session.commit()
 
