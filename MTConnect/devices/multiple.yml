@@ -21,5 +21,3 @@ devices:
       adapter:
         IP: 10.0.0.7
         PORT: 7879
-
-network: factory-net
