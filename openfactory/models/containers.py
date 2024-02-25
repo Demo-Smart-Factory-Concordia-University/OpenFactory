@@ -8,7 +8,11 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+
 from .base import Base
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .node import Node
 
 
 class DockerContainer(Base):
@@ -19,6 +23,8 @@ class DockerContainer(Base):
     __tablename__ = "docker_container"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    node_id = mapped_column(ForeignKey("ofa_nodes.id")).exit
+    node: Mapped["Node"] = relationship(back_populates="containers")
     docker_url: Mapped[str] = mapped_column(String(20),
                                             default='unix://var/run/docker.sock')
     image: Mapped[str] = mapped_column(String(40))

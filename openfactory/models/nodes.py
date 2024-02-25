@@ -13,7 +13,8 @@ import openfactory.config as config
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .agent import Agent
+    from .agents import Agent
+    from .containers import DockerContainer
 
 
 class Node(Base):
@@ -31,6 +32,7 @@ class Node(Base):
     docker_url: Mapped[str] = mapped_column(String(40),
                                             default='unix://var/run/docker.sock')
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")
+    containers: Mapped[List["DockerContainer"]] = relationship(back_populates="node")
 
     def __repr__(self):
         return f"{self.node_name} ({self.node_ip})"

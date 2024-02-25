@@ -66,6 +66,7 @@ def _create_agent(db_engine, device, network, yaml_config_file):
 
         container = DockerContainer(
             docker_url=node.docker_url,
+            node_id=node.id,
             image=config.MTCONNECT_AGENT_IMAGE,
             name=device['UUID'].lower() + '-agent',
             ports=[

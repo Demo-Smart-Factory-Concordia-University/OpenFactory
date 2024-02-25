@@ -41,6 +41,7 @@ def attach(agent_uuid):
     producer_url = agent_uuid.lower().replace("-agent", "-producer")
     container = DockerContainer(
         docker_url=agent.node.docker_url,
+        node_id=agent.node.id,
         image=config.MTCONNECT_PRODUCER_IMAGE,
         name=producer_url,
         environment=[
