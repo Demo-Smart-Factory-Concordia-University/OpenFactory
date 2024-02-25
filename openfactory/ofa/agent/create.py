@@ -50,8 +50,8 @@ def _copy_files(container, src):
     tmp_dir.cleanup()
 
 
-def _create_agent(db_engine, device, network, yaml_config_file):
-    """ insert agent to OpenFactory data base and create Docker container of agent """
+def _create_agent(db_engine, device, yaml_config_file):
+    """ Insert agent and its container to OpenFactory data base """
 
     with Session(db_engine) as session:
 
@@ -79,7 +79,6 @@ def _create_agent(db_engine, device, network, yaml_config_file):
                 EnvVar(variable='ADAPTER_PORT', value=f"{device['agent']['adapter']['PORT']}"),
                 EnvVar(variable='DOCKER_GATEWAY', value='172.17.0.1')
             ],
-            network=network,
             command='mtcagent run agent.cfg',
         )
 
@@ -118,7 +117,7 @@ def create(yaml_config_file, run=False, attach=False):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        agent = _create_agent(db_engine, device, cfg['network'], yaml_config_file)
+        agent = _create_agent(db_engine, device, yaml_config_file)
         if agent is None:
             continue
         print("Created", device['UUID'].upper() + "-AGENT")

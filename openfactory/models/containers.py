@@ -27,7 +27,6 @@ class DockerContainer(Base):
     node: Mapped["Node"] = relationship(back_populates="containers")
     image: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(20), unique=True)
-    network: Mapped[str] = mapped_column(String(20))
     command: Mapped[str] = mapped_column(String(40),
                                          default='')
     environment: Mapped[List["EnvVar"]] = relationship(back_populates="container",
@@ -42,6 +41,11 @@ class DockerContainer(Base):
     def docker_url(self):
         """ docker_url from node on which container is deployed """
         return self.node.docker_url
+
+    @hybrid_property
+    def network(self):
+        """ network from node on which container is deployed """
+        return self.node.network
 
     @hybrid_property
     def status(self):

@@ -48,8 +48,7 @@ def attach(agent_uuid):
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
             EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
-        ],
-        network=agent.agent_container.network
+        ]
     )
     session.add_all([container])
     session.commit()
