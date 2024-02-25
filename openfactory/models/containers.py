@@ -8,7 +8,11 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+
 from .base import Base
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .node import Node
 
 
 class DockerContainer(Base):
@@ -19,11 +23,10 @@ class DockerContainer(Base):
     __tablename__ = "docker_container"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    docker_url: Mapped[str] = mapped_column(String(20),
-                                            default='unix://var/run/docker.sock')
+    node_id = mapped_column(ForeignKey("ofa_nodes.id"))
+    node: Mapped["Node"] = relationship(back_populates="containers")
     image: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(20), unique=True)
-    network: Mapped[str] = mapped_column(String(20))
     command: Mapped[str] = mapped_column(String(40),
                                          default='')
     environment: Mapped[List["EnvVar"]] = relationship(back_populates="container",
@@ -35,6 +38,16 @@ class DockerContainer(Base):
         return f"Container (id={self.id} name={self.name})"
 
     @hybrid_property
+    def docker_url(self):
+        """ docker_url from node on which container is deployed """
+        return self.node.docker_url
+
+    @hybrid_property
+    def network(self):
+        """ network from node on which container is deployed """
+        return self.node.network
+
+    @hybrid_property
     def status(self):
         """ Status of container """
         client = docker.DockerClient(base_url=self.docker_url)
@@ -42,27 +55,6 @@ class DockerContainer(Base):
         status = container.attrs['State']['Status']
         client.close()
         return status
-
-    def create(self):
-        """ Create Docker container """
-
-        ports_dict = {}
-        for p in self.ports:
-            ports_dict[p.container_port] = p.host_port
-        env = []
-        for var in self.environment:
-            env.append(f"{var.variable}={var.value}")
-
-        docker_client = docker.DockerClient(base_url=self.docker_url)
-        cont = docker_client.containers.create(self.image,
-                                               name=self.name,
-                                               detach=True,
-                                               environment=env,
-                                               ports=ports_dict,
-                                               command=self.command,
-                                               network=self.network)
-        docker_client.close()
-        return cont
 
     def start(self):
         """ Start Docker container """
@@ -79,9 +71,34 @@ class DockerContainer(Base):
         docker_client.close()
 
 
+@event.listens_for(DockerContainer, 'after_insert')
+def dockerContainer_after_insert(mapper, connection, target):
+    """
+    Create Docker container after a database object is inserted
+    """
+    ports_dict = {}
+    for p in target.ports:
+        ports_dict[p.container_port] = p.host_port
+    env = []
+    for var in target.environment:
+        env.append(f"{var.variable}={var.value}")
+
+    docker_client = docker.DockerClient(base_url=target.docker_url)
+    docker_client.containers.create(target.image,
+                                    name=target.name,
+                                    detach=True,
+                                    environment=env,
+                                    ports=ports_dict,
+                                    command=target.command,
+                                    network=target.network)
+    docker_client.close()
+
+
 @event.listens_for(DockerContainer, 'after_delete')
 def dockerContainer_after_delete(mapper, connection, target):
-    """ Removes Docker container when database object is deleted """
+    """
+    Remove Docker container when database object is deleted
+    """
     docker_client = docker.DockerClient(base_url=target.docker_url)
     container = docker_client.containers.get(target.name)
     container.stop()

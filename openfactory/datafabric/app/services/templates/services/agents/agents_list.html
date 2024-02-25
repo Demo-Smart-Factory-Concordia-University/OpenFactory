@@ -10,6 +10,7 @@
            <th scope="col">UUID</th>
            <th scope="col">Agent url</th>
            <th scope="col">Agent Port</th>
+           <th scope="col">Node</th> 
            <th scope="col">Agent Status</th> 
         </tr>
       </thead>
@@ -21,6 +22,7 @@
           <th><a href="#">{{ agent.uuid }}</th>
           <td>{{ agent.agent_url }}</td>
           <td>{{ agent.agent_port }}</td>
+          <td>{{ agent.node }}</td>
           <td>{{ agent.status }}</td>
         </tr>   
         {% endfor %}

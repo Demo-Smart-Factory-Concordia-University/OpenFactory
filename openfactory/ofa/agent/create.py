@@ -50,23 +50,23 @@ def _copy_files(container, src):
     tmp_dir.cleanup()
 
 
-def _create_agent(db_engine, device, network, yaml_config_file):
-    """ insert agent to OpenFactory data base and create Docker container of agent """
+def _create_agent(db_engine, device, yaml_config_file):
+    """ Insert agent and its container to OpenFactory data base """
 
     with Session(db_engine) as session:
 
         query = select(Node).where(Node.node_name == device['NODE'])
         node = session.execute(query).one()[0]
 
-        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip)
+        client = docker.DockerClient(base_url=node.docker_url)
         if not _validate(device, db_engine, client):
             client.close()
             return None
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
-        client.close()
 
         container = DockerContainer(
-            docker_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip,
+            node_id=node.id,
+            node=node,
             image=config.MTCONNECT_AGENT_IMAGE,
             name=device['UUID'].lower() + '-agent',
             ports=[
@@ -79,7 +79,6 @@ def _create_agent(db_engine, device, network, yaml_config_file):
                 EnvVar(variable='ADAPTER_PORT', value=f"{device['agent']['adapter']['PORT']}"),
                 EnvVar(variable='DOCKER_GATEWAY', value='172.17.0.1')
             ],
-            network=network,
             command='mtcagent run agent.cfg',
         )
 
@@ -93,15 +92,18 @@ def _create_agent(db_engine, device, network, yaml_config_file):
 
         session.add_all([container, agent])
         session.commit()
-        agent = container.create()
 
-    # compute device file absolute path
-    if os.path.isabs(device['agent']['DEVICE_XML']):
-        device_file = device['agent']['DEVICE_XML']
-    else:
-        device_file = os.path.join(os.path.dirname(yaml_config_file), device['agent']['DEVICE_XML'])
-    _copy_files(agent, device_file)
-    return agent
+        # compute device xml model absolute path
+        if os.path.isabs(device['agent']['DEVICE_XML']):
+            device_xml = device['agent']['DEVICE_XML']
+        else:
+            device_xml = os.path.join(os.path.dirname(yaml_config_file), device['agent']['DEVICE_XML'])
+
+        # add device xml model to agent container
+        cont = client.containers.get(container.name)
+        _copy_files(cont, device_xml)
+        client.close()
+    return cont
 
 
 def create(yaml_config_file, run=False, attach=False):
@@ -115,7 +117,7 @@ def create(yaml_config_file, run=False, attach=False):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        agent = _create_agent(db_engine, device, cfg['network'], yaml_config_file)
+        agent = _create_agent(db_engine, device, yaml_config_file)
         if agent is None:
             continue
         print("Created", device['UUID'].upper() + "-AGENT")

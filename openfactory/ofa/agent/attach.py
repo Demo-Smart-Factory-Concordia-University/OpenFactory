@@ -34,29 +34,26 @@ def attach(agent_uuid):
                                   WHERE device_uuid = '{agent.device_uuid}'
                                   GROUP BY id;""")
 
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url)
+    client = docker.DockerClient(base_url=agent.node.docker_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
     client.close()
 
-    producer_url = agent_uuid.lower().replace("-agent", "-producer")
     container = DockerContainer(
-        docker_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url,
+        node_id=agent.node.id,
+        node=agent.node,
         image=config.MTCONNECT_PRODUCER_IMAGE,
-        name=producer_url,
+        name=agent_uuid.lower().replace("-agent", "-producer"),
         environment=[
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
             EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
-        ],
-        network=agent.agent_container.network
+        ]
     )
     session.add_all([container])
     session.commit()
-    container.create()
     container.start()
 
-    agent.producer_url = producer_url
     agent.producer_container = container
     session.commit()
 
