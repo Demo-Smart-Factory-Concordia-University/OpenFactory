@@ -34,13 +34,13 @@ def attach(agent_uuid):
                                   WHERE device_uuid = '{agent.device_uuid}'
                                   GROUP BY id;""")
 
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url)
+    client = docker.DockerClient(base_url=agent.node.docker_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
     client.close()
 
     producer_url = agent_uuid.lower().replace("-agent", "-producer")
     container = DockerContainer(
-        docker_url="ssh://" + config.OPENFACTORY_USER + "@" + agent.agent_url,
+        docker_url=agent.node.docker_url,
         image=config.MTCONNECT_PRODUCER_IMAGE,
         name=producer_url,
         environment=[
@@ -53,7 +53,6 @@ def attach(agent_uuid):
     )
     session.add_all([container])
     session.commit()
-    container.create()
     container.start()
 
     agent.producer_url = producer_url

@@ -43,27 +43,6 @@ class DockerContainer(Base):
         client.close()
         return status
 
-    def create(self):
-        """ Create Docker container """
-
-        ports_dict = {}
-        for p in self.ports:
-            ports_dict[p.container_port] = p.host_port
-        env = []
-        for var in self.environment:
-            env.append(f"{var.variable}={var.value}")
-
-        docker_client = docker.DockerClient(base_url=self.docker_url)
-        cont = docker_client.containers.create(self.image,
-                                               name=self.name,
-                                               detach=True,
-                                               environment=env,
-                                               ports=ports_dict,
-                                               command=self.command,
-                                               network=self.network)
-        docker_client.close()
-        return cont
-
     def start(self):
         """ Start Docker container """
         docker_client = docker.DockerClient(base_url=self.docker_url)
@@ -79,9 +58,34 @@ class DockerContainer(Base):
         docker_client.close()
 
 
+@event.listens_for(DockerContainer, 'before_insert')
+def dockerContainer_before_insert(mapper, connection, target):
+    """
+    Create Docker container when database object is inserted
+    """
+    ports_dict = {}
+    for p in target.ports:
+        ports_dict[p.container_port] = p.host_port
+    env = []
+    for var in target.environment:
+        env.append(f"{var.variable}={var.value}")
+
+    docker_client = docker.DockerClient(base_url=target.docker_url)
+    docker_client.containers.create(target.image,
+                                    name=target.name,
+                                    detach=True,
+                                    environment=env,
+                                    ports=ports_dict,
+                                    command=target.command,
+                                    network=target.network)
+    docker_client.close()
+
+
 @event.listens_for(DockerContainer, 'after_delete')
 def dockerContainer_after_delete(mapper, connection, target):
-    """ Removes Docker container when database object is deleted """
+    """
+    Remove Docker container when database object is deleted
+    """
     docker_client = docker.DockerClient(base_url=target.docker_url)
     container = docker_client.containers.get(target.name)
     container.stop()

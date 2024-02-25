@@ -58,15 +58,14 @@ def _create_agent(db_engine, device, network, yaml_config_file):
         query = select(Node).where(Node.node_name == device['NODE'])
         node = session.execute(query).one()[0]
 
-        client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip)
+        client = docker.DockerClient(base_url=node.docker_url)
         if not _validate(device, db_engine, client):
             client.close()
             return None
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
-        client.close()
 
         container = DockerContainer(
-            docker_url="ssh://" + config.OPENFACTORY_USER + "@" + node.node_ip,
+            docker_url=node.docker_url,
             image=config.MTCONNECT_AGENT_IMAGE,
             name=device['UUID'].lower() + '-agent',
             ports=[
@@ -93,15 +92,18 @@ def _create_agent(db_engine, device, network, yaml_config_file):
 
         session.add_all([container, agent])
         session.commit()
-        agent = container.create()
 
-    # compute device file absolute path
-    if os.path.isabs(device['agent']['DEVICE_XML']):
-        device_file = device['agent']['DEVICE_XML']
-    else:
-        device_file = os.path.join(os.path.dirname(yaml_config_file), device['agent']['DEVICE_XML'])
-    _copy_files(agent, device_file)
-    return agent
+        # compute device xml model absolute path
+        if os.path.isabs(device['agent']['DEVICE_XML']):
+            device_xml = device['agent']['DEVICE_XML']
+        else:
+            device_xml = os.path.join(os.path.dirname(yaml_config_file), device['agent']['DEVICE_XML'])
+
+        # add device xml model to agent container
+        cont = client.containers.get(container.name)
+        _copy_files(cont, device_xml)
+        client.close()
+    return cont
 
 
 def create(yaml_config_file, run=False, attach=False):
