@@ -28,7 +28,7 @@ def login():
         login_user(user)
         next_page = request.args.get('next')
         if not next_page or urlsplit(next_page).netloc != '':
-            next_page = url_for('index')
+            next_page = url_for('main.index')
         return redirect(next_page)
     return render_template('login.html', title='Sign In', form=form)
 
