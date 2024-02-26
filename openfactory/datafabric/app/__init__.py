@@ -26,6 +26,7 @@ def create_app(config_class=Config):
 
     # auth app
     login.init_app(app)
+    login.login_message_category = "warning"
   
     # main blueprint
     from openfactory.datafabric.app.main import bp as main_blueprint
