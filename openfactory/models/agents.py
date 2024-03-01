@@ -52,7 +52,7 @@ class Agent(Base):
     @hybrid_property
     def agent_url(self):
         """ URL of node where agent is running """
-        return self.node.node_ip
+        return self.node.docker_url
 
     @hybrid_property
     def device_uuid(self):
@@ -71,7 +71,7 @@ class Agent(Base):
         """ Status of agent """
         if self.external:
             return "TO BE DONE"
-        client = docker.DockerClient(base_url="ssh://" + self.agent_url)
+        client = docker.DockerClient(base_url=self.agent_url)
         container = client.containers.get(self.uuid.lower())
         return container.attrs['State']['Status']
 
