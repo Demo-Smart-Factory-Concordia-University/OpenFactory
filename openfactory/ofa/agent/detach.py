@@ -20,6 +20,7 @@ def detach(agent_uuid):
 
     session.delete(agent[0].producer_container)
     session.commit()
+    session.close()
 
 
 @click.command(name='detach')
