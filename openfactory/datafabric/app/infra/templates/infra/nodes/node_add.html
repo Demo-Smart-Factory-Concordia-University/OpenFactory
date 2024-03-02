@@ -1,0 +1,12 @@
+{% extends "infra/infraBase.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+
+{% block content %}
+  <h4>Add a new node</h4>
+  <hr>
+  <div class="float-left">  
+    {{ wtf.quick_form(form) }}
+  </div>
+
+{% endblock content %}
