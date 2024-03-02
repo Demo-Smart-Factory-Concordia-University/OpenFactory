@@ -1,5 +1,4 @@
 import click
-import docker
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -23,19 +22,15 @@ def down(yaml_config_file):
 
     for node, host in infra['nodes'].items():
         print("Detaching", node)
-        rem_client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + host)
-        rem_client.swarm.leave()
-        rem_client.close()
         query = select(Node).where(Node.node_name == node)
         for n in session.scalars(query):
             session.delete(n)
+            session.commit()
 
     print("Shutting down manager")
-    client = docker.DockerClient(base_url="ssh://" + config.OPENFACTORY_USER + "@" + infra['manager'])
-    client.swarm.leave(force=True)
     query = select(Node).where(Node.node_name == 'manager')
     for node in session.scalars(query):
         session.delete(node)
 
     session.commit()
-    client.close()
+    session.close()

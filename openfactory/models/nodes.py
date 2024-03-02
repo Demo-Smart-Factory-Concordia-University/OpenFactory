@@ -58,9 +58,9 @@ class Node(Base):
 
 
 @event.listens_for(Node, 'before_insert')
-def add_docker_node_id(mapper, connection, target):
+def node_before_insert(mapper, connection, target):
     """
-    Finds and adds docker id
+    Add docker id and create swarm node
     """
 
     # Checks if node is the swarm manager
@@ -85,9 +85,28 @@ def add_docker_node_id(mapper, connection, target):
     node_client = docker.DockerClient(base_url=target.docker_url)
     node_client.swarm.join([manager.node_ip], join_token=token)
 
-    # finds and adds docker id of node
+    # finds and adds Docker id of node
     for n in client.nodes.list():
         if n.attrs['Status']['Addr'] == target.node_ip:
             target.docker_node_id = n.attrs['ID']
     client.close()
     node_client.close()
+
+
+@event.listens_for(Node, 'after_delete')
+def node_after_delete(mapper, connection, target):
+    """
+    Remove swarm node when database object is deleted
+    """
+
+    client = docker.DockerClient(base_url=target.docker_url)
+
+    # Checks if node is the swarm manager
+    if target.node_name == "manager":
+        client.swarm.leave(force=True)
+        client.close()
+        return
+
+    client.swarm.leave()
+    client.close()
+    return
