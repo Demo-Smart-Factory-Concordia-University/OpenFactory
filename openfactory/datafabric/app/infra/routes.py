@@ -6,6 +6,7 @@ from flask import render_template
 from . import bp
 from .nodes_view import NodesList
 from .node_add import NodeAdd
+from .node_remove import NodeRemove
 
 
 @bp.route('/')
@@ -17,3 +18,4 @@ def home():
 
 bp.add_url_rule("/nodes/", view_func=NodesList.as_view("nodes"))
 bp.add_url_rule("/node/add", view_func=NodeAdd.as_view("node_add"))
+bp.add_url_rule("/node/remove/<int:node_id>", view_func=NodeRemove.as_view("node_remove"))

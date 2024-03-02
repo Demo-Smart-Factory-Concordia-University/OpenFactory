@@ -11,7 +11,8 @@
            <th scope="col">Node name</th>
            <th scope="col">Node IP</th>
            <th scope="col">Network</th>
-           <th scope="col">Node Status</th> 
+           <th scope="col">Node Status</th>
+           <th></th>
         </tr>
       </thead>
     
@@ -24,6 +25,7 @@
           <td>{{ node.node_ip }}</td>
           <td>{{ node.network }}</td>
           <td>{{ node.status }}</td>
+          <td><button onclick=location.href="{{ url_for('infra.node_remove', node_id=node.id) }}" type="button" class="btn btn-success">Remove</button></td>
         {% endfor %}
       </tbody>
 
