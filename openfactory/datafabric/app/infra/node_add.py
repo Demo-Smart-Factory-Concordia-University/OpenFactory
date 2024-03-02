@@ -3,6 +3,7 @@ DataFabric Node add view
 """
 import socket
 import docker
+from docker.errors import DockerException
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -57,7 +58,8 @@ class NodeAddForm(FlaskForm):
             client = docker.DockerClient(base_url='ssh://' + config.OPENFACTORY_USER + '@' + field.data)
         except (BadHostKeyException,
                 AuthenticationException,
-                SSHException):
+                SSHException,
+                DockerException):
             raise ValidationError(f"The OpenFactory user '{config.OPENFACTORY_USER}' cannot use Docker on this node")
         client.close()
 
