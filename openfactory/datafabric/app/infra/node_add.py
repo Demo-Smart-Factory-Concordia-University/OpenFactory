@@ -5,8 +5,6 @@ import socket
 import docker
 from docker.errors import DockerException
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from flask import render_template
 from flask import redirect
 from flask import url_for
@@ -17,6 +15,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, IPAddress, ValidationError
 from flask.views import MethodView
 
+from openfactory.datafabric.app import db
 from openfactory.models.nodes import Node
 import openfactory.config as config
 
@@ -34,20 +33,15 @@ class NodeAddForm(FlaskForm):
 
     def validate_node_name(form, field):
         """ Validate that node name is unique """
-        db = create_engine(config.SQL_ALCHEMY_CONN)
-        session = Session(db)
-        if session.query(Node.id).filter_by(node_name=field.data).first() is not None:
+        if db.session.query(Node.id).filter_by(node_name=field.data).first() is not None:
             raise ValidationError("This name is already in use")
 
     def validate_node_ip(form, field):
         """ Validate node IP """
         if 'node_ip' in form.errors:
             return
-        db = create_engine(config.SQL_ALCHEMY_CONN)
-        session = Session(db)
-        if session.query(Node.id).filter_by(node_ip=field.data).first() is not None:
+        if db.session.query(Node.id).filter_by(node_ip=field.data).first() is not None:
             raise ValidationError("This IP is already in use")
-        session.close()
 
         try:
             socket.gethostbyaddr(field.data)
@@ -81,15 +75,12 @@ class NodeAdd(MethodView):
     def post(self):
         form = NodeAddForm()
         if form.validate_on_submit():
-            db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-            session = Session(db_engine)
             node = Node(
                 node_name=form.node_name.data,
                 node_ip=form.node_ip.data
             )
-            session.add_all([node])
-            session.commit()
-            session.close()
+            db.session.add_all([node])
+            db.session.commit()
             flash(f'Added new node {form.node_name.data}', "success")
             return redirect(url_for('infra.nodes'))
         else:
