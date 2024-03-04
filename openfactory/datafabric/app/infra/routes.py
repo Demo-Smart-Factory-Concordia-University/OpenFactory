@@ -4,9 +4,9 @@ Routes for DataFabric Infrastructure Blueprint
 from flask_login import login_required
 from flask import render_template
 from . import bp
-from .nodes_view import NodesList
-from .node_add import NodeAdd
-from .node_remove import NodeRemove
+from .nodes.nodes_view import NodesList
+from .nodes.node_add import NodeAdd
+from .nodes.node_remove import NodeRemove
 
 
 @bp.route('/')
