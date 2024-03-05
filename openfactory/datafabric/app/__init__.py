@@ -55,7 +55,7 @@ def create_app(config_class=Config):
     
     return app
 
-
+from openfactory.models.compose import ComposeProject
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
 from openfactory.models.containers import DockerContainer
