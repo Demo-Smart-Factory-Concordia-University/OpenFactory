@@ -1,0 +1,36 @@
+{% extends "infra/infraBase.html" %}
+
+{% block content %}
+  <h4>Docker Compose Projects</h4>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover table-sm ">
+      <thead class="table-light">
+        <tr style="background-color: #b0d3d5; padding: 5px">
+           <th scope="col">ID</th>
+           <th scope="col">Name</th>
+           <th scope="col">Description</th>
+           <th scope="col">Node</th> 
+        </tr>
+      </thead>
+    
+      <tbody>
+        <tr style="transform: rotate(0);">
+        {% for project in projects %}
+        <tr>
+          <th><a href="#">{{ project.id }}</th>
+          <td>{{ project.name }}</td>
+          <td>{{ project.descritption }}</td>
+          <td>{{ project.node }}</td>
+        </tr>   
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+    <button onclick=location.href="{{ url_for('infra.compose_add') }}" type="button" class="btn btn-success">
+        <i class="fa fa-plus"></i> Add Compose Project
+    </button>
+
+  </div>
+{% endblock content %}
