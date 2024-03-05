@@ -14,3 +14,4 @@ flask-sqlalchemy
 flask-admin
 flask-login
 flask-wtf
+WTForms-SQLAlchemy
