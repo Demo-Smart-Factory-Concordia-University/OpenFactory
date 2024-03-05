@@ -38,7 +38,7 @@ class Node(Base):
     compose_projects: Mapped[List["ComposeProject"]] = relationship(back_populates="node")
 
     def __repr__(self):
-        return f"{self.node_name} ({self.node_ip})"
+        return f"{self.node_name.title()} ({self.node_ip})"
 
     @hybrid_property
     def status(self):
