@@ -1,7 +1,7 @@
 """
 DataFabric WebApp
 """
-
+from pathlib import Path
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -19,8 +19,12 @@ login.login_view = 'auth.login'
 admin = Admin(name='DataFabric', template_mode='bootstrap3')
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    app = Flask(__name__,
+                instance_path=Config.INSTANCE_PATH)
     app.config.from_object(Config)
+
+    # setup instance folder
+    Path(Config.INSTANCE_PATH).mkdir(parents=True, exist_ok=True)
     
     db.init_app(app)
 
