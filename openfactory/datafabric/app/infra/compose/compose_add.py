@@ -6,7 +6,6 @@ import yaml
 from python_on_whales import DockerClient
 from python_on_whales.exceptions import DockerException
 from sqlalchemy import select
-from flask import current_app
 from flask import render_template
 from flask import flash
 from flask import redirect
