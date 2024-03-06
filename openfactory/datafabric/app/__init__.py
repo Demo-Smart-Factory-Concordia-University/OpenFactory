@@ -26,7 +26,7 @@ def create_app(config_class=Config):
 
     # setup instance folder
     Path(Config.INSTANCE_PATH).mkdir(parents=True, exist_ok=True)
-    
+
     db.init_app(app)
 
     # auth app
@@ -57,6 +57,7 @@ def create_app(config_class=Config):
     
     return app
 
+from openfactory.models.configurations import Configuration
 from openfactory.models.compose import ComposeProject
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
