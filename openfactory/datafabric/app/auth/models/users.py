@@ -5,22 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from flask_login import UserMixin
 
 from openfactory.datafabric.app import db
-from openfactory.datafabric.app import login
-
-
-"""
-Functions required by Flask-Login
-"""
-
-
-@login.user_loader
-def load_user(id):
-    return db.session.get(User, int(id))
-
-
-"""
-Model
-"""
 
 
 class User(UserMixin, db.Model):
