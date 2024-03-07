@@ -1,8 +1,6 @@
 """
 Infrastructure blueprint
 """
-import os
-from pathlib import Path
 from flask import Blueprint
 
 
