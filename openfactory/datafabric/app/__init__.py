@@ -39,8 +39,8 @@ def create_app(config_class=Config):
     create_infra_bp(app)
 
     # services blueprint
-    from openfactory.datafabric.app.services import bp as services_blueprint
-    app.register_blueprint(services_blueprint, url_prefix='/services')
+    from openfactory.datafabric.app.services import create_bp as create_services_bp
+    create_services_bp(app)
 
     # admin app
     admin.init_app(app)
