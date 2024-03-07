@@ -51,3 +51,23 @@ def composeProject_after_insert(mapper, connection, target):
     docker.compose.config()
     docker.compose.up(detach=True)
     os.remove(compose_file)
+
+
+@event.listens_for(ComposeProject, 'after_delete')
+def composeProject_after_delete(mapper, connection, target):
+    """
+    Remove Docker Compose project when database object is deleted
+    """
+
+    datastore_system = get_configuration('datastore_system')
+    if datastore_system is None:
+        raise Exception("Cannot remove Docker Compose projects. Administrator needs first to configure the 'datastore_system' variable")
+        return
+    compose_file = os.path.join(datastore_system, target.name + '.yml')
+    f = open(compose_file, 'w')
+    f.write(target.yaml_config)
+    f.close()
+    docker = DockerClient(host=target.node.docker_url,
+                          compose_files=[compose_file])
+    docker.compose.down()
+    os.remove(compose_file)
