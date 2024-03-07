@@ -27,8 +27,8 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     # main blueprint
-    from openfactory.datafabric.app.main import bp as main_blueprint
-    app.register_blueprint(main_blueprint)
+    from openfactory.datafabric.app.main import create_bp as create_main_bp
+    create_main_bp(app)
 
     # authentification blueprint
     from openfactory.datafabric.app.auth import create_bp as create_auth_bp
@@ -44,6 +44,7 @@ def create_app(config_class=Config):
 
     # admin app
     admin.init_app(app)
+    admin.add_view(ModelView(Configuration, db.session))
     admin.add_view(AgentView(Agent, db.session))
     admin.add_view(ModelView(DockerContainer, db.session))
     admin.add_view(ModelView(Node, db.session))
