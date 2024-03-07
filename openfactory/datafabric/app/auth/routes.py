@@ -7,11 +7,11 @@ from flask_login import current_user, login_user, logout_user
 
 from openfactory.datafabric.app import db
 from .models.users import User
-from . import bp
+from . import auth_blueprint
 from .forms.loginform import LoginForm
 
 
-@bp.route('/login', methods=['GET', 'POST'])
+@auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
     """
     Login view
@@ -33,7 +33,7 @@ def login():
     return render_template('login.html', title='Sign In', form=form)
 
 
-@bp.route('/logout')
+@auth_blueprint.route('/logout')
 def logout():
     """
     Logout view

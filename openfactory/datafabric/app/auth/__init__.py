@@ -17,8 +17,8 @@ def load_user(id):
     return db.session.get(User, int(id))
 
 # blueprint
-bp = Blueprint('auth', __name__,
-               template_folder='templates')
+auth_blueprint = Blueprint('auth', __name__,
+                           template_folder='templates')
 
 def create_bp(app):
     """ Blueprint factory """
@@ -31,6 +31,6 @@ def create_bp(app):
     login.init_app(app)
 
     # register blueprint
-    app.register_blueprint(bp, url_prefix='/auth')
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
 from . import routes
