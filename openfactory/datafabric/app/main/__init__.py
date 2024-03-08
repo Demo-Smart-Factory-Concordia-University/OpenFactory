@@ -2,6 +2,9 @@
 DataFabric Main blueprint
 """
 from flask import Blueprint
+from openfactory.datafabric.app import admin, db
+from .models.tasks import RQTask
+from .views.taskview import RQTaskView
 
 main_blueprint = Blueprint('main', __name__,
                            template_folder='templates',
@@ -10,6 +13,9 @@ main_blueprint = Blueprint('main', __name__,
 
 def create_bp(app):
     """ Blueprint factory """
+    # register models to admin app
+    admin.add_view(RQTaskView(RQTask, db.session, name='RQ-Task'))
+
     # register blueprint
     app.register_blueprint(main_blueprint)
 

@@ -58,3 +58,4 @@ from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
 from openfactory.models.containers import DockerContainer
 from openfactory.datafabric.app.auth.models.users import User
+from openfactory.datafabric.app.main.models.tasks import RQTask

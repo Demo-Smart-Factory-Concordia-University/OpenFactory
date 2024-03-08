@@ -1,10 +1,14 @@
 from typing import Optional
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, WriteOnlyMapped
+from sqlalchemy.orm import relationship
 from flask_login import UserMixin
 
 from openfactory.datafabric.app import db
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from openfactory.datafabric.app.main.models.tasks import RQTask
 
 
 class User(UserMixin, db.Model):
@@ -19,6 +23,8 @@ class User(UserMixin, db.Model):
     fullname: Mapped[str] = mapped_column(String(120), index=True,
                                           unique=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(256))
+
+    tasks: WriteOnlyMapped['RQTask'] = relationship(back_populates='user')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
