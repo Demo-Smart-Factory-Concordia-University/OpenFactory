@@ -16,3 +16,4 @@ flask-login
 flask-wtf
 WTForms-SQLAlchemy
 python-on-whales
+rq

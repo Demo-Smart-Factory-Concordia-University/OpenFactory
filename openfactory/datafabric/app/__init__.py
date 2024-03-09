@@ -1,6 +1,8 @@
 """
 DataFabric WebApp
 """
+import rq
+from redis import Redis
 from pathlib import Path
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -23,6 +25,10 @@ def create_app(config_class=Config):
 
     # setup instance folder
     Path(Config.INSTANCE_PATH).mkdir(parents=True, exist_ok=True)
+
+    # Redis and RQ
+    app.redis = Redis.from_url(Config.REDIS_URL)
+    app.task_queue = rq.Queue('datafabric-tasks', connection=app.redis)
 
     db.init_app(app)
 

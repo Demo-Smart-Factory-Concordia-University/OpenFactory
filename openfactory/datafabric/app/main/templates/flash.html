@@ -1,3 +1,18 @@
+<!-- RQ Tasks in progress -->
+{% if current_user.is_authenticated %}
+  {% with tasks = current_user.get_RQ_tasks_in_progress() %}
+    {% if tasks %}
+      <span id="user_rq_tasks">
+      {% for task in tasks %}
+        <div class="alert alert-info">
+           {{ task.description }}
+        </div>
+      {% endfor %}
+      </span>
+    {% endif %}
+  {% endwith %}
+{% endif %}
+
 <!-- Flash messages -->
 {% with msg = get_flashed_messages(with_categories=True) %}
     {% if msg %}

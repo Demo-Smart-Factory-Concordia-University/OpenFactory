@@ -1,0 +1,16 @@
+<!-- General scripts -->
+
+<!-- Pools perdiodically user rq-tasks and updates them -->
+{% if current_user.is_authenticated %}
+function update_rq_tasks() {
+   setInterval(async function() {
+      const response = await fetch("{{ url_for('main.rq_tasks') }}");
+      const tasks = await response.json();
+      const rq_tasks_Element = document.getElementById("user_rq_tasks");
+      var tasks_text = "";
+      tasks.forEach(t => tasks_text += '<div class="alert alert-info">'+ t.description + '</div>');
+      rq_tasks_Element.innerHTML = tasks_text;
+    }, 1000);
+}
+document.addEventListener('DOMContentLoaded', update_rq_tasks);
+{% endif %}

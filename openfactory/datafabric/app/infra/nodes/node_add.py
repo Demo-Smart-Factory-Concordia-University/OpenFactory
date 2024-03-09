@@ -9,7 +9,7 @@ from flask import render_template
 from flask import redirect
 from flask import url_for
 from flask import flash
-from flask_login import login_required
+from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, IPAddress, ValidationError
@@ -75,13 +75,11 @@ class NodeAdd(MethodView):
     def post(self):
         form = NodeAddForm()
         if form.validate_on_submit():
-            node = Node(
-                node_name=form.node_name.data,
-                node_ip=form.node_ip.data
-            )
-            db.session.add_all([node])
-            db.session.commit()
             flash(f'Added new node {form.node_name.data}', "success")
+            current_user.submit_RQ_task('node_up',
+                                        'Setting up node ' + form.node_name.data + ' ...',
+                                        form.node_name.data,
+                                        form.node_ip.data)
             return redirect(url_for('infra.nodes'))
         else:
             flash('Cannot create the desired node. Some entries are not valid', "danger")
