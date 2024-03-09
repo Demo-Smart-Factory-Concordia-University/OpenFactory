@@ -1,5 +1,5 @@
 """
-RQ Task to create a new DataFabric Node
+RQ Task to create a new OpenFactory Node
 """
 from rq import get_current_job
 from openfactory.models.nodes import Node
@@ -12,8 +12,7 @@ app.app_context().push()
 
 
 def node_up(node_name, node_ip):
-
-    print(db.engines)
+    """ Spins up an OpenFactory node """
 
     # create new node
     node = Node(
