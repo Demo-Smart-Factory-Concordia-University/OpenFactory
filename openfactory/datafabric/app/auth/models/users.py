@@ -8,6 +8,7 @@ from flask_login import UserMixin
 
 from openfactory.datafabric.app import db
 from openfactory.datafabric.app.main.models.tasks import RQTask
+from openfactory.datafabric.app.main.models.notifications import Notification
 
 
 class User(UserMixin, db.Model):
@@ -24,6 +25,7 @@ class User(UserMixin, db.Model):
     password_hash: Mapped[Optional[str]] = mapped_column(String(256))
 
     tasks: WriteOnlyMapped['RQTask'] = relationship(back_populates='user')
+    notifications: WriteOnlyMapped['Notification'] = relationship(back_populates='user')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

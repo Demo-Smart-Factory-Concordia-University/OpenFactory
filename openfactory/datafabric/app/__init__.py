@@ -50,18 +50,14 @@ def create_app(config_class=Config):
 
     # admin app
     admin.init_app(app)
-    admin.add_view(ModelView(Configuration, db.session))
-    admin.add_view(AgentView(Agent, db.session))
-    admin.add_view(ModelView(DockerContainer, db.session))
-    admin.add_view(ModelView(Node, db.session))
-    admin.add_view(ComposeProjectView(ComposeProject, db.session))
+    admin.add_view(ModelView(ofamodels.Configuration, db.session))
+    admin.add_view(AgentView(ofamodels.Agent, db.session))
+    admin.add_view(ModelView(ofamodels.DockerContainer, db.session))
+    admin.add_view(ModelView(ofamodels.Node, db.session))
+    admin.add_view(ComposeProjectView(ofamodels.ComposeProject, db.session))
     
     return app
 
-from openfactory.models.configurations import Configuration
-from openfactory.models.compose import ComposeProject
-from openfactory.models.agents import Agent
-from openfactory.models.nodes import Node
-from openfactory.models.containers import DockerContainer
-from openfactory.datafabric.app.auth.models.users import User
-from openfactory.datafabric.app.main.models.tasks import RQTask
+import openfactory.models as ofamodels
+import openfactory.datafabric.app.main.models
+import openfactory.datafabric.app.auth.models
