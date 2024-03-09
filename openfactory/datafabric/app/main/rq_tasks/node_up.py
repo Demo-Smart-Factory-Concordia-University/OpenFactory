@@ -27,4 +27,5 @@ def node_up(node_name, node_ip):
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
     rq_task.complete = True
+    rq_task.user.send_notification(f'Added new node {node_name}', "success")
     db.session.commit()

@@ -75,7 +75,6 @@ class NodeAdd(MethodView):
     def post(self):
         form = NodeAddForm()
         if form.validate_on_submit():
-            flash(f'Added new node {form.node_name.data}', "success")
             current_user.submit_RQ_task('node_up',
                                         'Setting up node ' + form.node_name.data + ' ...',
                                         form.node_name.data,
