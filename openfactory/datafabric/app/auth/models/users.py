@@ -41,6 +41,25 @@ class User(UserMixin, db.Model):
         query = self.notifications.select()
         return db.session.scalars(query)
 
+    def count_notifications(self):
+        """ Counts all user notifcations """
+        return len(list(self.get_notifications()))
+
+    def send_notification(self, message, type='success'):
+        """ Send a user notifcation """
+        notification = Notification(message=message,
+                                    type=type,
+                                    user=self)
+        db.session.add(notification)
+        db.session.commit()
+        return notification
+
+    def clear_notifications(self):
+        """ Clears all user notifications """
+        for n in self.get_notifications():
+            db.session.delete(n)
+        db.session.commit()
+
     def submit_RQ_task(self, name, description, *args, **kwargs):
         """ Submmits an RQ task to the task queue """
         rq_job = current_app.task_queue.enqueue(f'openfactory.datafabric.app.main.rq_tasks.{name}',

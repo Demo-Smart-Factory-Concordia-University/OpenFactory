@@ -1,16 +1,38 @@
 <!-- General scripts -->
 
-<!-- Pools perdiodically user rq-tasks and updates them -->
+<!-- Display user notifications -->
+function display_user_notifications(notifications) {
+  var html = "";
+  notifications.forEach(n => html += 
+     '<div class="alert alert-' + n.type + ' alert-dismissible">' +
+      n.message + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+  const notifications_Element = document.getElementById("user_notifications");
+  notifications_Element.innerHTML = html;
+}
+
+
+<!-- Load and display user notifications -->
+async function load_user_notifications() {
+  const response = await fetch("{{ url_for('main.user_notifications') }}");
+  display_user_notifications(await response.json())
+}
+document.addEventListener('DOMContentLoaded', load_user_notifications);
+
+
+<!-- Pools perdiodically user notifications and rq-tasks and updates them as required -->
 {% if current_user.is_authenticated %}
 function update_rq_tasks() {
    setInterval(async function() {
+      const r = await fetch("{{ url_for('main.new_user_notifications') }}");
+      const n = await r.json();
+      if (n == '1') {load_user_notifications()};
       const response = await fetch("{{ url_for('main.rq_tasks') }}");
       const tasks = await response.json();
       const rq_tasks_Element = document.getElementById("user_rq_tasks");
       var tasks_text = "";
       tasks.forEach(t => tasks_text += '<div class="alert alert-info">'+ t.description + '</div>');
       rq_tasks_Element.innerHTML = tasks_text;
-    }, 1000);
+    }, 3000);
 }
 document.addEventListener('DOMContentLoaded', update_rq_tasks);
 {% endif %}

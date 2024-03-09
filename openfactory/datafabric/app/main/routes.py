@@ -23,3 +23,25 @@ def rq_tasks():
     return [{'name': t.name,
              'id': t.id,
              'description': t.description} for t in tasks]
+
+
+@main_blueprint.route('/new_user_notifications')
+@login_required
+def new_user_notifications():
+    """ Returns 1 if new notifications 0 if none """
+    notifications = current_user.count_notifications()
+    print(notifications)
+    if notifications > 0:
+        return '1'
+    else:
+        return '0'
+
+
+@main_blueprint.route('/user_notifications')
+@login_required
+def user_notifications():
+    """ Returns all user notifications and clears them """
+    notifications = current_user.get_notifications()
+    current_user.clear_notifications()
+    return [{'message': n.message,
+             'type': n.type} for n in notifications]
