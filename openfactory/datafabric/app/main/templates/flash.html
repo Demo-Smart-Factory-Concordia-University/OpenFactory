@@ -13,6 +13,21 @@
   {% endwith %}
 {% endif %}
 
+<!-- User notifications -->
+{% if current_user.is_authenticated %}
+  {% with notifications = current_user.get_notifications() %}
+    {% if notifications %}
+      <span id="user_notifications">
+      {% for notification in notifications %}
+        <div class="alert alert-{{ notification.type }} alert-dismissible">
+           {{ notification.message }} <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+      {% endfor %}
+      </span>
+    {% endif %}
+  {% endwith %}
+{% endif %}
+
 <!-- Flash messages -->
 {% with msg = get_flashed_messages(with_categories=True) %}
     {% if msg %}
