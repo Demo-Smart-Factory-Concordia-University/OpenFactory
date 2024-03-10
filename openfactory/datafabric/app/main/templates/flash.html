@@ -5,7 +5,7 @@
       <span id="user_rq_tasks">
       {% for task in tasks %}
         <div class="alert alert-info">
-           {{ task.description }}
+           <img src="{{ url_for('main.static', filename='figures/loading.gif') }}">  {{ task.description }}
         </div>
       {% endfor %}
       </span>
