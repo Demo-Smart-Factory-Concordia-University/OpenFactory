@@ -9,6 +9,7 @@ from .nodes.node_add import NodeAdd
 from .nodes.node_remove import NodeRemove
 from .compose.compose_listview import ComposeProjecList
 from .compose.compose_add import ComposeAdd
+from .compose.compose_remove import ComposeRemove
 
 
 @infra_blueprint.route('/')
@@ -24,3 +25,4 @@ infra_blueprint.add_url_rule("/node/remove/<int:node_id>", view_func=NodeRemove.
 
 infra_blueprint.add_url_rule("/compose/", view_func=ComposeProjecList.as_view("compose_list"))
 infra_blueprint.add_url_rule("/compose/add", view_func=ComposeAdd.as_view("compose_add"))
+infra_blueprint.add_url_rule("/compose/remove/<int:compose_id>", view_func=ComposeRemove.as_view("compose_remove"))

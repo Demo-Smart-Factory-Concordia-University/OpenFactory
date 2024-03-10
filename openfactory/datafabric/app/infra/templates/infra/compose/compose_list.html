@@ -10,7 +10,8 @@
            <th scope="col">ID</th>
            <th scope="col">Name</th>
            <th scope="col">Description</th>
-           <th scope="col">Node</th> 
+           <th scope="col">Node</th>
+           <th></th>
         </tr>
       </thead>
     
@@ -22,6 +23,7 @@
           <td>{{ project.name }}</td>
           <td>{{ project.description }}</td>
           <td>{{ project.node }}</td>
+          <td><button onclick=location.href="{{ url_for('infra.compose_remove', compose_id=project.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
         </tr>   
         {% endfor %}
       </tbody>

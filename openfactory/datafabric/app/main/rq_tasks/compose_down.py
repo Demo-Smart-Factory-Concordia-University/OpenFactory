@@ -1,16 +1,17 @@
 """
-RQ Task to create a new Docker Compose project
+RQ Task to remove a Docker Compose project
 """
 from rq import get_current_job
-# from openfactory.models.compose import ComposeProject
 from openfactory.datafabric.app import db
 from openfactory.datafabric.app.main.models.tasks import RQTask
 
 
-def compose_up(compose):
-    """ Spins up Docker Compose Project """
+def compose_down(compose):
+    """ Tears down a Docker Compose project """
 
-    db.session.add_all([compose])
+    # remove compose project
+    compose_name = compose.name
+    db.session.delete(compose)
     db.session.commit()
 
     # clear rq-task
@@ -18,5 +19,5 @@ def compose_up(compose):
     rq_task = db.session.get(RQTask, job.get_id())
     rq_task.complete = True
     db.session.commit()
-    rq_task.user.send_notification(f'Docker Compose project {compose.name} was added successfully', "success")
+    rq_task.user.send_notification(f'Docker Compose project {compose_name} was removed successfully', "success")
     return True
