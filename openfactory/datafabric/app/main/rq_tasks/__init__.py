@@ -1,1 +1,7 @@
+from openfactory.datafabric.app import create_app
+
+app = create_app()
+app.app_context().push()
+
 from .node_up import node_up
+from .node_down import node_down
