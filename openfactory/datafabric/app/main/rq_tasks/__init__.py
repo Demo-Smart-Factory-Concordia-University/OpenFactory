@@ -5,3 +5,4 @@ app.app_context().push()
 
 from .node_up import node_up
 from .node_down import node_down
+from .compose_up import compose_up

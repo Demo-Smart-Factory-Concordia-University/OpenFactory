@@ -11,7 +11,7 @@ from flask import flash
 from flask import redirect
 from flask import url_for
 from flask.views import MethodView
-from flask_login import login_required
+from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 from wtforms import StringField, SubmitField
@@ -96,9 +96,9 @@ class ComposeAdd(MethodView):
                 description=form.description.data,
                 yaml_config=f.read().decode()
             )
-            db.session.add_all([compose])
-            db.session.commit()
-            flash(f'Added new Docker Compose project {form.name.data}', "success")
+            current_user.submit_RQ_task('compose_up',
+                                        'Setting up Docker Compose project ' + form.name.data + ' (this may take a while) ...',
+                                        compose)
             return redirect(url_for('infra.compose_list'))
         else:
             flash('Cannot create the Docker Compose project. Some entries are not valid', "danger")

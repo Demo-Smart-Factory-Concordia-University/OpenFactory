@@ -48,7 +48,6 @@ def composeProject_after_insert(mapper, connection, target):
     f.close()
     docker = DockerClient(host=target.node.docker_url,
                           compose_files=[compose_file])
-    docker.compose.config()
     docker.compose.up(detach=True)
     os.remove(compose_file)
 
