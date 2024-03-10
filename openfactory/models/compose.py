@@ -47,7 +47,8 @@ def composeProject_after_insert(mapper, connection, target):
     f.write(target.yaml_config)
     f.close()
     docker = DockerClient(host=target.node.docker_url,
-                          compose_files=[compose_file])
+                          compose_files=[compose_file],
+                          compose_project_name=target.name.lower())
     docker.compose.up(detach=True)
     os.remove(compose_file)
 
@@ -67,6 +68,7 @@ def composeProject_after_delete(mapper, connection, target):
     f.write(target.yaml_config)
     f.close()
     docker = DockerClient(host=target.node.docker_url,
-                          compose_files=[compose_file])
+                          compose_files=[compose_file],
+                          compose_project_name=target.name.lower())
     docker.compose.down()
     os.remove(compose_file)
