@@ -10,6 +10,7 @@ from sqlalchemy.orm import relationship
 
 from .base import Base
 from openfactory.utils import get_configuration
+from openfactory.utils import docker_compose_up
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .node import Node
@@ -46,10 +47,9 @@ def composeProject_after_insert(mapper, connection, target):
     f = open(compose_file, 'w')
     f.write(target.yaml_config)
     f.close()
-    docker = DockerClient(host=target.node.docker_url,
-                          compose_files=[compose_file],
-                          compose_project_name=target.name.lower())
-    docker.compose.up(detach=True)
+    docker_compose_up(host=target.node.docker_url,
+                      compose_file=compose_file,
+                      compose_project_name=target.name.lower())
     os.remove(compose_file)
 
 
