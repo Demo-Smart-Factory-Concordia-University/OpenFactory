@@ -82,7 +82,8 @@ class NodeAdd(MethodView):
             # wait task is done
             while task.get_rq_job().result is None:
                 pass
-            flash(f'Added successfully node {form.node_name.data}', "success")
+            if task.get_rq_job().result:
+                flash(f'Added successfully node {form.node_name.data}', "success")
             return redirect(url_for('infra.home'))
         else:
             flash('Cannot create the desired node. Some entries are not valid', "danger")
