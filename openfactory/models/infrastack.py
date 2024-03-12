@@ -3,6 +3,7 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -23,3 +24,10 @@ class InfraStack(Base):
 
     def __repr__(self):
         return self.stack_name
+
+    @hybrid_property
+    def manager(self):
+        """ Returns swarm manager of the stack """
+        if not self.nodes:
+            return None
+        return self.nodes[0].manager
