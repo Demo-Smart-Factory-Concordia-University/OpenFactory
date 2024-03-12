@@ -13,6 +13,7 @@ from openfactory.models.base import Base
 from openfactory.datafabric.config import Config
 from openfactory.datafabric.app.admin.agentview import AgentView
 from openfactory.datafabric.app.admin.composeview import ComposeProjectView
+from openfactory.datafabric.app.admin.infrastackview import InfraStackView
 
 
 db = SQLAlchemy(model_class=Base)
@@ -54,7 +55,7 @@ def create_app(config_class=Config):
     admin.add_view(AgentView(ofamodels.Agent, db.session))
     admin.add_view(ModelView(ofamodels.DockerContainer, db.session))
     admin.add_view(ModelView(ofamodels.Node, db.session))
-    admin.add_view(ModelView(ofamodels.InfraStack, db.session))
+    admin.add_view(InfraStackView(ofamodels.InfraStack, db.session))
     admin.add_view(ComposeProjectView(ofamodels.ComposeProject, db.session))
     
     return app
