@@ -20,3 +20,6 @@ class InfraStack(Base):
     stack_name: Mapped[str] = mapped_column(String(20), unique=True)
 
     nodes: Mapped[List["Node"]] = relationship(back_populates="stack")
+
+    def __repr__(self):
+        return self.stack_name
