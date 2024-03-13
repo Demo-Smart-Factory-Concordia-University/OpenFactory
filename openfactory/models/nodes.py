@@ -1,8 +1,10 @@
 import docker
 from typing import List
+from typing import Optional
 from sqlalchemy import event
 from sqlalchemy import select
 from sqlalchemy import create_engine
+from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
@@ -16,6 +18,7 @@ if TYPE_CHECKING:
     from .agents import Agent
     from .containers import DockerContainer
     from .compose import ComposeProject
+    from .infrastack import InfraStack
 
 
 class Node(Base):
@@ -32,6 +35,9 @@ class Node(Base):
     docker_node_id: Mapped[str] = mapped_column(String(30))
     docker_url: Mapped[str] = mapped_column(String(40),
                                             default='unix://var/run/docker.sock')
+
+    stack_id: Mapped[Optional[int]] = mapped_column(ForeignKey("ofa_infra_stack.id"))
+    stack: Mapped[Optional["InfraStack"]] = relationship(back_populates="nodes")
 
     agents: Mapped[List["Agent"]] = relationship(back_populates="node")
     containers: Mapped[List["DockerContainer"]] = relationship(back_populates="node")
