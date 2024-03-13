@@ -42,9 +42,8 @@ def new_user_notifications():
 @main_blueprint.route('/user_notifications')
 @login_required
 def user_notifications():
-    """ Returns all user notifications and clears them """
+    """ Returns all user notifications """
     notifications = current_user.get_notifications()
-    current_user.clear_notifications()
     return [{'message': n.message,
              'type': n.type} for n in notifications]
 
