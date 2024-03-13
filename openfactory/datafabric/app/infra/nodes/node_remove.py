@@ -27,6 +27,10 @@ class NodeRemove(View):
             flash('Cannot remove a node with running containers', "danger")
             return redirect(url_for('infra.nodes'))
 
+        if node.compose_projects:
+            flash('Cannot remove a node with running compose projects', "danger")
+            return redirect(url_for('infra.nodes'))
+
         task = current_user.submit_RQ_task('node_down',
                                            'Removing node ' + node.node_name + '...',
                                            node)
