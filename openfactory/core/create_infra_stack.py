@@ -5,7 +5,7 @@ from openfactory.models.infrastack import InfraStack
 from openfactory.exceptions import OFAConfigurationException
 
 
-def create_infra_stack(db_session, stack_config_file):
+def create_infra_stack(db_session, stack_config_file, user_notification=print):
     """ Creates an infrastructure stack """
 
     # Load yaml description file
@@ -29,8 +29,12 @@ def create_infra_stack(db_session, stack_config_file):
     else:
         stack = None
 
-    if stack.manager is None:
-        print("Setting up manager and network")
+    query = select(Node).where(Node.node_name == 'manager')
+    manager = db_session.execute(query).one_or_none()
+    if manager is None:
+        if 'manager' not in infra:
+            raise OFAConfigurationException('Manager missing in configuration file')
+        user_notification("Setting up manager and network")
         node = Node(
             node_name='manager',
             node_ip=infra['manager'],
@@ -44,7 +48,7 @@ def create_infra_stack(db_session, stack_config_file):
     for node_name, host in infra['nodes'].items():
         query = select(Node).where(Node.node_name == node_name)
         if db_session.execute(query).one_or_none() is None:
-            print("Attaching ", node_name)
+            user_notification(f"Attaching {node_name}")
             node = Node(
                 node_name=node_name,
                 node_ip=host,
