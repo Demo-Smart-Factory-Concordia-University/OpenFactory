@@ -44,15 +44,20 @@ def new_user_notifications():
 def user_notifications():
     """ Returns all user notifications """
     notifications = current_user.get_notifications()
-    return [{'message': n.message,
+    return [{'id': n.id,
+             'message': n.message,
              'type': n.type} for n in notifications]
 
 
-@main_blueprint.route('/user_notification/<int:notification_id>/remove')
+@main_blueprint.route('/user_notification/<notification_id>/remove')
 @login_required
 def user_notification_remove(notification_id):
-    """ Remove user notifications """
+    """ Remove user notifications and returns updated ones """
     notification = db.get_or_404(Notification, notification_id, description="This notification doesn't exist")
     db.session.delete(notification)
     db.session.commit()
-    return f'notification {notification_id} removed'
+    notifications = current_user.get_notifications()
+    return [{'id': n.id,
+             'message': n.message,
+             'type': n.type} for n in notifications]
+
