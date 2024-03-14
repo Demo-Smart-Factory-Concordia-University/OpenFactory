@@ -3,7 +3,9 @@ Routes for DataFabric Main Blueprint
 """
 from flask_login import login_required, current_user
 from flask import render_template
+from openfactory.datafabric.app import db
 from . import main_blueprint
+from .models.notifications import Notification
 
 
 @main_blueprint.route('/')
@@ -40,8 +42,22 @@ def new_user_notifications():
 @main_blueprint.route('/user_notifications')
 @login_required
 def user_notifications():
-    """ Returns all user notifications and clears them """
+    """ Returns all user notifications """
     notifications = current_user.get_notifications()
-    current_user.clear_notifications()
-    return [{'message': n.message,
+    return [{'id': n.id,
+             'message': n.message,
              'type': n.type} for n in notifications]
+
+
+@main_blueprint.route('/user_notification/<notification_id>/remove')
+@login_required
+def user_notification_remove(notification_id):
+    """ Remove user notifications and returns updated ones """
+    notification = db.get_or_404(Notification, notification_id, description="This notification doesn't exist")
+    db.session.delete(notification)
+    db.session.commit()
+    notifications = current_user.get_notifications()
+    return [{'id': n.id,
+             'message': n.message,
+             'type': n.type} for n in notifications]
+

@@ -1,11 +1,18 @@
 <!-- General scripts -->
 
+<!-- Remove a user notifications -->
+async function rm_user_notification(notification_id) {
+  const url = "{{ url_for('main.user_notification_remove', notification_id='NOTE_ID') }}".replace("NOTE_ID", notification_id)
+  const response = await fetch(url);
+  display_user_notifications(await response.json());
+}
+
 <!-- Display user notifications -->
 function display_user_notifications(notifications) {
   var html = "";
   notifications.forEach(n => html += 
      '<div class="alert alert-' + n.type + ' alert-dismissible">' +
-      n.message + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+      n.message + '<button type="button" class="close" onclick="rm_user_notification(' + n.id + ')" data-dismiss="alert">&times;</button></div>');
   const notifications_Element = document.getElementById("user_notifications");
   notifications_Element.innerHTML = html;
 }
@@ -30,7 +37,7 @@ function update_rq_tasks() {
       const tasks = await response.json();
       const rq_tasks_Element = document.getElementById("user_rq_tasks");
       var tasks_text = "";
-      tasks.forEach(t => tasks_text += '<div class="alert alert-info"><img src="{{ url_for('main.static', filename='figures/loading.gif') }}"> '+ t.description + '</div>');
+      tasks.forEach(t => tasks_text += '<div class="alert alert-info"><img src="{{ url_for('main.static', filename='figures/loading.gif') }}"> ' + t.description + '</div>');
       rq_tasks_Element.innerHTML = tasks_text;
     }, 3000);
 }
