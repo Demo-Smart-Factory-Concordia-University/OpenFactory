@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 import openfactory.config as config
 import openfactory.ofa as ofa
+from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
 from openfactory.models.containers import DockerContainer, EnvVar, Port
@@ -127,8 +128,12 @@ def create(yaml_config_file, run=False, attach=False):
             print("Started", device['UUID'].upper() + "-AGENT")
 
         if attach:
-            ofa.agent.attach(device['UUID'].upper() + "-AGENT")
-            print("Attached", device['UUID'].upper() + "-AGENT")
+            try:
+                ofa.agent.attach(device['UUID'].upper() + "-AGENT")
+                print("Attached", device['UUID'].upper() + "-AGENT")
+            except OFAException as err:
+                print("Could not attach", device['UUID'].upper() + "-AGENT")
+                print("Error was:", err)
 
 
 @click.command(name='create')
