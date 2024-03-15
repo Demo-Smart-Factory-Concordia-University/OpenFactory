@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 import openfactory.config as config
 from openfactory.models.agents import Agent
+from openfactory.exceptions import OFAException
 
 
 def detach(agent_uuid):
@@ -15,8 +16,7 @@ def detach(agent_uuid):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one_or_none()
     if agent is None:
-        print("No agent", agent_uuid)
-        return
+        raise OFAException("No agent {agent_uuid} in OpenFactory database")
 
     session.delete(agent[0].producer_container)
     session.commit()
