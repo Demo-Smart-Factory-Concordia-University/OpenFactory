@@ -46,8 +46,12 @@ class Agent(Base):
     agent_port = mapped_column(Integer())
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
-    agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table)
-    producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table)
+    agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table,
+                                                            cascade="all, delete-orphan",
+                                                            single_parent=True)
+    producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table,
+                                                               cascade="all, delete-orphan",
+                                                               single_parent=True)
 
     @hybrid_property
     def agent_url(self):
