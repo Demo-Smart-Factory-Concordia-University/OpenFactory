@@ -8,6 +8,8 @@ def remove_infra_stack(db_session, stack_id, user_notification_success=print, us
     stack = stack[0]
     stack_name = stack.stack_name
     for node in stack.nodes:
+        if node.node_name == 'manager':
+            continue
         if node.containers or node.compose_projects:
             user_notification_fail(f"Cannot remove node {node.node_name} as containers/Docker compose projects are running on it")
         else:
@@ -15,6 +17,13 @@ def remove_infra_stack(db_session, stack_id, user_notification_success=print, us
             db_session.delete(node)
             db_session.commit()
             user_notification_success(f"Removed node {node_name}")
+
+    if len(stack.nodes) == 1:
+        if stack.nodes[0].node_name == 'manager':
+            db_session.delete(stack.nodes[0])
+            db_session.commit()
+            user_notification_success("Removed manager node")
+
     if stack.nodes:
         user_notification_success(f'Cleared successfully stack {stack_name}')
     else:
