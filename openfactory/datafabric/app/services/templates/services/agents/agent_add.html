@@ -1,0 +1,11 @@
+{% extends "services/servicesBase.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+
+{% block content %}
+  <h4>Add a new MTConnect agent</h4>
+  <hr>
+  <div class="float-left">  
+    {{ wtf.quick_form(form, enctype="multipart/form-data") }}
+  </div>
+{% endblock content %}
