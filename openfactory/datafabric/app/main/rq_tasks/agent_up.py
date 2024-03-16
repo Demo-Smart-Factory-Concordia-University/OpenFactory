@@ -89,5 +89,5 @@ def agent_up(agent, container, mtc_file):
     client.close()
     rq_task.complete = True
     db.session.commit()
-    rq_task.user.send_notification(f'MTConnect agent {agent.uuid} was deployed successfully', "success")
+    rq_task.user.send_notification(f'MTConnect agent {agent.uuid} was deployed successfully on {agent.node}', "success")
     return True

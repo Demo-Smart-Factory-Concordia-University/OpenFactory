@@ -130,7 +130,7 @@ class AgentAdd(MethodView):
             )
 
             current_user.submit_RQ_task('agent_up',
-                                        f'Deploying MTConnect agent {form.device_uuid.data.upper()} (this may take a while) ...',
+                                        f'Deploying MTConnect agent {form.device_uuid.data.upper()} on {form.node.data} (this may take a while) ...',
                                         agent, container,
                                         os.path.join(get_configuration('datastore_system'), 'device.xml'))
             return redirect(url_for('services.agents'))
