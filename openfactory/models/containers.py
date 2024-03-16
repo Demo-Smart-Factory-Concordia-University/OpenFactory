@@ -36,6 +36,7 @@ class DockerContainer(Base):
                                                        cascade="all, delete-orphan")
     ports: Mapped[List["Port"]] = relationship(back_populates="container",
                                                cascade="all, delete-orphan")
+    cpus = mapped_column(Integer(), default=0)
 
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
@@ -91,6 +92,17 @@ class DockerContainer(Base):
         docker_client.close()
 
 
+@event.listens_for(DockerContainer, 'before_insert')
+def dockerContainer_before_insert(mapper, connection, target):
+    """
+    Adjust runtime constraints of container
+    """
+    if target.cpus is None:
+        target.cpus = target.node.cpus
+    if (target.cpus == 0) or (target.cpus > target.node.cpus):
+        target.cpus = target.node.cpus
+
+
 @event.listens_for(DockerContainer, 'after_insert')
 def dockerContainer_after_insert(mapper, connection, target):
     """
@@ -110,7 +122,8 @@ def dockerContainer_after_insert(mapper, connection, target):
                                     environment=env,
                                     ports=ports_dict,
                                     command=target.command,
-                                    network=target.network)
+                                    network=target.network,
+                                    nano_cpus=int(target.cpus*1E9))
     docker_client.close()
 
 
