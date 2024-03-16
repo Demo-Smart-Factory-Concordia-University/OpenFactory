@@ -17,7 +17,7 @@ from openfactory.models.containers import DockerContainer, EnvVar, Port
 
 
 def _validate(device, db_engine, client):
-    """ Validate that device and container do not exist """
+    """ Validate that device and container does not exist """
     if [cont for cont in client.containers.list() if cont.name == device['UUID'].lower() + '-agent']:
         print("A container", device['UUID'].lower() + '-agent', "exists already")
         print("Agent was not created")
