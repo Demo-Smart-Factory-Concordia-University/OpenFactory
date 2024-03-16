@@ -48,13 +48,17 @@ class DockerContainer(Base):
         return self.node.network
 
     @hybrid_property
-    def status(self):
-        """ Status of container """
+    def container(self):
+        """ Gets Docker container """
         client = docker.DockerClient(base_url=self.docker_url)
         container = client.containers.get(self.name)
-        status = container.attrs['State']['Status']
         client.close()
-        return status
+        return container
+
+    @hybrid_property
+    def status(self):
+        """ Status of container """
+        return self.container.attrs['State']['Status']
 
     def start(self):
         """ Start Docker container """
