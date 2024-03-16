@@ -108,7 +108,7 @@ def node_after_delete(mapper, connection, target):
     Remove swarm node when database object is deleted
     """
     client = docker.DockerClient(base_url=target.docker_url)
-    
+
     # Checks if node is the swarm manager
     if target.node_name == "manager":
         client.swarm.leave(force=True)
