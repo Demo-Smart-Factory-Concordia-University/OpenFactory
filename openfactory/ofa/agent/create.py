@@ -10,13 +10,14 @@ from sqlalchemy.orm import Session
 
 import openfactory.config as config
 import openfactory.ofa as ofa
+from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
 from openfactory.models.containers import DockerContainer, EnvVar, Port
 
 
 def _validate(device, db_engine, client):
-    """ Validate that device and container do not exist """
+    """ Validate that device and container does not exist """
     if [cont for cont in client.containers.list() if cont.name == device['UUID'].lower() + '-agent']:
         print("A container", device['UUID'].lower() + '-agent', "exists already")
         print("Agent was not created")
@@ -127,8 +128,12 @@ def create(yaml_config_file, run=False, attach=False):
             print("Started", device['UUID'].upper() + "-AGENT")
 
         if attach:
-            ofa.agent.attach(device['UUID'].upper() + "-AGENT")
-            print("Attached", device['UUID'].upper() + "-AGENT")
+            try:
+                ofa.agent.attach(device['UUID'].upper() + "-AGENT")
+                print("Attached", device['UUID'].upper() + "-AGENT")
+            except OFAException as err:
+                print("Could not attach", device['UUID'].upper() + "-AGENT")
+                print("Error was:", err)
 
 
 @click.command(name='create')

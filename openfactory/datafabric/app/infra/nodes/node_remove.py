@@ -37,5 +37,6 @@ class NodeRemove(View):
         # wait task is done
         while task.get_rq_job().result is None:
             pass
-        flash(f'Removed successfully node {node_name}', "success")
+        if task.get_rq_job().result:
+            flash(f'Removed successfully node {node_name}', "success")
         return redirect(url_for('infra.nodes'))

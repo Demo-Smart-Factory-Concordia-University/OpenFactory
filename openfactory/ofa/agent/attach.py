@@ -4,8 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
+from httpx import HTTPError
 
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 
@@ -18,21 +20,22 @@ def attach(agent_uuid):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one_or_none()
     if agent is None:
-        print("No agent", agent_uuid)
-        return
+        raise OFAException(f"No agent {agent_uuid} in OpenFactory database")
     agent = agent[0]
     if agent.agent_container is None:
-        print("Agent", agent_uuid, "has no existing container")
-        return
+        raise OFAException(f"Agent {agent_uuid} has no existing container")
 
     # Create ksqlDB table for device handeld by the agent
     ksql = KSQL(config.KSQLDB)
-    ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.device_uuid.replace('-', '_')} AS
-                                  SELECT id,
-                                         LATEST_BY_OFFSET(value) AS value
-                                  FROM devices_stream
-                                  WHERE device_uuid = '{agent.device_uuid}'
-                                  GROUP BY id;""")
+    try:
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.device_uuid.replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{agent.device_uuid}'
+                                      GROUP BY id;""")
+    except HTTPError:
+        raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
 
     client = docker.DockerClient(base_url=agent.node.docker_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)

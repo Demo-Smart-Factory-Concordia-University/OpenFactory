@@ -60,4 +60,3 @@ def user_notification_remove(notification_id):
     return [{'id': n.id,
              'message': n.message,
              'type': n.type} for n in notifications]
-

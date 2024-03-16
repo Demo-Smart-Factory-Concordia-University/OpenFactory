@@ -2,7 +2,7 @@
 RQ Task to create a new OpenFactory Node
 """
 from rq import get_current_job
-from python_on_whales.exceptions import DockerException
+from docker.errors import APIError
 from sqlalchemy.exc import PendingRollbackError
 from paramiko.ssh_exception import SSHException
 from openfactory.models.nodes import Node
@@ -22,7 +22,7 @@ def node_up(node_name, node_ip):
         db.session.add_all([node])
         db.session.commit()
         docker_error = ''
-    except (DockerException, PendingRollbackError, SSHException) as err:
+    except (APIError, PendingRollbackError, SSHException) as err:
         docker_error = err
         db.session.rollback()
     finally:

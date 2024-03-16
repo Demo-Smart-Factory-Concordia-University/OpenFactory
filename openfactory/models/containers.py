@@ -1,4 +1,7 @@
 import docker
+import os
+import tarfile
+from tempfile import TemporaryDirectory
 from typing import List
 from sqlalchemy import event
 from sqlalchemy import ForeignKey
@@ -48,13 +51,30 @@ class DockerContainer(Base):
         return self.node.network
 
     @hybrid_property
-    def status(self):
-        """ Status of container """
+    def container(self):
+        """ Gets Docker container """
         client = docker.DockerClient(base_url=self.docker_url)
         container = client.containers.get(self.name)
-        status = container.attrs['State']['Status']
         client.close()
-        return status
+        return container
+
+    @hybrid_property
+    def status(self):
+        """ Status of container """
+        return self.container.attrs['State']['Status']
+
+    def add_file(self, src, dest):
+        """ Copy a file into the Docker container """
+        tmp_dir = TemporaryDirectory()
+        tmp_file = os.path.join(tmp_dir.name, 'files.tar')
+        tar = tarfile.open(tmp_file, mode='w')
+        try:
+            tar.add(src, arcname=os.path.basename(dest))
+        finally:
+            tar.close()
+        data = open(tmp_file, 'rb').read()
+        self.container.put_archive(os.path.dirname(dest), data)
+        tmp_dir.cleanup()
 
     def start(self):
         """ Start Docker container """

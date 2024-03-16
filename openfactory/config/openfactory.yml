@@ -14,4 +14,6 @@ KSQLDB: http://localhost:8088
 
 # Docker Images
 MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
+MTCONNECT_AGENT_CFG_FILE: ${MTCONNECT_AGENT_CFG_FILE}
 MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer
+

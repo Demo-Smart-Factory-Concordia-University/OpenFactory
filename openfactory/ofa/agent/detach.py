@@ -15,12 +15,13 @@ def detach(agent_uuid):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = session.execute(query).one_or_none()
     if agent is None:
-        print("No agent", agent_uuid)
+        print(f"No agent {agent_uuid} running.")
         return
 
-    session.delete(agent[0].producer_container)
-    session.commit()
-    session.close()
+    if agent[0].producer_container:
+        session.delete(agent[0].producer_container)
+        session.commit()
+        session.close()
 
 
 @click.command(name='detach')
