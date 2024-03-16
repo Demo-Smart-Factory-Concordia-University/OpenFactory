@@ -6,6 +6,8 @@ from sqlalchemy import select
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
+from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -32,6 +34,8 @@ class Node(Base):
     node_name: Mapped[str] = mapped_column(String(20), unique=True)
     network: Mapped[str] = mapped_column(String(20))
     node_ip: Mapped[str] = mapped_column(String(14), unique=True)
+    cpus = mapped_column(Integer())
+    memory = mapped_column(Float())
     docker_node_id: Mapped[str] = mapped_column(String(30))
     docker_url: Mapped[str] = mapped_column(String(40),
                                             default='unix://var/run/docker.sock')
@@ -72,7 +76,7 @@ def node_before_insert(mapper, connection, target):
     Add docker id and create swarm node
     """
 
-    # Checks if node is the swarm manager
+    # Check if node is the swarm manager
     if target.node_name == "manager":
         target.docker_url = "ssh://" + config.OPENFACTORY_USER + "@" + target.node_ip
         client = docker.DockerClient(base_url=target.docker_url)
@@ -80,10 +84,12 @@ def node_before_insert(mapper, connection, target):
         client.networks.create(target.network,
                                driver='overlay',
                                attachable=True)
+        target.cpus = client.info()['NCPU']
+        target.memory = client.info()['MemTotal'] / 1073741824
         client.close()
         return
 
-    # gets manager token
+    # get manager token
     manager = target.manager
     target.network = manager.network
     client = docker.DockerClient(base_url=manager.docker_url)
@@ -94,10 +100,11 @@ def node_before_insert(mapper, connection, target):
     node_client = docker.DockerClient(base_url=target.docker_url)
     node_client.swarm.join([manager.node_ip], join_token=token)
 
-    # finds and adds Docker id of node
-    for n in client.nodes.list():
-        if n.attrs['Status']['Addr'] == target.node_ip:
-            target.docker_node_id = n.attrs['ID']
+    # get node information
+    target.docker_node_id = node_client.info()['Swarm']['NodeID']
+    target.cpus = node_client.info()['NCPU']
+    target.memory = node_client.info()['MemTotal'] / 1073741824
+
     client.close()
     node_client.close()
 
