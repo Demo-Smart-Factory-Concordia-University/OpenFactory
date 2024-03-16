@@ -9,3 +9,4 @@ from .compose_up import compose_up
 from .compose_down import compose_down
 from .remove_stack import remove_stack
 from .add_stack import add_stack
+from .agent_up import agent_up
