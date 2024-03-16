@@ -68,6 +68,7 @@ def agent_up(agent, container, mtc_file):
             EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
         ]
     )
+    agent.producer_container = producer
     try:
         client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
         db.session.add_all([producer])
