@@ -11,7 +11,8 @@
            <th scope="col">Agent url</th>
            <th scope="col">Agent Port</th>
            <th scope="col">Node</th> 
-           <th scope="col">Agent Status</th> 
+           <th scope="col">Agent Status</th>
+           <th></th>
         </tr>
       </thead>
     
@@ -24,6 +25,7 @@
           <td>{{ agent.agent_port }}</td>
           <td>{{ agent.node }}</td>
           <td>{{ agent.status }}</td>
+          <td><button onclick=location.href="{{ url_for('services.agent_remove', agent_id=agent.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
         </tr>   
         {% endfor %}
       </tbody>

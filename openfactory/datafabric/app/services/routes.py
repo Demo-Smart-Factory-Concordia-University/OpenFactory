@@ -6,6 +6,7 @@ from flask import render_template
 from . import serv_blueprint
 from .agents.agents_view import AgentList
 from .agents.agent_add import AgentAdd
+from .agents.agent_remove import AgentRemove
 from .containers.containers_view import ContainerList
 
 
@@ -18,4 +19,6 @@ def home():
 
 serv_blueprint.add_url_rule("/agents", view_func=AgentList.as_view("agents"))
 serv_blueprint.add_url_rule("/agent/add", view_func=AgentAdd.as_view("agent_add"))
+serv_blueprint.add_url_rule("/agent/remove/<int:agent_id>", view_func=AgentRemove.as_view("agent_remove"))
+
 serv_blueprint.add_url_rule("/containers", view_func=ContainerList.as_view("containers"))
