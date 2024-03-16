@@ -84,4 +84,4 @@ class Agent(Base):
             return "no"
 
     def __repr__(self) -> str:
-        return f"Agent (id={self.id!r}, uuid={self.uuid!r}, agent_url={self.agent_url!r})"
+        return f"Agent (id={self.id}, uuid={self.uuid})"
