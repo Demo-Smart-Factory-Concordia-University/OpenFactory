@@ -18,11 +18,9 @@ def rm(agent_uuid):
             if agent.status == 'running':
                 print("You cannot remove a running agent. Stop it first.")
                 return
-            session.delete(agent.agent_container)
         session.delete(agent)
+        session.commit()
         print("Removed", agent_uuid)
-
-    session.commit()
 
 
 @click.command(name='rm')
