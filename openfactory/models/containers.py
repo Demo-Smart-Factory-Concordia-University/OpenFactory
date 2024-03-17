@@ -6,6 +6,7 @@ from typing import List
 from sqlalchemy import event
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Double
 from sqlalchemy import String
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -36,7 +37,7 @@ class DockerContainer(Base):
                                                        cascade="all, delete-orphan")
     ports: Mapped[List["Port"]] = relationship(back_populates="container",
                                                cascade="all, delete-orphan")
-    cpus = mapped_column(Integer(), default=0)
+    cpus = mapped_column(Double(), default=0)
 
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
