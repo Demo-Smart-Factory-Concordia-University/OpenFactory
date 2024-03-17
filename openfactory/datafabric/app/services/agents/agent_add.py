@@ -12,9 +12,9 @@ from flask import url_for
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
-from wtforms import IntegerField, StringField, SubmitField
+from wtforms import IntegerField, DecimalField, StringField, SubmitField
 from wtforms_sqlalchemy.fields import QuerySelectField
-from wtforms.validators import DataRequired, IPAddress, Regexp, ValidationError
+from wtforms.validators import DataRequired, IPAddress, Regexp, NumberRange, Optional, ValidationError
 from flask.views import MethodView
 
 import openfactory.config as config
@@ -34,22 +34,44 @@ class AgentAddForm(FlaskForm):
     """
     Agent add form
     """
-    node = QuerySelectField(query_factory=nodes)
+    node = QuerySelectField(query_factory=nodes,
+                            description='Node on which agent will be deployed')
     port = IntegerField('Agent port',
+                        description='Port where agent will listen',
                         validators=[DataRequired()])
     device_uuid = StringField('Device UUID',
+                              description='UUID of device agent handels',
                               validators=[DataRequired(),
                                           Regexp(r'^[a-zA-Z0-9-_]+$',
                                           message='Please use a single word with only alphanumeric characters and numbers')])
     mtc_file = FileField('MTConnect XML device model file',
+                         description='MTConnect device model file',
                          validators=[FileRequired()])
     adapter_ip = StringField('Adapter IP',
+                             description='IP address of adatper',
                              validators=[DataRequired(),
                                          IPAddress(ipv4=True, ipv6=False,
                                                    message="Please Enter a valid IP Address")])
     adapter_port = IntegerField('Adapter port',
+                                description='Port where the adapter listens',
                                 validators=[DataRequired()])
-    submit = SubmitField('Add Agent')
+    agent_cpus = DecimalField('Allocated CPUs for Agent (leave empty or zero for maximum)',
+                              description='CPUs allocated (can be fractions e.g. 0.5)',
+                              validators=[Optional(),
+                                          NumberRange(min=0,
+                                                      message='Number of CPUS cannot be negative')])
+    agent_memory = DecimalField('Allocated memory in Giga Bytes for Agent (leave empty or zero for maximum)',
+                                description='Maximal memory allocated (in GB)',
+                                validators=[Optional()])
+    producer_cpus = DecimalField('Allocated CPUs for Kafka producer (leave empty or zero for maximum)',
+                                 description='CPUs allocated (can be fractions e.g. 0.5)',
+                                 validators=[NumberRange(min=0,
+                                                         message='Number of CPUS cannot be negative')])
+    producer_memory = DecimalField('Allocated memory in Giga Bytes for Kafka producer (leave empty or zero for maximum)',
+                                   description='Maximal memory allocated (in GB)',
+                                   validators=[Optional()])
+
+    submit = SubmitField('Deploy Agent')
 
     def validate_device_uuid(form, field):
         """ Validate that device UUID is unique """
@@ -78,6 +100,18 @@ class AgentAddForm(FlaskForm):
         except ET.ParseError:
             raise ValidationError('The file does not seem to be an XML file')
 
+    def validate_agent_cpus(form, field):
+        """ Validate number of CPUs is less than number of CPUs of node """
+        node = form.node.data
+        if field.data > node.cpus:
+            raise ValidationError(f"Must be less than number of CPUs of deployment node ({node.cpus} cpus)")
+
+    def validate_producer_cpus(form, field):
+        """ Validate number of CPUs is less than number of CPUs of node """
+        node = form.node.data
+        if field.data > node.cpus:
+            raise ValidationError(f"Must be less than number of CPUs of deployment node ({node.cpus} cpus)")
+
 
 class AgentAdd(MethodView):
     """
@@ -95,7 +129,7 @@ class AgentAdd(MethodView):
         form = AgentAddForm()
         return render_template("services/agents/agent_add.html",
                                form=form,
-                               title='Add Agent')
+                               title='Deploy New Agent')
 
     def post(self):
         form = AgentAddForm()
@@ -118,6 +152,7 @@ class AgentAdd(MethodView):
                     EnvVar(variable='DOCKER_GATEWAY', value='172.17.0.1')
                 ],
                 command='mtcagent run agent.cfg',
+                cpus=float(form.agent_cpus.data)
             )
 
             # configure agent
@@ -132,10 +167,11 @@ class AgentAdd(MethodView):
             current_user.submit_RQ_task('agent_up',
                                         f'Deploying MTConnect agent {form.device_uuid.data.upper()} on {form.node.data} (this may take a while) ...',
                                         agent, container,
-                                        os.path.join(get_configuration('datastore_system'), 'device.xml'))
+                                        os.path.join(get_configuration('datastore_system'), 'device.xml'),
+                                        float(form.producer_cpus.data))
             return redirect(url_for('services.agents'))
         else:
             flash('Cannot create the desired agent. Some entries are not valid', "danger")
             return render_template("services/agents/agent_add.html",
                                    form=form,
-                                   title='Add Agent')
+                                   title='Deploy New Agent')

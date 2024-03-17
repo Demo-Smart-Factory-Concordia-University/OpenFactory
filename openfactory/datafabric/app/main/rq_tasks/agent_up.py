@@ -14,7 +14,7 @@ from openfactory.datafabric.app import db
 from openfactory.datafabric.app.main.models.tasks import RQTask
 
 
-def agent_up(agent, container, mtc_file):
+def agent_up(agent, container, mtc_file, producer_cpus):
     """ Spins up an MTConnect Agent """
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
@@ -73,7 +73,8 @@ def agent_up(agent, container, mtc_file):
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
             EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
-        ]
+        ],
+        cpus=float(producer_cpus)
     )
     agent.producer_container = producer
     try:
