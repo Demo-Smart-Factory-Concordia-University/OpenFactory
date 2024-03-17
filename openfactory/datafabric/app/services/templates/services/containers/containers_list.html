@@ -12,6 +12,7 @@
            <th scope="col">Image</th>
            <th scope="col">Node</th>
            <th scope="col">Network</th>
+           <th scope="col">CPUs</th>
            <th scope="col">Status</th>
         </tr>
       </thead>
@@ -25,6 +26,7 @@
           <td>{{ container.image }}</td>
           <td>{{ container.node }}</td>
           <td>{{ container.network }}</td>
+          <td>{{ container.cpus }}</td>
           <td>{{ container.status }}</td>
         </tr>   
         {% endfor %}
