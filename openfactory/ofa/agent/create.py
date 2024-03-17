@@ -65,6 +65,12 @@ def _create_agent(db_engine, device, yaml_config_file):
             return None
         client.images.pull(config.MTCONNECT_AGENT_IMAGE)
 
+        cpus = 0
+        if 'runtime' in device:
+            if 'agent' in device['runtime']:
+                if 'cpus' in device['runtime']['agent']:
+                    cpus = device['runtime']['agent']['cpus']
+
         container = DockerContainer(
             node_id=node.id,
             node=node,
@@ -81,6 +87,7 @@ def _create_agent(db_engine, device, yaml_config_file):
                 EnvVar(variable='DOCKER_GATEWAY', value='172.17.0.1')
             ],
             command='mtcagent run agent.cfg',
+            cpus=cpus
         )
 
         agent = Agent(
