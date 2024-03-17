@@ -1,5 +1,10 @@
 <!-- General scripts -->
 
+<!-- Tooltips (Bootstrap 4) initialization with jQuery -->
+$(document).ready(function(){
+  $('[data-toggle="tooltip"]').tooltip();
+});
+
 <!-- Remove a user notifications -->
 async function rm_user_notification(notification_id) {
   const url = "{{ url_for('main.user_notification_remove', notification_id='NOTE_ID') }}".replace("NOTE_ID", notification_id)
