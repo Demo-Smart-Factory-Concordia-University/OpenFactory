@@ -24,8 +24,11 @@ class NodeAddForm(FlaskForm):
     """
     Node add form
     """
-    node_name = StringField('Node name', validators=[DataRequired()])
+    node_name = StringField('Node name',
+                            description='Unique name of node',
+                            validators=[DataRequired()])
     node_ip = StringField('Node IP',
+                          description='Node IP adress',
                           validators=[DataRequired(),
                                       IPAddress(ipv4=True, ipv6=False,
                                                 message="Please Enter a valid IP Address")])

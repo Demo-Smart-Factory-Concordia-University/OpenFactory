@@ -18,7 +18,9 @@ class StackAddForm(FlaskForm):
     """
     Infrastructure stack add form
     """
-    yml_file = FileField('Infrastructure Stack YAML configuration file', validators=[FileRequired()])
+    yml_file = FileField('Infrastructure Stack YAML configuration file',
+                         description='Infrastructure Stack YAML configuration file',
+                         validators=[FileRequired()])
     submit = SubmitField('Add Infrastructure Stack')
 
     def validate_yml_file(form, field):

@@ -33,13 +33,18 @@ class ComposeAddForm(FlaskForm):
     """
     Docker Compose add form
     """
-    node = QuerySelectField(query_factory=nodes)
+    node = QuerySelectField(query_factory=nodes,
+                            description='Node on which Docker Compose porject will be deployed')
     name = StringField('Docker Compose project name',
+                       description='Unique name for Docker Compose project',
                        validators=[DataRequired(),
                                    Regexp(r'^[\w]+$',
                                           message='Please use single word with only alphanumeric characters')])
-    description = StringField('Description (optional)')
-    yml_file = FileField('Docker Compose YAML configuration file', validators=[FileRequired()])
+    description = StringField('Description (optional)',
+                              description='Optional description of Docker Compose project')
+    yml_file = FileField('Docker Compose YAML configuration file',
+                         description='Docker Compose YAML configuration file',
+                         validators=[FileRequired()])
     submit = SubmitField('Add Docker Compose Project')
 
     def validate_name(form, field):

@@ -36,7 +36,9 @@
 
   {%- else %}
       <div class="mb-3">
-        {{ field.label(class='form-label') }}:
+        <span data-toggle="tooltip" data-placement="right" title="{{ field.description }}">
+          {{ field.label(class='form-label') }}:
+        </span>
         {% if autofocus %}
           {{ field(class='form-control' + (' is-invalid' if field.errors else ''), autofocus=True) }}
         {% else %}
@@ -49,6 +51,10 @@
   {%- endif %}
 {% endmacro %}
 
+<!-- quick_form macro 
+  Usage: quick_form(form, action="", method="post", id="", novalidate=False, enctype="")
+        form: WTFform
+        action, method, id, novalidate, encotype: options passed to HTML -->
 {% macro quick_form(form, action="", method="post", id="", novalidate=False, enctype="") %}
 <form novalidate
   {%- if action != None %} action="{{ action }}"{% endif -%}
