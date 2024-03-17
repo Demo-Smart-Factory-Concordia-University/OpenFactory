@@ -27,7 +27,7 @@ def agent_up(agent, container, mtc_file):
         db.session.commit()
         container.add_file(mtc_file, '/home/agent/device.xml')
         container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
-    except (DockerComposeException, PendingRollbackError, SSHException) as err:
+    except (DockerComposeException, PendingRollbackError, SSHException, docker.errors.APIError) as err:
         db.session.rollback()
         rq_task.user.send_notification(f'MTConnect agent {agent.uuid} could not be created. Error was:<br>"{err}"', "danger")
         rq_task.complete = True
@@ -37,7 +37,14 @@ def agent_up(agent, container, mtc_file):
     rq_task.user.send_notification(f'MTConnect agent {agent.uuid} created successfully', "success")
 
     # Start agent
-    container.start()
+    try:
+        container.start()
+    except docker.errors.APIError as err:
+        rq_task.user.send_notification(f'MTConnect agent {agent.uuid} could not be started. Error was:<br>"{err}"', "danger")
+        rq_task.complete = True
+        db.session.commit()
+        return False
+
     rq_task.user.send_notification(f'MTConnect agent {agent.uuid} started successfully', "success")
 
     # Create ksqlDB table for device handeld by the agent
