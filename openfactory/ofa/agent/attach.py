@@ -12,7 +12,7 @@ from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 
 
-def attach(agent_uuid):
+def attach(agent_uuid, cpus=0):
     """ Attach a Kafka producer to an MTConnect agent """
 
     db_engine = create_engine(config.SQL_ALCHEMY_CONN)
@@ -51,7 +51,8 @@ def attach(agent_uuid):
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
             EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
-        ]
+        ],
+        cpus=cpus
     )
     session.add_all([container])
     session.commit()

@@ -135,8 +135,13 @@ def create(yaml_config_file, run=False, attach=False):
             print("Started", device['UUID'].upper() + "-AGENT")
 
         if attach:
+            cpus = 0
+            if 'runtime' in device:
+                if 'producer' in device['runtime']:
+                    if 'cpus' in device['runtime']['producer']:
+                        cpus = device['runtime']['producer']['cpus']
             try:
-                ofa.agent.attach(device['UUID'].upper() + "-AGENT")
+                ofa.agent.attach(device['UUID'].upper() + "-AGENT", cpus)
                 print("Attached", device['UUID'].upper() + "-AGENT")
             except OFAException as err:
                 print("Could not attach", device['UUID'].upper() + "-AGENT")
