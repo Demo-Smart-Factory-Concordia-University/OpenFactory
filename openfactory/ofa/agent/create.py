@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import NoResultFound
 
 import openfactory.config as config
 import openfactory.ofa as ofa
@@ -57,7 +58,10 @@ def _create_agent(db_engine, device, yaml_config_file):
     with Session(db_engine) as session:
 
         query = select(Node).where(Node.node_name == device['NODE'])
-        node = session.execute(query).one()[0]
+        try:
+            node = session.execute(query).one()[0]
+        except NoResultFound:
+            raise OFAException(f"Node {device['NODE']} is not configured in OpenFactory")
 
         client = docker.DockerClient(base_url=node.docker_url)
         if not _validate(device, db_engine, client):
