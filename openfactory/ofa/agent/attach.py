@@ -5,7 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
 from httpx import HTTPError
-
+from paramiko.ssh_exception import SSHException
+from sqlalchemy.exc import PendingRollbackError
+from openfactory.exceptions import DockerComposeException
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
@@ -38,10 +40,16 @@ def attach(agent_uuid, cpus=0, user_notification=print):
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
     user_notification(f"Created KSQLdb table {agent.device_uuid.replace('-', '_')}")
 
-    client = docker.DockerClient(base_url=agent.node.docker_url)
-    client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
-    client.close()
+    # pull Docker image of producer
+    try:
+        client = docker.DockerClient(base_url=agent.node.docker_url)
+        client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
+        client.close()
+    except (DockerComposeException, PendingRollbackError, SSHException) as err:
+        session.rollback()
+        raise OFAException(f'Docker image {config.MTCONNECT_PRODUCER_IMAGE} could not be pulled. Error was: {err}')
 
+    # create producer
     container = DockerContainer(
         node_id=agent.node.id,
         node=agent.node,
@@ -55,14 +63,18 @@ def attach(agent_uuid, cpus=0, user_notification=print):
         ],
         cpus=cpus
     )
-    session.add_all([container])
-    session.commit()
+    agent.producer_container = container
+    try:
+        session.add_all([container])
+        session.commit()
+    except (DockerComposeException, PendingRollbackError, SSHException) as err:
+        session.rollback()
+        raise OFAException(f'Producer for agent {agent_uuid} could not be created. Error was: {err}')
     user_notification(f'Producer for agent {agent_uuid} created successfully')
+
+    # Start prodcuer
     container.start()
     user_notification(f'Producer for agent {agent_uuid} started successfully')
-
-    agent.producer_container = container
-    session.commit()
 
 
 @click.command(name='attach')
