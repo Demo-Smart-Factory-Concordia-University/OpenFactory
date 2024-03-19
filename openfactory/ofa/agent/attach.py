@@ -12,7 +12,7 @@ from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 
 
-def attach(agent_uuid, cpus=0):
+def attach(agent_uuid, cpus=0, user_notification=print):
     """ Attach a Kafka producer to an MTConnect agent """
 
     db_engine = create_engine(config.SQL_ALCHEMY_CONN)
@@ -36,6 +36,7 @@ def attach(agent_uuid, cpus=0):
                                       GROUP BY id;""")
     except HTTPError:
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
+    user_notification(f"Created KSQLdb table {agent.device_uuid.replace('-', '_')}")
 
     client = docker.DockerClient(base_url=agent.node.docker_url)
     client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
@@ -56,7 +57,9 @@ def attach(agent_uuid, cpus=0):
     )
     session.add_all([container])
     session.commit()
+    user_notification(f'Producer for agent {agent_uuid} created successfully')
     container.start()
+    user_notification(f'Producer for agent {agent_uuid} started successfully')
 
     agent.producer_container = container
     session.commit()
