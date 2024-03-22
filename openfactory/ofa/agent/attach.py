@@ -59,7 +59,7 @@ def attach(agent_uuid, cpus=0, user_notification=print):
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
-            EnvVar(variable='MTC_AGENT_UUID', value='agent_uuid')
+            EnvVar(variable='MTC_AGENT_UUID', value=f'{agent_uuid}')
         ],
         cpus=cpus
     )
