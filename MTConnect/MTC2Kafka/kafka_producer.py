@@ -8,7 +8,6 @@ class MTCDHT_Connector(MTCSourceConnector):
     bootstrap_servers = [os.environ.get('KAFKA_BROKER', 'broker:29092')]
     mtc_namespace = os.environ.get('MTC_NAMESPACE', 'urn:mtconnect.org:MTConnectStreams:2.0')
     mtc_agent = os.environ['MTC_AGENT']
-    mtc_agent_uuid = os.environ['MTC_AGENT_UUID']
     kafka_producer_uuid = os.environ['KAFKA_PRODUCER_UUID']
 
 
