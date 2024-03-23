@@ -3,7 +3,6 @@ from typing import List
 from typing import Optional
 from sqlalchemy import event
 from sqlalchemy import select
-from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import Integer
@@ -62,11 +61,9 @@ class Node(Base):
     @hybrid_property
     def manager(self):
         """ Returns swarm manager """
-        db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-        session = Session(db_engine)
+        session = Session.object_session(self)
         query = select(Node).where(Node.node_name == "manager")
         manager = session.execute(query).first()
-        session.close()
         return manager[0]
 
 
