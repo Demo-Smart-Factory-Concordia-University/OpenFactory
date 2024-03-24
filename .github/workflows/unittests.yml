@@ -23,4 +23,4 @@ jobs:
           pip install --force-reinstall -r requirements.txt
       - name: Test with unittest 
         run: |
-          python -m unittest discover tests
+          python -m unittest discover .
