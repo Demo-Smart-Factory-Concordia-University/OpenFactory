@@ -4,6 +4,7 @@ from unittest.mock import Mock, PropertyMock
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 import openfactory.config as config
 from openfactory.models.base import Base
@@ -221,6 +222,33 @@ class TestNodes(TestCase):
         args, kwargs = mock_DockerRemove_node.call_args
         self.assertEqual(args[0], 'a node id')
         self.assertEqual(kwargs['force'], True)
+
+        self.session.delete(manager_node)
+        self.session.commit()
+
+    def test_node_name_unique(self, *args):
+        """
+        Test Node.node_name is required to be unique
+        """
+        manager_node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        self.session.add_all([manager_node])
+        self.session.commit()
+
+        node1 = Node(
+            node_name='node1',
+            node_ip='123.456.7.901'
+        )
+        node2 = Node(
+            node_name='node1',
+            node_ip='123.456.7.902'
+        )
+        self.session.add_all([node1, node2])
+        self.assertRaises(IntegrityError, self.session.commit)
+        self.session.rollback()
 
         self.session.delete(manager_node)
         self.session.commit()
