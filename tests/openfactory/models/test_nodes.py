@@ -22,6 +22,22 @@ mock_docker_swarm.leave = Mock()
 
 
 """
+Mock Python Docker SDK Node object
+"""
+mock_docker_node = Mock()
+mock_docker_node.attrs = {
+    'Status': {'State': 'ready', 'Addr': '123.456.7.900'}
+}
+
+
+"""
+Mock Python Docker SDK Nodes object
+"""
+mock_docker_nodes = Mock()
+mock_docker_nodes.get = Mock(return_value=mock_docker_node)
+
+
+"""
 Mock Python Docker SDK Network object
 """
 mock_docker_network = Mock()
@@ -43,6 +59,7 @@ INFO_DIC = {
 @patch("docker.APIClient.close")
 @patch("docker.DockerClient.__init__", return_value=None)
 @patch("docker.DockerClient.info", return_value=INFO_DIC)
+@patch("docker.DockerClient.nodes", new_callable=PropertyMock, return_value=mock_docker_nodes)
 @patch("docker.DockerClient.close")
 @patch("docker.DockerClient.networks", new_callable=PropertyMock, return_value=mock_docker_network)
 @patch("docker.DockerClient.swarm", new_callable=PropertyMock, return_value=mock_docker_swarm)
@@ -79,6 +96,7 @@ class TestNodes(TestCase):
                            mock_swarm,
                            mock_network,
                            mock_DockerClientClose,
+                           mock_DockerClientNodes,
                            mock_DockerClientInfo,
                            mock_DockerClient,
                            mock_DockerAPIClientClose,
@@ -138,6 +156,7 @@ class TestNodes(TestCase):
                         mock_swarm,
                         mock_docker_network,
                         mock_DockerClientClose,
+                        mock_DockerClientNodes,
                         mock_DockerClientInfo,
                         mock_DockerClient,
                         mock_DockerAPIClientClose,
@@ -191,5 +210,41 @@ class TestNodes(TestCase):
         self.assertEqual(args[0], 'a node id')
         self.assertEqual(kwargs['force'], True)
 
+        self.session.delete(manager_node)
+        self.session.commit()
+
+    def test_node_status(self,
+                         mock_swarm,
+                         mock_docker_network,
+                         mock_DockerClientClose,
+                         mock_DockerClientNodes,
+                         mock_DockerClientInfo,
+                         mock_DockerClient,
+                         mock_DockerAPIClientClose,
+                         mock_DockerRemove_node,
+                         mock_DockerAPIClient):
+        """
+        Test status hybride property of an OpenFactory node
+        """
+        manager_node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+
+        node = Node(
+            node_name='node2',
+            node_ip='123.456.7.902'
+        )
+
+        self.session.add_all([manager_node])
+        self.session.commit()
+        self.session.add_all([node])
+        self.session.commit()
+
+        self.assertEqual(node.status, 'ready')
+
+        self.session.delete(node)
+        self.session.commit()
         self.session.delete(manager_node)
         self.session.commit()
