@@ -1,5 +1,6 @@
 # OpenFactory
 [![Lint with Flake8](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/lint.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/lint.yml)
+[![Unit tests](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml)
 
 Framework for manufacturing data management
 
