@@ -253,6 +253,33 @@ class TestNodes(TestCase):
         self.session.delete(manager_node)
         self.session.commit()
 
+    def test_node_ip_unique(self, *args):
+        """
+        Test Node.node_ip is required to be unique
+        """
+        manager_node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        self.session.add_all([manager_node])
+        self.session.commit()
+
+        node1 = Node(
+            node_name='node1',
+            node_ip='123.456.7.901'
+        )
+        node2 = Node(
+            node_name='node2',
+            node_ip='123.456.7.901'
+        )
+        self.session.add_all([node1, node2])
+        self.assertRaises(IntegrityError, self.session.commit)
+        self.session.rollback()
+
+        self.session.delete(manager_node)
+        self.session.commit()
+
     def test_node_status(self, *args):
         """
         Test hybride property 'status' of an OpenFactory node
