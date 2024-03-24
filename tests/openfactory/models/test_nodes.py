@@ -13,12 +13,12 @@ from openfactory.models.nodes import Node
 """
 Mock Python Docker SDK Swarm object
 """
-mock_swarm_node = Mock()
-mock_swarm_node.attrs = {
+mock_docker_swarm = Mock()
+mock_docker_swarm.attrs = {
     'JoinTokens': {'Worker': 'docker_swarm_manager_token'}
 }
-mock_swarm_node.init = Mock(return_value='swarm_node_id')
-mock_swarm_node.leave = Mock()
+mock_docker_swarm.init = Mock(return_value='swarm_node_id')
+mock_docker_swarm.leave = Mock()
 
 
 """
@@ -45,7 +45,7 @@ INFO_DIC = {
 @patch("docker.DockerClient.info", return_value=INFO_DIC)
 @patch("docker.DockerClient.close")
 @patch("docker.DockerClient.networks", new_callable=PropertyMock, return_value=mock_docker_network)
-@patch("docker.DockerClient.swarm", new_callable=PropertyMock, return_value=mock_swarm_node)
+@patch("docker.DockerClient.swarm", new_callable=PropertyMock, return_value=mock_docker_swarm)
 class TestNodes(TestCase):
     """
     Unit tests for Nodes model
@@ -101,7 +101,7 @@ class TestNodes(TestCase):
         mock_DockerClientClose.assert_called_once()
 
         # setup correctly manager node
-        args, kwargs = mock_swarm_node.init.call_args
+        args, kwargs = mock_docker_swarm.init.call_args
         self.assertEqual(kwargs['advertise_addr'], '123.456.7.891')
 
         # setup correctly network
@@ -131,7 +131,7 @@ class TestNodes(TestCase):
         mock_DockerClientClose.assert_called()
 
         # manager node removed correctly
-        args, kwargs = mock_swarm_node.leave.call_args
+        args, kwargs = mock_docker_swarm.leave.call_args
         self.assertEqual(kwargs['force'], True)
 
     def test_node_setup(self,
@@ -183,7 +183,7 @@ class TestNodes(TestCase):
         mock_DockerClientClose.assert_called()
 
         # leave swarm
-        mock_swarm_node.leave.assert_called()
+        mock_docker_swarm.leave.assert_called()
 
         # remove node from swarm manager
         mock_DockerAPIClient.assert_called_with('ssh://' + config.OPENFACTORY_USER + '@123.456.7.891')
