@@ -92,6 +92,12 @@ class TestNodes(TestCase):
         self.session.rollback()
         self.session.close()
 
+    def test_class_parent(self, *args):
+        """
+        Test parent of class is Base
+        """
+        self.assertEqual(Node.__bases__[0], Base)
+
     def test_manager_setup(self,
                            mock_swarm,
                            mock_network,
@@ -163,7 +169,7 @@ class TestNodes(TestCase):
                         mock_DockerRemove_node,
                         mock_DockerAPIClient):
         """
-        Test setup of an OpenFactory node
+        Test setup and tear down of an OpenFactory node
         """
         manager_node = Node(
             node_name='manager',
@@ -224,14 +230,13 @@ class TestNodes(TestCase):
                          mock_DockerRemove_node,
                          mock_DockerAPIClient):
         """
-        Test status hybride property of an OpenFactory node
+        Test hybride property 'status' of an OpenFactory node
         """
         manager_node = Node(
             node_name='manager',
             node_ip='123.456.7.891',
             network='test-net'
         )
-
         node = Node(
             node_name='node2',
             node_ip='123.456.7.902'
