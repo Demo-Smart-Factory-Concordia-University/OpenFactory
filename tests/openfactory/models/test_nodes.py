@@ -98,6 +98,12 @@ class TestNodes(TestCase):
         """
         self.assertEqual(Node.__bases__[0], Base)
 
+    def test_table_name(self, *args):
+        """
+        Test table name
+        """
+        self.assertEqual(Node.__tablename__, 'ofa_nodes')
+
     def test_manager_setup(self,
                            mock_swarm,
                            mock_network,
