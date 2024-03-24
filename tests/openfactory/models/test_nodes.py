@@ -219,16 +219,7 @@ class TestNodes(TestCase):
         self.session.delete(manager_node)
         self.session.commit()
 
-    def test_node_status(self,
-                         mock_swarm,
-                         mock_docker_network,
-                         mock_DockerClientClose,
-                         mock_DockerClientNodes,
-                         mock_DockerClientInfo,
-                         mock_DockerClient,
-                         mock_DockerAPIClientClose,
-                         mock_DockerRemove_node,
-                         mock_DockerAPIClient):
+    def test_node_status(self, *args):
         """
         Test hybride property 'status' of an OpenFactory node
         """
