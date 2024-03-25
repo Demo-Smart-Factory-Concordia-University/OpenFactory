@@ -3,3 +3,4 @@ from .mock_docker import docker_node
 from .mock_docker import docker_nodes
 from .mock_docker import docker_networks
 from .mock_docker import docker_client
+from .mock_docker import docker_apiclient
