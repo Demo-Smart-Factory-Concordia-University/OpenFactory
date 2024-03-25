@@ -1,69 +1,18 @@
 from unittest import TestCase
 from unittest.mock import patch
-from unittest.mock import Mock, PropertyMock
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+import tests.mocks as mock
 import openfactory.config as config
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 
 
-"""
-Mock Python Docker SDK Swarm object
-"""
-mock_docker_swarm = Mock()
-mock_docker_swarm.attrs = {
-    'JoinTokens': {'Worker': 'docker_swarm_manager_token'}
-}
-mock_docker_swarm.init = Mock(return_value='swarm_node_id')
-mock_docker_swarm.leave = Mock()
-
-
-"""
-Mock Python Docker SDK Node object
-"""
-mock_docker_node = Mock()
-mock_docker_node.attrs = {
-    'Status': {'State': 'ready', 'Addr': '123.456.7.900'}
-}
-
-
-"""
-Mock Python Docker SDK Nodes object
-"""
-mock_docker_nodes = Mock()
-mock_docker_nodes.get = Mock(return_value=mock_docker_node)
-
-
-"""
-Mock Python Docker SDK Network object
-"""
-mock_docker_network = Mock()
-mock_docker_network.create = Mock(return_value='docker_network')
-
-
-"""
-Mock return value of DockerClient.info()
-"""
-INFO_DIC = {
-    'Swarm': {'NodeID': 'a node id'},
-    'NCPU': 5,
-    'MemTotal': 1073741824
-}
-
-
-@patch("docker.APIClient.__init__", return_value=None)
-@patch("docker.APIClient.remove_node")
-@patch("docker.APIClient.close")
-@patch("docker.DockerClient.__init__", return_value=None)
-@patch("docker.DockerClient.info", return_value=INFO_DIC)
-@patch("docker.DockerClient.nodes", new_callable=PropertyMock, return_value=mock_docker_nodes)
-@patch("docker.DockerClient.close")
-@patch("docker.DockerClient.networks", new_callable=PropertyMock, return_value=mock_docker_network)
-@patch("docker.DockerClient.swarm", new_callable=PropertyMock, return_value=mock_docker_swarm)
+@patch("docker.DockerClient", return_value=mock.docker_client)
+@patch("docker.APIClient", return_value=mock.docker_apiclient)
 class TestNodes(TestCase):
     """
     Unit tests for Nodes model
@@ -105,19 +54,12 @@ class TestNodes(TestCase):
         """
         self.assertEqual(Node.__tablename__, 'ofa_nodes')
 
-    def test_manager_setup(self,
-                           mock_swarm,
-                           mock_network,
-                           mock_DockerClientClose,
-                           mock_DockerClientNodes,
-                           mock_DockerClientInfo,
-                           mock_DockerClient,
-                           mock_DockerAPIClientClose,
-                           mock_DockerRemove_node,
-                           mock_DockerAPIClient):
+    def test_manager_setup(self, mock_DockerAPIClient, mock_DockerClient):
         """
         Test setup and tear down of a manager node
         """
+        mock_DockerClient.reset_mock()
+        mock.docker_client.reset_mock()
         # setup manager node
         node = Node(
             node_name='manager',
@@ -129,14 +71,14 @@ class TestNodes(TestCase):
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url='ssh://' + config.OPENFACTORY_USER + '@123.456.7.891')
-        mock_DockerClientClose.assert_called_once()
+        mock.docker_client.close.assert_called_once()
 
         # setup correctly manager node
-        args, kwargs = mock_docker_swarm.init.call_args
+        args, kwargs = mock.docker_swarm.init.call_args
         self.assertEqual(kwargs['advertise_addr'], '123.456.7.891')
 
         # setup correctly network
-        args, kwargs = mock_docker_network.create.call_args
+        args, kwargs = mock.docker_networks.create.call_args
         self.assertEqual(args[0], 'test-net')
         self.assertEqual(kwargs['driver'], 'overlay')
         self.assertEqual(kwargs['attachable'], True)
@@ -159,22 +101,13 @@ class TestNodes(TestCase):
 
         # use correct docker client
         mock_DockerClient.assert_called_with(base_url='ssh://' + config.OPENFACTORY_USER + '@123.456.7.891')
-        mock_DockerClientClose.assert_called()
+        mock.docker_client.close.assert_called()
 
         # manager node removed correctly
-        args, kwargs = mock_docker_swarm.leave.call_args
+        args, kwargs = mock.docker_swarm.leave.call_args
         self.assertEqual(kwargs['force'], True)
 
-    def test_node_setup(self,
-                        mock_swarm,
-                        mock_docker_network,
-                        mock_DockerClientClose,
-                        mock_DockerClientNodes,
-                        mock_DockerClientInfo,
-                        mock_DockerClient,
-                        mock_DockerAPIClientClose,
-                        mock_DockerRemove_node,
-                        mock_DockerAPIClient):
+    def test_node_setup(self, mock_DockerAPIClient, mock_DockerClient):
         """
         Test setup and tear down of an OpenFactory node
         """
@@ -212,14 +145,14 @@ class TestNodes(TestCase):
 
         # use correct docker client
         mock_DockerClient.assert_called_with(base_url='ssh://' + config.OPENFACTORY_USER + '@123.456.7.901')
-        mock_DockerClientClose.assert_called()
+        mock.docker_client.close.assert_called()
 
         # leave swarm
-        mock_docker_swarm.leave.assert_called()
+        mock.docker_swarm.leave.assert_called()
 
         # remove node from swarm manager
         mock_DockerAPIClient.assert_called_with('ssh://' + config.OPENFACTORY_USER + '@123.456.7.891')
-        args, kwargs = mock_DockerRemove_node.call_args
+        args, kwargs = mock.docker_apiclient.remove_node.call_args
         self.assertEqual(args[0], 'a node id')
         self.assertEqual(kwargs['force'], True)
 
