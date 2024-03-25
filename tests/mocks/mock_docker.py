@@ -45,3 +45,9 @@ docker_client.nodes = docker_nodes
 docker_client.networks = docker_networks
 docker_client.swarm = docker_swarm
 docker_client.close = Mock()
+
+
+""" Python Docker SDK APIClient object """
+docker_apiclient = Mock()
+docker_apiclient.remove_node = Mock()
+docker_apiclient.close = Mock()
