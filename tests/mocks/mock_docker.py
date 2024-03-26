@@ -30,6 +30,23 @@ docker_networks = Mock()
 docker_networks.create = Mock(return_value='docker_network')
 
 
+""" Python Docker SDK Container object """
+docker_container = Mock()
+docker_container.start = Mock()
+docker_container.stop = Mock()
+docker_container.remove = Mock()
+docker_container.put_archive = Mock()
+docker_container.attrs = {
+    'State': {'Status': 'running'}
+}
+
+
+""" Python Docker SDK Containers object """
+docker_containers = Mock()
+docker_containers.create = Mock(return_value=docker_container)
+docker_containers.get = Mock(return_value=docker_container)
+
+
 """ return value of DockerClient.info() """
 INFO_DIC = {
     'Swarm': {'NodeID': 'a node id'},
@@ -43,6 +60,7 @@ docker_client = Mock()
 docker_client.info = Mock(return_value=INFO_DIC)
 docker_client.nodes = docker_nodes
 docker_client.networks = docker_networks
+docker_client.containers = docker_containers
 docker_client.swarm = docker_swarm
 docker_client.close = Mock()
 
