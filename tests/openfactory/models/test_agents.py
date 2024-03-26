@@ -21,7 +21,7 @@ class TestAgent(TestCase):
     def setUpClass(cls):
         """ setup in memory sqlite db """
         print("Setting up in memory sqlite db")
-        cls.db_engine = create_engine('sqlite:///:memory')
+        cls.db_engine = create_engine('sqlite:///:memory:')
         Base.metadata.drop_all(cls.db_engine)
         Base.metadata.create_all(cls.db_engine)
 
