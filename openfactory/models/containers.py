@@ -80,17 +80,11 @@ class DockerContainer(Base):
 
     def start(self):
         """ Start Docker container """
-        docker_client = docker.DockerClient(base_url=self.docker_url)
-        container = docker_client.containers.get(self.name)
-        container.start()
-        docker_client.close()
+        self.container.start()
 
     def stop(self):
         """ Stop Docker container """
-        docker_client = docker.DockerClient(base_url=self.docker_url)
-        container = docker_client.containers.get(self.name)
-        container.stop()
-        docker_client.close()
+        self.container.stop()
 
 
 @event.listens_for(DockerContainer, 'before_insert')
