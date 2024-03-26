@@ -74,7 +74,8 @@ class DockerContainer(Base):
             tar.add(src, arcname=os.path.basename(dest))
         finally:
             tar.close()
-        data = open(tmp_file, 'rb').read()
+        with open(tmp_file, 'rb') as f:
+            data = f.read()
         self.container.put_archive(os.path.dirname(dest), data)
         tmp_dir.cleanup()
 
