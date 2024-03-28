@@ -1,7 +1,5 @@
 import click
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-import openfactory.config as config
+from openfactory.ofa.db import db
 from openfactory.core import create_infra_stack
 
 
@@ -11,8 +9,4 @@ from openfactory.core import create_infra_stack
                 nargs=1)
 def up(yaml_config_file):
     """ Setup OpenFactory infrastructure """
-
-    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-    session = Session(db_engine)
-    create_infra_stack(session, yaml_config_file)
-    session.close()
+    create_infra_stack(db.session, yaml_config_file)
