@@ -37,6 +37,8 @@ def up(db_session, stack_config_file, user_notification=print):
     if manager is None:
         if 'manager' not in infra:
             raise OFAConfigurationException('Manager missing in configuration file')
+        if 'network' not in infra:
+            raise OFAConfigurationException('Network missing in configuration file')
         user_notification("Setting up manager and network")
         node = Node(
             node_name='manager',
