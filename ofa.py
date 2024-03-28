@@ -1,5 +1,7 @@
 import click
 import openfactory.ofa as ofa
+from openfactory.ofa.db import db
+import openfactory.config as config
 
 
 @click.group()
@@ -43,6 +45,10 @@ agent.add_command(ofa.agent.click_detach)
 cli.add_command(device)
 device.add_command(ofa.device.up)
 device.add_command(ofa.device.down)
+
+# connect to database
+db.conn_uri = config.SQL_ALCHEMY_CONN
+db.connect()
 
 
 if __name__ == '__main__':
