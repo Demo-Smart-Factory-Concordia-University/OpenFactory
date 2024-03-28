@@ -23,7 +23,7 @@ def create_node():
 @patch("docker.DockerClient", return_value=mock.docker_client)
 class TestEnvVar(TestCase):
     """
-    Unit tests for InfraStack model
+    Unit tests for EnvVar model
     """
 
     @classmethod
