@@ -26,6 +26,9 @@ def up(db_session, stack_config_file, user_notification=print):
             if ('manager' in infra) and (stack.manager is not None):
                 if stack.manager.node_ip != infra['manager']:
                     raise OFAConfigurationException('Manager in configuration file differs from existing stack manager')
+            if ('network' in infra) and (stack.manager is not None):
+                if stack.manager.network != infra['network']:
+                    raise OFAConfigurationException('Network in configuration file differs from existing stack network')
     else:
         stack = None
 
