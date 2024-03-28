@@ -1,0 +1,7 @@
+# Extends test_base_stack with a node
+
+stack: test_base_stack
+
+nodes:
+
+   node3: 123.456.7.803
