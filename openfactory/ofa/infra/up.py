@@ -7,6 +7,6 @@ from openfactory.core import create_infra_stack
 @click.argument('yaml_config_file',
                 type=click.Path(exists=True),
                 nargs=1)
-def up(yaml_config_file):
+def click_up(yaml_config_file):
     """ Setup OpenFactory infrastructure """
     create_infra_stack(db.session, yaml_config_file)

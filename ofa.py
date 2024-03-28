@@ -29,7 +29,7 @@ def device():
 
 
 cli.add_command(infra)
-infra.add_command(ofa.infra.up)
+infra.add_command(ofa.infra.click_up)
 infra.add_command(ofa.infra.down)
 
 cli.add_command(agent)
