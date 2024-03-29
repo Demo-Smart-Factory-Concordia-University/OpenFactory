@@ -3,7 +3,7 @@ OpenFactory ofa module
 """
 
 # sub-commands
-import openfactory.ofa.infra as infra
+import openfactory.ofa.stack as stack
 import openfactory.ofa.agent as agent
 import openfactory.ofa.device as device
 

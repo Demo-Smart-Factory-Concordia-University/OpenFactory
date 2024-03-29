@@ -11,7 +11,7 @@ def cli():
 
 
 @click.group
-def infra():
+def stack():
     """ Manage OpenFactory infrastructure """
     pass
 
@@ -28,9 +28,9 @@ def device():
     pass
 
 
-cli.add_command(infra)
-infra.add_command(ofa.infra.click_up)
-infra.add_command(ofa.infra.click_down)
+cli.add_command(stack)
+stack.add_command(ofa.stack.click_up)
+stack.add_command(ofa.stack.click_down)
 
 cli.add_command(agent)
 agent.add_command(ofa.agent.ls)
