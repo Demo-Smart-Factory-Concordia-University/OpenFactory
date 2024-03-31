@@ -1,10 +1,11 @@
+from sqlalchemy import select
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
 
 
 def rm(db_session, stack_id, user_notification_success=print, user_notification_fail=print):
     """ Removes an infrastructure stack """
-    query = db_session.query(InfraStack).where(InfraStack.id == stack_id)
+    query = select(InfraStack).where(InfraStack.id == stack_id)
     stack = db_session.execute(query).one()
     stack = stack[0]
     stack_name = stack.stack_name
