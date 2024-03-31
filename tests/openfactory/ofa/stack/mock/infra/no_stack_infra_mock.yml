@@ -1,0 +1,10 @@
+# Mock for an OpenFactory infrastructure config file without assigning a stack
+
+network: test-net
+
+manager: 123.456.7.800
+
+nodes:
+
+   node1: 123.456.7.801
+   node2: 123.456.7.802
