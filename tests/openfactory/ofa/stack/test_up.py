@@ -42,11 +42,12 @@ class Test_ofa_stack_up(TestCase):
         """
         Clean up all stacks and nodes
         """
+        # remove nodes
+        for node in db.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                db.session.delete(node)
+        # remove stacks
         for stack in db.session.scalars(select(InfraStack)):
-            # remove nodes
-            for node in stack.nodes:
-                if node.node_name != 'manager':
-                    db.session.delete(node)
             db.session.delete(stack)
             db.session.commit()
         # remove manager
@@ -56,37 +57,90 @@ class Test_ofa_stack_up(TestCase):
             db.session.delete(manager[0])
             db.session.commit()
 
+    def test_return_stack(self, *args):
+        """
+        Test if return value correct
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mock/infra/base_infra_mock.yml')
+        ret = ofa.stack.up(db.session, config_file)
+
+        # check if return value is correct
+        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
+        stack = db.session.execute(query).first()
+        self.assertEqual(stack[0], ret)
+
+        # clean up
+        self.cleanup()
+
+    def test_return_no_stack(self, *args):
+        """
+        Test if return value correct if no stack is defined in config file
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mock/infra/no_stack_infra_mock.yml')
+        ret = ofa.stack.up(db.session, config_file)
+
+        # check if return value is correct
+        self.assertEqual(ret, None)
+
+        # clean up
+        self.cleanup()
+
+    def test_setup_no_stack(self, *args):
+        """
+        Test setup for a config file without stack
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mock/infra/no_stack_infra_mock.yml')
+        ofa.stack.up(db.session, config_file)
+
+        # check if manager is setup correctly
+        query = select(Node).where(Node.node_name == "manager")
+        manager = db.session.execute(query).one()
+        self.assertEqual(manager[0].network, 'test-net')
+        self.assertEqual(manager[0].node_ip, '123.456.7.800')
+
+        # check if nodes are setup correctly
+        query = select(Node).where(Node.node_name == "node1")
+        node1 = db.session.execute(query).one()
+        self.assertEqual(node1[0].network, 'test-net')
+        self.assertEqual(node1[0].node_ip, '123.456.7.801')
+
+        query = select(Node).where(Node.node_name == "node2")
+        node2 = db.session.execute(query).one()
+        self.assertEqual(node2[0].network, 'test-net')
+        self.assertEqual(node2[0].node_ip, '123.456.7.802')
+
+        # clean up
+        self.cleanup()
+
     def test_setup_base_stack(self, *args):
         """
         Test setup of a base stack
         """
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-
-        # check if InfraStack is setup correctly
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        stack = db.session.execute(query).first()
-        self.assertEqual(stack[0].stack_name, 'test_base_stack')
+        stack = ofa.stack.up(db.session, config_file)
 
         # check if manager is setup correctly
-        manager = stack[0].manager
+        manager = stack.manager
         self.assertEqual(manager.network, 'test-net')
         self.assertEqual(manager.node_ip, '123.456.7.800')
-        self.assertTrue(manager in stack[0].nodes)
+        self.assertTrue(manager in stack.nodes)
 
         # check if nodes are setup correctly
         query = select(Node).where(Node.node_name == "node1")
-        node1 = db.session.execute(query).first()
+        node1 = db.session.execute(query).one()
         self.assertEqual(node1[0].network, 'test-net')
         self.assertEqual(node1[0].node_ip, '123.456.7.801')
-        self.assertTrue(node1[0] in stack[0].nodes)
+        self.assertTrue(node1[0] in stack.nodes)
 
         query = select(Node).where(Node.node_name == "node2")
-        node2 = db.session.execute(query).first()
+        node2 = db.session.execute(query).one()
         self.assertEqual(node2[0].network, 'test-net')
         self.assertEqual(node2[0].node_ip, '123.456.7.802')
-        self.assertTrue(node2[0] in stack[0].nodes)
+        self.assertTrue(node2[0] in stack.nodes)
 
         # clean up
         self.cleanup()
@@ -98,10 +152,7 @@ class Test_ofa_stack_up(TestCase):
         # setup base stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        stack = db.session.execute(query).first()
-        stack1 = stack[0]
+        stack1 = ofa.stack.up(db.session, config_file)
 
         # setup additional stacks
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -112,10 +163,7 @@ class Test_ofa_stack_up(TestCase):
         ofa.stack.up(db.session, config_file)
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add1_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_add_stack")
-        stack = db.session.execute(query).first()
-        stack2 = stack[0]
+        stack2 = ofa.stack.up(db.session, config_file)
 
         # check if new nodes are setup correctly
         query = select(Node).where(Node.node_name == "node3")

@@ -6,7 +6,10 @@ from openfactory.exceptions import OFAConfigurationException
 
 
 def up(db_session, stack_config_file, user_notification=print):
-    """ Spins up an infrastructure stack """
+    """
+    Spins up an infrastructure stack
+    Returns created InfraStack object or None
+    """
 
     # Load yaml description file
     infra = load_yaml(stack_config_file)
@@ -61,3 +64,5 @@ def up(db_session, stack_config_file, user_notification=print):
             )
             db_session.add_all([node])
             db_session.commit()
+
+    return stack

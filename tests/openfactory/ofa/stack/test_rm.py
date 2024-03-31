@@ -41,11 +41,12 @@ class Test_ofa_stack_rm(TestCase):
         """
         Clean up all stacks and nodes
         """
+        # remove nodes
+        for node in db.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                db.session.delete(node)
+        # remove stacks
         for stack in db.session.scalars(select(InfraStack)):
-            # remove nodes
-            for node in stack.nodes:
-                if node.node_name != 'manager':
-                    db.session.delete(node)
             db.session.delete(stack)
             db.session.commit()
         # remove manager
@@ -62,12 +63,10 @@ class Test_ofa_stack_rm(TestCase):
         # setup base stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        stack = db.session.execute(query).first()
+        stack = ofa.stack.up(db.session, config_file)
 
         # remove stack
-        ofa.stack.rm(db.session, stack[0].id)
+        ofa.stack.rm(db.session, stack.id)
 
         # check stack and nodes were removed
         self.assertEqual(len(db.session.query(InfraStack).all()), 0)
@@ -88,10 +87,7 @@ class Test_ofa_stack_rm(TestCase):
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add1_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_add_stack")
-        stack = db.session.execute(query).first()
-        stack2 = stack[0]
+        stack2 = ofa.stack.up(db.session, config_file)
 
         # remove additional stack
         ofa.stack.rm(db.session, stack2.id)
@@ -122,10 +118,7 @@ class Test_ofa_stack_rm(TestCase):
         # setup stacks
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        stack = db.session.execute(query).first()
-        stack1 = stack[0]
+        stack1 = ofa.stack.up(db.session, config_file)
 
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
