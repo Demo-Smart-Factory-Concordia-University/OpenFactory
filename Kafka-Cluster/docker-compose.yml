@@ -1,8 +1,6 @@
 # Runs a single broker Kafka cluster
 # Ref: https://developer.confluent.io/quickstart/kafka-docker/
 
-version: '3.9'
-
 services:
 
   zookeeper:
