@@ -1,25 +1,16 @@
 import click
-from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import openfactory.config as config
+from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
 
-def detach(agent_uuid):
+def detach(agent):
     """ Detach a Kafka producer from an MTConnect agent """
-
-    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-    session = Session(db_engine)
-    query = select(Agent).where(Agent.uuid == agent_uuid)
-    agent = session.execute(query).one_or_none()
-    if agent is None:
-        print(f"No agent {agent_uuid} running.")
-        return
-
-    if agent[0].producer_container:
-        session.delete(agent[0].producer_container)
+    session = Session.object_session(agent)
+    if agent.producer_container:
+        session.delete(agent.producer_container)
         session.commit()
         session.close()
 
@@ -28,4 +19,9 @@ def detach(agent_uuid):
 @click.argument('agent_uuid', nargs=1)
 def click_detach(agent_uuid):
     """ Detach a Kafka producer from an MTConnect agent """
-    detach(agent_uuid)
+    query = select(Agent).where(Agent.uuid == agent_uuid)
+    agent = db.session.execute(query).one_or_none()
+    if agent is None:
+        print(f'No Agent {agent_uuid} defined in OpenFactory')
+    else:
+        detach(agent[0])

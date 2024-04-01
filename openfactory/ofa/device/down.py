@@ -1,6 +1,10 @@
 import click
 import yaml
+from sqlalchemy import select
+
 import openfactory.ofa as ofa
+from openfactory.ofa.db import db
+from openfactory.models.agents import Agent
 
 
 @click.command(name='down')
@@ -17,6 +21,11 @@ def down(yaml_config_file):
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
         agent_uuid = device['UUID'].upper() + "-AGENT"
-        ofa.agent.stop(agent_uuid)
-        ofa.agent.detach(agent_uuid)
+        query = select(Agent).where(Agent.uuid == agent_uuid)
+        agent = db.session.execute(query).one_or_none()
+        if agent is None:
+            print(f'No Agent {agent_uuid} defined in OpenFactory')
+            continue
+        ofa.agent.stop(agent[0])
+        ofa.agent.detach(agent[0])
         ofa.agent.rm(agent_uuid)
