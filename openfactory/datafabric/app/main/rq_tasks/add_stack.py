@@ -19,7 +19,7 @@ def add_stack(stack_config_file):
     rq_task = db.session.get(RQTask, job.get_id())
     current_user = rq_task.user
     try:
-        ofa.infra.up(db.session,
+        ofa.stack.up(db.session,
                      stack_config_file,
                      user_notification=lambda msg: current_user.send_notification(msg, 'info'))
         rq_task.user.send_notification('Infrastructure stack was added successfully', 'success')
