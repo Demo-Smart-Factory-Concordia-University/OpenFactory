@@ -25,3 +25,4 @@ def click_detach(agent_uuid):
         print(f'No Agent {agent_uuid} defined in OpenFactory')
     else:
         detach(agent[0])
+        print("Detached", agent.uuid)

@@ -27,5 +27,7 @@ def down(yaml_config_file):
             print(f'No Agent {agent_uuid} defined in OpenFactory')
             continue
         ofa.agent.stop(agent[0])
+        print("Stopped", agent_uuid)
         ofa.agent.detach(agent[0])
+        print("Detached", agent_uuid)
         ofa.agent.rm(agent_uuid)
