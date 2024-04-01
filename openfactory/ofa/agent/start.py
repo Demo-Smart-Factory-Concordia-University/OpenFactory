@@ -19,4 +19,7 @@ def click_start(agent_uuid):
     """ Start an MTConnect agent defined in OpenFactory """
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = db.session.execute(query).one_or_none()
-    start(agent[0])
+    if agent is None:
+        print(f'No Agent {agent_uuid} defined in OpenFactory')
+    else:
+        start(agent[0])
