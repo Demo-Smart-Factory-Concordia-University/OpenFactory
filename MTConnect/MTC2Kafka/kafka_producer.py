@@ -2,16 +2,15 @@ import os
 from mtc2kafka.connectors import MTCSourceConnector
 
 
-class MTCDHT_Connector(MTCSourceConnector):
+class MTC_Producer(MTCSourceConnector):
     """ Kafka producer for MTConnect data """
 
     bootstrap_servers = [os.environ.get('KAFKA_BROKER', 'broker:29092')]
-    mtc_namespace = os.environ.get('MTC_NAMESPACE', 'urn:mtconnect.org:MTConnectStreams:2.0')
     mtc_agent = os.environ['MTC_AGENT']
     kafka_producer_uuid = os.environ['KAFKA_PRODUCER_UUID']
 
 
-con = MTCDHT_Connector()
+con = MTC_Producer()
 print("======================================================")
 print("Kafka producer for MTConnect data from", con.mtc_agent)
 print("Streaming from", con.get_agent_baseUrl())
