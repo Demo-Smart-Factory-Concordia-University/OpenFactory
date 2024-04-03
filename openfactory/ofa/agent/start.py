@@ -10,6 +10,9 @@ def start(agent):
         print("This is an external agent. It cannot be started by OpenFactory")
         return
     agent.agent_container.start()
+    if agent.producer_container:
+        agent.producer_container.start()
+        
     print("Started", agent.uuid)
 
 
