@@ -77,12 +77,12 @@ def attach(agent, cpus=0, user_notification=print):
         session.commit()
     except (DockerComposeException, PendingRollbackError, SSHException) as err:
         session.rollback()
-        raise OFAException(f'Producer for agent {agent.uuid} could not be created. Error was: {err}')
-    user_notification(f'Producer for agent {agent.uuid} created successfully')
+        raise OFAException(f'Producer for agent {agent.device_uuid} could not be created. Error was: {err}')
+    user_notification(f'Producer for {agent.device_uuid} created successfully')
 
     # Start prodcuer
     container.start()
-    user_notification(f'Producer for agent {agent.uuid} started successfully')
+    user_notification(f'Producer for {agent.device_uuid} started successfully')
 
 
 @click.command(name='attach')
@@ -95,3 +95,4 @@ def click_attach(agent_uuid):
         print(f'No Agent {agent_uuid} defined in OpenFactory')
     else:
         attach(agent[0])
+        print(f'Agent {agent_uuid} attached successfully')

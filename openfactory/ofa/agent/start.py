@@ -4,15 +4,17 @@ from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
 
-def start(agent):
+def start(agent, user_notification=print):
     """ Start an MTConnect agent defined in OpenFactory """
     if agent.external:
-        print("This is an external agent. It cannot be started by OpenFactory")
+        user_notification("This is an external agent. It cannot be started by OpenFactory")
         return
-    agent.agent_container.start()
+    agent_uuid = agent.uuid
     if agent.producer_container:
         agent.producer_container.start()
-    print("Started", agent.uuid)
+        user_notification(f"Producer {agent_uuid.replace('-agent', '-producer')} started successfully")
+    agent.agent_container.start()
+    user_notification(f"Agent {agent_uuid} started successfully")
 
 
 @click.command(name='start')

@@ -6,10 +6,10 @@ from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
 
-def stop(agent):
+def stop(agent, user_notification=print):
     """ Stop an MTConnect agent defined in OpenFactory """
     if agent.external:
-        print("This is an external agent. It cannot be stoped by OpenFactory")
+        user_notification("This is an external agent. It cannot be stoped by OpenFactory")
         return
     if not agent.status == 'running':
         return
@@ -20,6 +20,7 @@ def stop(agent):
 
     # stop agent
     agent.agent_container.stop()
+    user_notification(f"{agent.uuid} stopped successfully")
 
 
 @click.command(name='stop')
@@ -32,4 +33,3 @@ def click_stop(agent_uuid):
         print(f'No Agent {agent_uuid} defined in OpenFactory')
     else:
         stop(agent[0])
-        print("Stopped", agent_uuid)
