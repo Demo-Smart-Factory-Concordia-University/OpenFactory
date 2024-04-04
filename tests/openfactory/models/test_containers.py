@@ -47,6 +47,10 @@ class TestDockerContainer(TestCase):
         """ Start a new session """
         self.session = Session(self.db_engine)
 
+        """ reset mocks """
+        mock.docker_client.reset_mock()
+        mock.docker_container.reset_mock()
+
     @classmethod
     def tearDown(self, *args):
         """ rollback all transactions """
