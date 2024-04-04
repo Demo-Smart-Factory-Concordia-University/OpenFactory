@@ -1,5 +1,5 @@
 import click
-from .create import create
+from .create import create_from_config_file
 
 
 @click.command(name='run')
@@ -8,4 +8,4 @@ from .create import create
                 nargs=1)
 def run(yaml_config_file):
     """ Run an MTConnect agent based on a yaml configuration file """
-    create(yaml_config_file, run=True)
+    create_from_config_file(yaml_config_file, run=True)

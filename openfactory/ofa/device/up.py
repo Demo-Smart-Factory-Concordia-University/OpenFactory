@@ -8,4 +8,4 @@ import openfactory.ofa as ofa
                 nargs=1)
 def up(yaml_config_file):
     """ Create and start devices """
-    ofa.agent.create(yaml_config_file, run=True, attach=True)
+    ofa.agent.create_from_config_file(yaml_config_file, run=True, attach=True)
