@@ -112,6 +112,7 @@ def dockerContainer_after_insert(mapper, connection, target):
         env.append(f"{var.variable}={var.value}")
 
     docker_client = docker.DockerClient(base_url=target.docker_url)
+    docker_client.images.pull(target.image)
     docker_client.containers.create(target.image,
                                     name=target.name,
                                     detach=True,

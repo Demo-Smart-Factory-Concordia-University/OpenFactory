@@ -50,6 +50,7 @@ class TestDockerContainer(TestCase):
         """ reset mocks """
         mock.docker_client.reset_mock()
         mock.docker_container.reset_mock()
+        mock.docker_images.reset_mock()
 
     @classmethod
     def tearDown(self, *args):
@@ -88,7 +89,10 @@ class TestDockerContainer(TestCase):
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once()
+        mock.docker_client.close.assert_called_once_with()
+
+        # pull Docker image
+        mock.docker_images.pull.assert_called_once_with('tester/test')
 
         # create correctly container
         args, kwargs = mock.docker_containers.create.call_args

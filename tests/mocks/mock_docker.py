@@ -47,6 +47,11 @@ docker_containers.create = Mock(return_value=docker_container)
 docker_containers.get = Mock(return_value=docker_container)
 
 
+""" Python Docker SDK Images object """
+docker_images = Mock()
+docker_containers.pull = Mock()
+
+
 """ return value of DockerClient.info() """
 INFO_DIC = {
     'Swarm': {'NodeID': 'a node id'},
@@ -61,6 +66,7 @@ docker_client.info = Mock(return_value=INFO_DIC)
 docker_client.nodes = docker_nodes
 docker_client.networks = docker_networks
 docker_client.containers = docker_containers
+docker_client.images = docker_images
 docker_client.swarm = docker_swarm
 docker_client.close = Mock()
 
