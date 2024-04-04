@@ -1,10 +1,12 @@
+import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, call
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+import openfactory.config as config
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
@@ -127,4 +129,54 @@ class TestAgent(TestCase):
 
         # clean-up
         self.session.delete(agent)
+        self.session.commit()
+
+    @patch("openfactory.models.containers.DockerContainer.add_file")
+    def test_create_container(self, mock_add_file, *args):
+        """
+        Test creation of Docker container for agent
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=6000)
+        node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        agent.node = node
+        self.session.add_all([agent])
+        self.session.commit()
+
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        # check if created correctly container
+        cont = agent.agent_container
+        self.assertEqual(cont.image, config.MTCONNECT_AGENT_IMAGE)
+        self.assertEqual(cont.name, 'test-agent')
+        self.assertEqual(cont.command, 'mtcagent run agent.cfg')
+        self.assertEqual(cont.cpus, 1)
+        self.assertEqual(cont.node, node)
+        self.assertEqual(cont.ports[0].container_port, '5000/tcp')
+        self.assertEqual(cont.ports[0].host_port, 6000)
+
+        # check container environment variables
+        self.assertEqual(list(filter(lambda var: var.variable == 'MTC_AGENT_UUID', cont.environment))[0].value,
+                         'TEST-AGENT')
+        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_UUID', cont.environment))[0].value,
+                         'TEST')
+        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_IP', cont.environment))[0].value,
+                         '123.456.7.500')
+        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_PORT', cont.environment))[0].value,
+                         '7878')
+
+        # check files are added to container
+        calls = mock_add_file.call_args_list
+        self.assertTrue(call(device_file, '/home/agent/device.xml') in calls)
+        self.assertTrue(call(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg') in calls)
+
+        # clean-up
+        self.session.delete(agent)
+        self.session.delete(node)
         self.session.commit()

@@ -6,12 +6,14 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
+import openfactory.config as config
 from .base import Base
-from .containers import DockerContainer
+from .containers import DockerContainer, EnvVar, Port
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .node import Node
@@ -86,11 +88,38 @@ class Agent(Base):
 
     @hybrid_property
     def attached(self):
-        """ kafka producer attached or not """
+        """ Kafka producer attached or not """
         if self.producer_container:
             return "yes"
         else:
             return "no"
+
+    def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
+        """ Create Docker container for agent """
+        container = DockerContainer(
+            node_id=self.node_id,
+            node=self.node,
+            image=config.MTCONNECT_AGENT_IMAGE,
+            name=self.device_uuid.lower() + '-agent',
+            ports=[
+                Port(container_port='5000/tcp', host_port=self.agent_port)
+            ],
+            environment=[
+                EnvVar(variable='MTC_AGENT_UUID', value=self.uuid.upper()),
+                EnvVar(variable='ADAPTER_UUID', value=self.device_uuid.upper()),
+                EnvVar(variable='ADAPTER_IP', value=adapter_ip),
+                EnvVar(variable='ADAPTER_PORT', value=adapter_port),
+                EnvVar(variable='DOCKER_GATEWAY', value='172.18.0.1')
+            ],
+            command='mtcagent run agent.cfg',
+            cpus=cpus
+        )
+        session = Session.object_session(self)
+        session.add_all([container])
+        self.agent_container = container
+        session.commit()
+        container.add_file(mtc_device_file, '/home/agent/device.xml')
+        container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
 
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"
