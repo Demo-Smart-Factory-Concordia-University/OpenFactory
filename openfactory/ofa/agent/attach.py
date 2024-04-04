@@ -36,9 +36,22 @@ def attach(agent_uuid, cpus=0, user_notification=print):
                                       FROM devices_stream
                                       WHERE device_uuid = '{agent.device_uuid}'
                                       GROUP BY id;""")
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.uuid.upper().replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{agent.uuid}'
+                                      GROUP BY id;""")
+        producer_uuid = agent.uuid.upper().replace('-AGENT', '-PRODUCER')
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {producer_uuid.replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{producer_uuid}'
+                                      GROUP BY id;""")
     except HTTPError:
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
-    user_notification(f"Created KSQLdb table {agent.device_uuid.replace('-', '_')}")
+    user_notification(f"Created KSQLdb tables {agent.device_uuid.replace('-', '_')}, {agent.uuid.upper().replace('-', '_')} and {producer_uuid.replace('-', '_')}")
 
     # pull Docker image of producer
     try:
@@ -57,7 +70,7 @@ def attach(agent_uuid, cpus=0, user_notification=print):
         name=agent_uuid.lower().replace("-agent", "-producer"),
         environment=[
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
-            EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.uuid.upper().replace('-AGENT', '-PRODUCER')),
+            EnvVar(variable='KAFKA_PRODUCER_UUID', value=producer_uuid),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
         ],
         cpus=cpus

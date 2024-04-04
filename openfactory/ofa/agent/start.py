@@ -11,7 +11,7 @@ def start(agent):
         return
     agent.agent_container.start()
     if agent.producer_container:
-        agent.producer_container.start()    
+        agent.producer_container.start()
     print("Started", agent.uuid)
 
 
