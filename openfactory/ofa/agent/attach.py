@@ -1,31 +1,25 @@
 import click
 import docker
-from sqlalchemy import create_engine
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from pyksql.ksql import KSQL
 from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import PendingRollbackError
 from openfactory.exceptions import DockerComposeException
 import openfactory.config as config
+from openfactory.ofa.db import db
 from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar
 
 
-def attach(agent_uuid, cpus=0, user_notification=print):
+def attach(agent, cpus=0, user_notification=print):
     """ Attach a Kafka producer to an MTConnect agent """
 
-    db_engine = create_engine(config.SQL_ALCHEMY_CONN)
-    session = Session(db_engine)
-    query = select(Agent).where(Agent.uuid == agent_uuid)
-    agent = session.execute(query).one_or_none()
-    if agent is None:
-        raise OFAException(f"No agent {agent_uuid} in OpenFactory database")
-    agent = agent[0]
     if agent.agent_container is None:
-        raise OFAException(f"Agent {agent_uuid} has no existing container")
+        raise OFAException(f"Agent {agent.uuid} has no existing container")
+    session = Session.object_session(agent)
 
     # Create ksqlDB table for device handeld by the agent
     ksql = KSQL(config.KSQLDB)
@@ -51,7 +45,9 @@ def attach(agent_uuid, cpus=0, user_notification=print):
                                       GROUP BY id;""")
     except HTTPError:
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
-    user_notification(f"Created KSQLdb tables {agent.device_uuid.replace('-', '_')}, {agent.uuid.upper().replace('-', '_')} and {producer_uuid.replace('-', '_')}")
+    user_notification((f"Created KSQLdb tables {agent.device_uuid.replace('-', '_')}, "
+                       f"{agent.uuid.upper().replace('-', '_')} and "
+                       f"{producer_uuid.replace('-', '_')}"))
 
     # pull Docker image of producer
     try:
@@ -67,7 +63,7 @@ def attach(agent_uuid, cpus=0, user_notification=print):
         node_id=agent.node.id,
         node=agent.node,
         image=config.MTCONNECT_PRODUCER_IMAGE,
-        name=agent_uuid.lower().replace("-agent", "-producer"),
+        name=agent.uuid.lower().replace("-agent", "-producer"),
         environment=[
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
             EnvVar(variable='KAFKA_PRODUCER_UUID', value=producer_uuid),
@@ -81,16 +77,21 @@ def attach(agent_uuid, cpus=0, user_notification=print):
         session.commit()
     except (DockerComposeException, PendingRollbackError, SSHException) as err:
         session.rollback()
-        raise OFAException(f'Producer for agent {agent_uuid} could not be created. Error was: {err}')
-    user_notification(f'Producer for agent {agent_uuid} created successfully')
+        raise OFAException(f'Producer for agent {agent.uuid} could not be created. Error was: {err}')
+    user_notification(f'Producer for agent {agent.uuid} created successfully')
 
     # Start prodcuer
     container.start()
-    user_notification(f'Producer for agent {agent_uuid} started successfully')
+    user_notification(f'Producer for agent {agent.uuid} started successfully')
 
 
 @click.command(name='attach')
 @click.argument('agent_uuid', nargs=1)
 def click_attach(agent_uuid):
     """ Attach a Kafka producer to an MTConnect agent """
-    attach(agent_uuid)
+    query = select(Agent).where(Agent.uuid == agent_uuid)
+    agent = db.session.execute(query).one_or_none()
+    if agent is None:
+        print(f'No Agent {agent_uuid} defined in OpenFactory')
+    else:
+        attach(agent[0])
