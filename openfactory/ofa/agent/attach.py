@@ -36,18 +36,17 @@ def attach(agent, cpus=0, user_notification=print):
                                       FROM devices_stream
                                       WHERE device_uuid = '{agent.uuid}'
                                       GROUP BY id;""")
-        producer_uuid = agent.uuid.upper().replace('-AGENT', '-PRODUCER')
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {producer_uuid.replace('-', '_')} AS
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.producer_uuid.replace('-', '_')} AS
                                       SELECT id,
                                              LATEST_BY_OFFSET(value) AS value
                                       FROM devices_stream
-                                      WHERE device_uuid = '{producer_uuid}'
+                                      WHERE device_uuid = '{agent.producer_uuid}'
                                       GROUP BY id;""")
     except HTTPError:
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
-    user_notification((f"Created KSQLdb tables {agent.device_uuid.replace('-', '_')}, "
+    user_notification((f"KSQLdb tables {agent.device_uuid.replace('-', '_')}, "
                        f"{agent.uuid.upper().replace('-', '_')} and "
-                       f"{producer_uuid.replace('-', '_')}"))
+                       f"{agent.producer_uuid.replace('-', '_')} created successfully"))
 
     # pull Docker image of producer
     try:
@@ -66,7 +65,7 @@ def attach(agent, cpus=0, user_notification=print):
         name=agent.uuid.lower().replace("-agent", "-producer"),
         environment=[
             EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
-            EnvVar(variable='KAFKA_PRODUCER_UUID', value=producer_uuid),
+            EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.producer_uuid),
             EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
         ],
         cpus=cpus
@@ -77,12 +76,12 @@ def attach(agent, cpus=0, user_notification=print):
         session.commit()
     except (DockerComposeException, PendingRollbackError, SSHException) as err:
         session.rollback()
-        raise OFAException(f'Producer for agent {agent.device_uuid} could not be created. Error was: {err}')
-    user_notification(f'Producer for {agent.device_uuid} created successfully')
+        raise OFAException(f'Kafka producer for agent {agent.device_uuid} could not be created. Error was: {err}')
+    user_notification(f'Kafka producer {agent.producer_uuid} created successfully')
 
     # Start prodcuer
     container.start()
-    user_notification(f'Producer for {agent.device_uuid} started successfully')
+    user_notification(f'Kafka producer {agent.producer_uuid} started successfully')
 
 
 @click.command(name='attach')

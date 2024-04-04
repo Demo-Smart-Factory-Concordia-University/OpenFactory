@@ -113,3 +113,18 @@ class TestAgent(TestCase):
         # clean-up
         self.session.delete(agent)
         self.session.commit()
+
+    def test_producer_uuid(self, *args):
+        """
+        Test hybride property 'producer_uuid' of an Agent
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=5000)
+        self.session.add_all([agent])
+        self.session.commit()
+
+        self.assertEqual(agent.producer_uuid, 'TEST-PRODUCER')
+
+        # clean-up
+        self.session.delete(agent)
+        self.session.commit()

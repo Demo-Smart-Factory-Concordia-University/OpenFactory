@@ -64,6 +64,11 @@ class Agent(Base):
         return self.uuid.upper().replace('-AGENT', '')
 
     @hybrid_property
+    def producer_uuid(self):
+        """ Kafka producer UUID for the agent """
+        return self.uuid.upper().replace('-AGENT', '-PRODUCER')
+
+    @hybrid_property
     def container(self):
         """ Container of agent """
         if self.external:
