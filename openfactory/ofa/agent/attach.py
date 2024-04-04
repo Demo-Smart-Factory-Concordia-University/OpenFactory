@@ -1,5 +1,4 @@
 import click
-import docker
 from sqlalchemy import select
 from pyksql.ksql import KSQL
 from httpx import HTTPError
@@ -48,15 +47,6 @@ def attach(agent, cpus=0, user_notification=print):
                        f"{agent.uuid.upper().replace('-', '_')} and "
                        f"{agent.producer_uuid.replace('-', '_')} created successfully"))
 
-    # pull Docker image of producer
-    try:
-        client = docker.DockerClient(base_url=agent.node.docker_url)
-        client.images.pull(config.MTCONNECT_PRODUCER_IMAGE)
-        client.close()
-    except (DockerComposeException, PendingRollbackError, SSHException) as err:
-        session.rollback()
-        raise OFAException(f'Docker image {config.MTCONNECT_PRODUCER_IMAGE} could not be pulled. Error was: {err}')
-
     # create producer
     container = DockerContainer(
         node_id=agent.node.id,
@@ -79,7 +69,7 @@ def attach(agent, cpus=0, user_notification=print):
         raise OFAException(f'Kafka producer for agent {agent.device_uuid} could not be created. Error was: {err}')
     user_notification(f'Kafka producer {agent.producer_uuid} created successfully')
 
-    # Start prodcuer
+    # Start producer
     container.start()
     user_notification(f'Kafka producer {agent.producer_uuid} started successfully')
 
