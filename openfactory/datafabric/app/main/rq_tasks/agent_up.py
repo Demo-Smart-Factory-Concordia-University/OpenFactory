@@ -21,8 +21,6 @@ def agent_up(agent, container, mtc_file, producer_cpus):
 
     # Deploy Agent and container
     try:
-        client = docker.DockerClient(base_url=container.node.docker_url)
-        client.images.pull(config.MTCONNECT_AGENT_IMAGE)
         db.session.add_all([container, agent])
         db.session.commit()
         container.add_file(mtc_file, '/home/agent/device.xml')
