@@ -1,4 +1,3 @@
-import docker
 from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -83,9 +82,10 @@ class Agent(Base):
         """ Status of agent """
         if self.external:
             return "TO BE DONE"
-        client = docker.DockerClient(base_url=self.agent_container.docker_url)
-        container = client.containers.get(self.uuid.lower())
-        return container.attrs['State']['Status']
+        if self.agent_container:
+            return self.agent_container.status
+        else:
+            return "No container"
 
     @hybrid_property
     def attached(self):

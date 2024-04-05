@@ -182,6 +182,60 @@ class TestAgent(TestCase):
         self.session.delete(node)
         self.session.commit()
 
+    def test_container(self, *args):
+        """
+        Test hybrid_property 'container'
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=6000)
+        node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        agent.node = node
+        self.session.add_all([agent])
+        self.session.commit()
+
+        # check container property
+        self.assertEqual(agent.container, 'test-agent')
+
+        # clean-up
+        self.session.delete(agent)
+        self.session.delete(node)
+        self.session.commit()
+
+    def test_status(self, *args):
+        """
+        Test hybrid_property 'status'
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=6000)
+        node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        agent.node = node
+        self.session.add_all([agent])
+        self.session.commit()
+
+        # check container satus
+        self.assertEqual(agent.status, 'No container')
+
+        # create container
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        # check container satus
+        self.assertEqual(agent.status, 'running')
+
+        # clean-up
+        self.session.delete(agent)
+        self.session.delete(node)
+        self.session.commit()
+
     def test_create_producer(self, *args):
         """
         Test creation of Kafka producer for agent
