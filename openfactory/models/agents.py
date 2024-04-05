@@ -144,5 +144,24 @@ class Agent(Base):
                                       WHERE device_uuid = '{self.producer_uuid}'
                                       GROUP BY id;""")
 
+    def create_producer(self, cpus=0):
+        """ Create Kafka producer for agent """
+        container = DockerContainer(
+            node_id=self.node.id,
+            node=self.node,
+            image=config.MTCONNECT_PRODUCER_IMAGE,
+            name=self.uuid.lower().replace("-agent", "-producer"),
+            environment=[
+                EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
+                EnvVar(variable='KAFKA_PRODUCER_UUID', value=self.producer_uuid),
+                EnvVar(variable='MTC_AGENT', value=f"{self.agent_container.name}:5000"),
+            ],
+            cpus=cpus
+        )
+        session = Session.object_session(self)
+        session.add_all([container])
+        self.producer_container = container
+        session.commit()
+
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"

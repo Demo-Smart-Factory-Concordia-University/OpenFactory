@@ -9,7 +9,6 @@ import openfactory.config as config
 from openfactory.ofa.db import db
 from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer, EnvVar
 
 
 def attach(agent, cpus=0, user_notification=print):
@@ -19,7 +18,7 @@ def attach(agent, cpus=0, user_notification=print):
         raise OFAException(f"Agent {agent.uuid} has no existing container")
     session = Session.object_session(agent)
 
-    # Create ksqlDB table for device handeld by the agent
+    # Create ksqlDB table for agent
     try:
         agent.create_ksqldb_tables()
     except HTTPError:
@@ -29,29 +28,15 @@ def attach(agent, cpus=0, user_notification=print):
                        f"{agent.producer_uuid.replace('-', '_')} created successfully"))
 
     # create producer
-    container = DockerContainer(
-        node_id=agent.node.id,
-        node=agent.node,
-        image=config.MTCONNECT_PRODUCER_IMAGE,
-        name=agent.uuid.lower().replace("-agent", "-producer"),
-        environment=[
-            EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
-            EnvVar(variable='KAFKA_PRODUCER_UUID', value=agent.producer_uuid),
-            EnvVar(variable='MTC_AGENT', value=f"{agent.agent_url}:{agent.agent_port}"),
-        ],
-        cpus=cpus
-    )
-    agent.producer_container = container
     try:
-        session.add_all([container])
-        session.commit()
+        agent.create_producer(cpus)
     except (DockerComposeException, PendingRollbackError, SSHException) as err:
         session.rollback()
         raise OFAException(f'Kafka producer for agent {agent.device_uuid} could not be created. Error was: {err}')
     user_notification(f'Kafka producer {agent.producer_uuid} created successfully')
 
     # Start producer
-    container.start()
+    agent.producer_container.start()
     user_notification(f'Kafka producer {agent.producer_uuid} started successfully')
 
 
