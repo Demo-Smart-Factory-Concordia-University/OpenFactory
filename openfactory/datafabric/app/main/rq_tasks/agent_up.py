@@ -49,7 +49,7 @@ def agent_up(agent, container, mtc_file, producer_cpus):
 
     # create and start producer
     try:
-        ofa.agent.attach(agent.uuid,
+        ofa.agent.attach(agent,
                          producer_cpus,
                          user_notification=lambda msg: current_user.send_notification(msg, 'info'))
     except OFAException as err:
