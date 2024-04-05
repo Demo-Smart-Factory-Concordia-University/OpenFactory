@@ -251,3 +251,33 @@ class TestAgent(TestCase):
         # clean-up
         self.session.delete(node)
         self.session.commit()
+
+    def test_producer_removed(self, *args):
+        """
+        Test if Kafka producer of agent is removed when agent removed
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=6000)
+        node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        agent.node = node
+        self.session.add_all([agent])
+        self.session.commit()
+
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+        self.session.delete(agent)
+
+        # check Kafka producer is removed
+        query = select(DockerContainer).where(DockerContainer.name == "test-producer")
+        cont = self.session.execute(query).first()
+        self.assertEqual(cont, None)
+
+        # clean-up
+        self.session.delete(node)
+        self.session.commit()
