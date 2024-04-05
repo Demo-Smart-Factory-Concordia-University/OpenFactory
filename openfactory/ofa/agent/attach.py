@@ -1,6 +1,5 @@
 import click
 from sqlalchemy import select
-from pyksql.ksql import KSQL
 from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
 from sqlalchemy.orm import Session
@@ -21,26 +20,8 @@ def attach(agent, cpus=0, user_notification=print):
     session = Session.object_session(agent)
 
     # Create ksqlDB table for device handeld by the agent
-    ksql = KSQL(config.KSQLDB)
     try:
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.device_uuid.replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{agent.device_uuid}'
-                                      GROUP BY id;""")
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.uuid.upper().replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{agent.uuid}'
-                                      GROUP BY id;""")
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {agent.producer_uuid.replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{agent.producer_uuid}'
-                                      GROUP BY id;""")
+        agent.create_ksqldb_tables()
     except HTTPError:
         raise OFAException(f"Could not connect to KSQLdb {config.KSQLDB}")
     user_notification((f"KSQLdb tables {agent.device_uuid.replace('-', '_')}, "

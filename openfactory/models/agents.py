@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from pyksql.ksql import KSQL
 
 import openfactory.config as config
 from .base import Base
@@ -120,6 +121,28 @@ class Agent(Base):
         session.commit()
         container.add_file(mtc_device_file, '/home/agent/device.xml')
         container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
+
+    def create_ksqldb_tables(self):
+        """ Create ksqlDB tables related to the agent """
+        ksql = KSQL(config.KSQLDB)
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.device_uuid.replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{self.device_uuid}'
+                                      GROUP BY id;""")
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.uuid.upper().replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{self.uuid}'
+                                      GROUP BY id;""")
+        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.producer_uuid.replace('-', '_')} AS
+                                      SELECT id,
+                                             LATEST_BY_OFFSET(value) AS value
+                                      FROM devices_stream
+                                      WHERE device_uuid = '{self.producer_uuid}'
+                                      GROUP BY id;""")
 
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"
