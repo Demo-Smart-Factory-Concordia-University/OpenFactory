@@ -74,8 +74,7 @@ class Test_ofa_agent_start(TestCase):
             db.session.delete(manager[0])
             db.session.commit()
 
-    @patch("openfactory.models.containers.DockerContainer.start")
-    def test_start(self, mock_start, *args):
+    def test_start(self, *args):
         """
         Test if Docker container is started
         """
@@ -83,17 +82,17 @@ class Test_ofa_agent_start(TestCase):
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
+        agent1.agent_container.start = Mock()
 
         ofa.agent.start(agent1)
 
         # check agent Docker container was started
-        mock_start.assert_called_once()
+        agent1.agent_container.start.assert_called_once()
 
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.containers.DockerContainer.start")
-    def test_start_with_producer(self, mock_start, *args):
+    def test_start_with_producer(self, *args):
         """
         Test if Docker container is started
         """
@@ -102,11 +101,14 @@ class Test_ofa_agent_start(TestCase):
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.create_producer()
+        agent1.agent_container.start = Mock()
+        agent1.producer_container.start = Mock()
 
         ofa.agent.start(agent1)
 
         # check agent Docker container and producer was started
-        self.assertEqual(mock_start.call_count, 2)
+        agent1.agent_container.start.assert_called_once()
+        agent1.producer_container.start.assert_called_once()
 
         # clean up
         self.cleanup()
