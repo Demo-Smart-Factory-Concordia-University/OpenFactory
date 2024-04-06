@@ -21,7 +21,7 @@ class Test_ofa_agent_detach(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """ setup in memory sqlite db """
+        """ Setup in memory sqlite db """
         print("Setting up in memory sqlite db")
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
@@ -35,7 +35,7 @@ class Test_ofa_agent_detach(TestCase):
 
     @classmethod
     def tearDown(self):
-        """ rollback all transactions """
+        """ Rollback all transactions """
         db.session.rollback()
 
     def setup_infrastructure(self, *args):
@@ -59,7 +59,7 @@ class Test_ofa_agent_detach(TestCase):
 
     def cleanup(self, *args):
         """
-        Clean up all stacks and nodes
+        Clean up all agents and nodes
         """
         # remove agents
         for agent in db.session.scalars(select(Agent)):
