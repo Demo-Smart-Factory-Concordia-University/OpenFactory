@@ -16,6 +16,10 @@ Install the various required libraries:
 (testenv) pip install pytest
 ```
 
+## Required environment variables
+To run the unit tests the following environment variables must be set:
+- MTCONNECT_AGENT_CFG_FILE: full path of the MTConnect-Agent configuration file (a sample is [openfactory/ofa/agent/configs/agent.cfg](openfactory/ofa/agent/configs/agent.cfg))
+
 ## Run unit tests
 To run all unit tests in the `tests` folder, run in the project folder (make sure your test environment is activated):
 ```
