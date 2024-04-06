@@ -9,12 +9,11 @@ def start(agent, user_notification=print):
     if agent.external:
         user_notification("This is an external agent. It cannot be started by OpenFactory")
         return
-    agent_uuid = agent.uuid
     if agent.producer_container:
         agent.producer_container.start()
-        user_notification(f"Producer {agent_uuid.replace('-agent', '-producer')} started successfully")
+        user_notification(f"Producer {agent.producer_uuid} started successfully")
     agent.agent_container.start()
-    user_notification(f"Agent {agent_uuid} started successfully")
+    user_notification(f"Agent {agent.uuid} started successfully")
 
 
 @click.command(name='start')
