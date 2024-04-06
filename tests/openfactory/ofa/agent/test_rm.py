@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 from sqlalchemy import select
 
 import tests.mocks as mock
@@ -115,18 +115,24 @@ class Test_ofa_agent_rm(TestCase):
         """
         Test if producer of agent is removed
         """
+        mock_notification = Mock()
         node, agent1, agent2 = self.setup_infrastructure()
-
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.create_producer()
-        ofa.agent.rm(agent1)
+
+        ofa.agent.rm(agent1, user_notification=mock_notification)
 
         # check producer was removed
         query = select(DockerContainer).where(DockerContainer.name == "test1-producer")
         cont = db.session.execute(query).first()
         self.assertEqual(cont, None)
+
+        # check if user_notification called
+        calls = mock_notification.call_args_list
+        self.assertEqual(calls[0], call('TEST1-PRODUCER removed successfully'))
+        self.assertEqual(calls[1], call('TEST1-AGENT removed successfully'))
 
         # clean up
         self.cleanup()
