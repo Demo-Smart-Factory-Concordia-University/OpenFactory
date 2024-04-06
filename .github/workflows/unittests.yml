@@ -3,7 +3,7 @@ name: Unit tests
 on: [workflow_dispatch]
 
 env:
-  MTCONNECT_AGENT_CFG_FILE: OpenFactory/openfactory/ofa/agent/configs/agent.cfg
+  MTCONNECT_AGENT_CFG_FILE: openfactory/ofa/agent/configs/agent.cfg
 
 jobs:
   build:
