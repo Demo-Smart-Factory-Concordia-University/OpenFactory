@@ -106,6 +106,12 @@ class Agent(Base):
         self.agent_container.start()
         user_notification(f"Agent {self.uuid} started successfully")
 
+    def detach(self, user_notification=print):
+        """ Detach agent by removing producer """
+        self.producer_container = None
+        Session.object_session(self).commit()
+        user_notification(f"{self.producer_uuid} removed successfully")
+
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
         container = DockerContainer(

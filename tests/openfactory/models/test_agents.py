@@ -207,6 +207,47 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
+    def test_detach(self, *args):
+        """
+        Test if producer is removed
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+        agent.detach()
+
+        # check producer was removed
+        self.assertEqual(agent.producer_container, None)
+        query = select(DockerContainer).where(DockerContainer.name == agent.producer_uuid)
+        cont = db.session.execute(query).first()
+        self.assertEqual(cont, None)
+
+        # check detach can be used even if no producer is present
+        agent.detach()
+
+        # clean up
+        self.cleanup()
+
+    def test_detach_user_notification(self, *args):
+        """
+        Test if user_notification called correctly in detach method
+        """
+        user_notification = Mock()
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+        agent.detach(user_notification=user_notification)
+
+        # check if user_notification called
+        user_notification.assert_called_once_with('TEST-PRODUCER removed successfully')
+
+        # clean up
+        self.cleanup()
+
     @patch("openfactory.models.containers.DockerContainer.add_file")
     def test_create_container(self, mock_add_file, *args):
         """
