@@ -2,7 +2,6 @@ import click
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import openfactory.ofa as ofa
 from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
