@@ -1,9 +1,7 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, call
-from sqlalchemy import create_engine
+from unittest.mock import patch, call, Mock
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 import openfactory.config as config
@@ -38,13 +36,12 @@ class TestAgent(TestCase):
     def tearDown(self):
         """ Rollback all transactions """
         db.session.rollback()
-        self.cleanup()
 
     def setup_agent(self, *args):
         """
         Setup an agent
         """
-        agent = Agent(uuid='test-agent',
+        agent = Agent(uuid='TEST-AGENT',
                       agent_port=5000)
         node = Node(
             node_name='manager',
@@ -92,9 +89,9 @@ class TestAgent(TestCase):
         """
         self.setup_agent()
 
-        query = select(Agent).where(Agent.uuid == "test-agent")
+        query = select(Agent).where(Agent.uuid == "TEST-AGENT")
         agent = db.session.execute(query).first()
-        self.assertEqual(agent[0].uuid, 'test-agent')
+        self.assertEqual(agent[0].uuid, 'TEST-AGENT')
         self.assertEqual(agent[0].agent_port, 5000)
         self.assertEqual(agent[0].external, False)
 
@@ -143,6 +140,71 @@ class TestAgent(TestCase):
         self.assertEqual(agent.producer_uuid, 'TEST-PRODUCER')
 
         # clean-up
+        self.cleanup()
+
+    def test_start(self, *args):
+        """
+        Test if Docker container is started
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.agent_container.start = Mock()
+        agent.start()
+
+        # check agent Docker container was started
+        agent.agent_container.start.assert_called_once()
+
+        # clean up
+        self.cleanup()
+
+    def test_start_with_producer(self, *args):
+        """
+        Test if Docker container is started
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+        agent.agent_container.start = Mock()
+        agent.producer_container.start = Mock()
+
+        agent.start()
+
+        # check agent Docker container and producer was started
+        agent.agent_container.start.assert_called_once()
+        agent.producer_container.start.assert_called_once()
+
+        # clean up
+        self.cleanup()
+
+    def test_start_user_notification(self, *args):
+        """
+        Test if user_notification called correctly in start method
+        """
+        mock_notification = Mock()
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.start(user_notification=mock_notification)
+
+        # check if user_notification called
+        mock_notification.assert_called_once_with('Agent TEST-AGENT started successfully')
+
+        # add producer
+        agent.create_producer()
+        mock_notification.reset_mock()
+        agent.start(user_notification=mock_notification)
+
+        # check if user_notification called
+        calls = mock_notification.call_args_list
+        self.assertEqual(calls[0], call('Producer TEST-PRODUCER started successfully'))
+        self.assertEqual(calls[1], call('Agent TEST-AGENT started successfully'))
+
+        # clean up
         self.cleanup()
 
     @patch("openfactory.models.containers.DockerContainer.add_file")

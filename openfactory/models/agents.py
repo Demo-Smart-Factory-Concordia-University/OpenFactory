@@ -95,6 +95,17 @@ class Agent(Base):
         else:
             return "no"
 
+    def start(self, user_notification=print):
+        """ Start agent """
+        if self.external:
+            user_notification("This is an external agent. It cannot be started by OpenFactory")
+            return
+        if self.producer_container:
+            self.producer_container.start()
+            user_notification(f"Producer {self.producer_uuid} started successfully")
+        self.agent_container.start()
+        user_notification(f"Agent {self.uuid} started successfully")
+
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
         container = DockerContainer(
