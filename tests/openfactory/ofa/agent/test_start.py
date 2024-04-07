@@ -1,6 +1,7 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock
+from click.testing import CliRunner
 from sqlalchemy import select
 
 import tests.mocks as mock
@@ -15,7 +16,7 @@ from openfactory.models.agents import Agent
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_ofa_agent_start(TestCase):
     """
-    Unit tests for ofa.agent.start function
+    Unit tests for ofa.agent.click_start
     """
 
     @classmethod
@@ -84,7 +85,9 @@ class Test_ofa_agent_start(TestCase):
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.agent_container.start = Mock()
 
-        ofa.agent.start(agent1)
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_start, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check agent Docker container was started
         agent1.agent_container.start.assert_called_once()
@@ -104,7 +107,9 @@ class Test_ofa_agent_start(TestCase):
         agent1.agent_container.start = Mock()
         agent1.producer_container.start = Mock()
 
-        ofa.agent.start(agent1)
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_start, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check agent Docker container and producer was started
         agent1.agent_container.start.assert_called_once()
@@ -113,30 +118,12 @@ class Test_ofa_agent_start(TestCase):
         # clean up
         self.cleanup()
 
-    def test_user_notification(self, *args):
+    def test_start_with_wrong_agent_uuid(self, *args):
         """
-        Test if user_notification called correctly
+        Test error message in case of wrong agent_uuid
         """
-        mock_notification = Mock()
-        node, agent1, agent2 = self.setup_infrastructure()
-
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        ofa.agent.start(agent1, user_notification=mock_notification)
-
-        # check if user_notification called
-        mock_notification.assert_called_once_with('Agent TEST1-AGENT started successfully')
-
-        # add producer
-        agent1.create_producer()
-        mock_notification.reset_mock()
-        ofa.agent.start(agent1, user_notification=mock_notification)
-
-        # check if user_notification called
-        calls = mock_notification.call_args_list
-        self.assertEqual(calls[0], call('Producer TEST1-PRODUCER started successfully'))
-        self.assertEqual(calls[1], call('Agent TEST1-AGENT started successfully'))
-
-        # clean up
-        self.cleanup()
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_start, ['none-existing-agent'])
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output,
+                         'No Agent none-existing-agent defined in OpenFactory\n')
