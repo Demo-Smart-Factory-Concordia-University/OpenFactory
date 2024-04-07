@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 import openfactory.config as config
+from openfactory.ofa.db import db
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
@@ -22,21 +23,56 @@ class TestAgent(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """ setup in memory sqlite db """
+        """ Setup in memory sqlite db """
         print("Setting up in memory sqlite db")
-        cls.db_engine = create_engine('sqlite:///:memory:')
-        Base.metadata.drop_all(cls.db_engine)
-        Base.metadata.create_all(cls.db_engine)
+        db.conn_uri = 'sqlite:///:memory:'
+        db.connect()
+        Base.metadata.create_all(db.engine)
 
     @classmethod
     def tearDownClass(cls):
         print("\nTear down in memory sqlite db")
-        Base.metadata.drop_all(cls.db_engine)
+        Base.metadata.drop_all(db.engine)
+        db.session.close()
 
-    @classmethod
-    def setUp(self):
-        """ Start a new session """
-        self.session = Session(self.db_engine)
+    def tearDown(self):
+        """ Rollback all transactions """
+        db.session.rollback()
+        self.cleanup()
+
+    def setup_agent(self, *args):
+        """
+        Setup an agent
+        """
+        agent = Agent(uuid='test-agent',
+                      agent_port=5000)
+        node = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        agent.node = node
+        db.session.add_all([node, agent])
+        db.session.commit()
+        return agent
+
+    def cleanup(self, *args):
+        """
+        Clean up all agents and nodes
+        """
+        # remove agents
+        for agent in db.session.scalars(select(Agent)):
+            db.session.delete(agent)
+        # remove nodes
+        for node in db.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                db.session.delete(node)
+        # remove manager
+        query = select(Node).where(Node.node_name == "manager")
+        manager = db.session.execute(query).first()
+        if manager:
+            db.session.delete(manager[0])
+        db.session.commit()
 
     def test_class_parent(self, *args):
         """
@@ -54,20 +90,16 @@ class TestAgent(TestCase):
         """
         Test setup and tear down of an Agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=5000)
-        self.session.add_all([agent])
-        self.session.commit()
+        self.setup_agent()
 
         query = select(Agent).where(Agent.uuid == "test-agent")
-        agent = self.session.execute(query).first()
+        agent = db.session.execute(query).first()
         self.assertEqual(agent[0].uuid, 'test-agent')
         self.assertEqual(agent[0].agent_port, 5000)
         self.assertEqual(agent[0].external, False)
 
         # clean-up
-        self.session.delete(agent[0])
-        self.session.commit()
+        self.cleanup()
 
     def test_agent_uuid_unique(self, *args):
         """
@@ -77,77 +109,48 @@ class TestAgent(TestCase):
                        agent_port=5000)
         agent2 = Agent(uuid='test-agent',
                        agent_port=6000)
-        self.session.add_all([agent1, agent2])
-        self.assertRaises(IntegrityError, self.session.commit)
+        db.session.add_all([agent1, agent2])
+        self.assertRaises(IntegrityError, db.session.commit)
 
     def test_agent_url(self, *args):
         """
         Test hybride property 'agent_url' of an Agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=5000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([node, agent])
-        self.session.commit()
+        agent = self.setup_agent()
 
         self.assertEqual(agent.agent_url, '123.456.7.891')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_device_uuid(self, *args):
         """
         Test hybride property 'device_uuid' of an Agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=5000)
-        self.session.add_all([agent])
-        self.session.commit()
+        agent = self.setup_agent()
 
         self.assertEqual(agent.device_uuid, 'TEST')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.commit()
+        self.cleanup()
 
     def test_producer_uuid(self, *args):
         """
         Test hybride property 'producer_uuid' of an Agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=5000)
-        self.session.add_all([agent])
-        self.session.commit()
+        agent = self.setup_agent()
 
         self.assertEqual(agent.producer_uuid, 'TEST-PRODUCER')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.commit()
+        self.cleanup()
 
     @patch("openfactory.models.containers.DockerContainer.add_file")
     def test_create_container(self, mock_add_file, *args):
         """
         Test creation of Docker container for agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
-
+        agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
@@ -158,9 +161,9 @@ class TestAgent(TestCase):
         self.assertEqual(cont.name, 'test-agent')
         self.assertEqual(cont.command, 'mtcagent run agent.cfg')
         self.assertEqual(cont.cpus, 1)
-        self.assertEqual(cont.node, node)
+        self.assertEqual(cont.node, agent.node)
         self.assertEqual(cont.ports[0].container_port, '5000/tcp')
-        self.assertEqual(cont.ports[0].host_port, 6000)
+        self.assertEqual(cont.ports[0].host_port, 5000)
 
         # check container environment variables
         self.assertEqual(list(filter(lambda var: var.variable == 'MTC_AGENT_UUID', cont.environment))[0].value,
@@ -178,47 +181,25 @@ class TestAgent(TestCase):
         self.assertTrue(call(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg') in calls)
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_container(self, *args):
         """
         Test hybrid_property 'container'
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
+        agent = self.setup_agent()
 
         # check container property
         self.assertEqual(agent.container, 'test-agent')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_status(self, *args):
         """
         Test hybrid_property 'status'
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
+        agent = self.setup_agent()
 
         # check container satus
         self.assertEqual(agent.status, 'No container')
@@ -232,25 +213,13 @@ class TestAgent(TestCase):
         self.assertEqual(agent.status, 'running')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_create_producer(self, *args):
         """
         Test creation of Kafka producer for agent
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
-
+        agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
@@ -261,7 +230,7 @@ class TestAgent(TestCase):
         self.assertEqual(cont.image, config.MTCONNECT_PRODUCER_IMAGE)
         self.assertEqual(cont.name, 'test-producer')
         self.assertEqual(cont.cpus, 2)
-        self.assertEqual(cont.node, node)
+        self.assertEqual(cont.node, agent.node)
         self.assertEqual(cont.ports, [])
 
         # check container environment variables
@@ -273,25 +242,13 @@ class TestAgent(TestCase):
                          'test-agent:5000')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_attached(self, *args):
         """
         Test hybrid_property 'attached'
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
-
+        agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
@@ -306,65 +263,41 @@ class TestAgent(TestCase):
         self.assertEqual(agent.attached, 'yes')
 
         # clean-up
-        self.session.delete(agent)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_container_removed(self, *args):
         """
         Test if Docker container of agent is removed when agent removed
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
-
+        agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
-        self.session.delete(agent)
+        db.session.delete(agent)
 
         # check agent container is removed
         query = select(DockerContainer).where(DockerContainer.name == "test-agent")
-        cont = self.session.execute(query).first()
+        cont = db.session.execute(query).first()
         self.assertEqual(cont, None)
 
         # clean-up
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_producer_removed(self, *args):
         """
         Test if Kafka producer of agent is removed when agent removed
         """
-        agent = Agent(uuid='test-agent',
-                      agent_port=6000)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        self.session.add_all([agent])
-        self.session.commit()
-
+        agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
         agent.create_producer()
-        self.session.delete(agent)
+        db.session.delete(agent)
 
         # check Kafka producer is removed
         query = select(DockerContainer).where(DockerContainer.name == "test-producer")
-        cont = self.session.execute(query).first()
+        cont = db.session.execute(query).first()
         self.assertEqual(cont, None)
 
         # clean-up
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
