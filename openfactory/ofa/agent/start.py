@@ -12,5 +12,6 @@ def click_start(agent_uuid):
     agent = db.session.execute(query).one_or_none()
     if agent is None:
         click.echo(f'No Agent {agent_uuid} defined in OpenFactory')
+        exit(1)
     else:
         agent[0].start()

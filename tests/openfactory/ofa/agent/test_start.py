@@ -124,6 +124,6 @@ class Test_ofa_agent_start(TestCase):
         """
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_start, ['none-existing-agent'])
-        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.exit_code, 1)
         self.assertEqual(result.output,
                          'No Agent none-existing-agent defined in OpenFactory\n')
