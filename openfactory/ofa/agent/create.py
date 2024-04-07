@@ -76,7 +76,7 @@ def create_from_config_file(yaml_config_file, run=False, attach=False):
         print(f"Agent {agent.uuid} created successfully")
 
         if run:
-            ofa.agent.start(agent)
+            agent.start()
 
         if attach:
             cpus = 0
