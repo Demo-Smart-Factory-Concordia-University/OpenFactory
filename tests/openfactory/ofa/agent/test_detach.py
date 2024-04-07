@@ -1,6 +1,7 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch
+from click.testing import CliRunner
 from sqlalchemy import select
 
 import tests.mocks as mock
@@ -16,7 +17,7 @@ from openfactory.models.containers import DockerContainer
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_ofa_agent_detach(TestCase):
     """
-    Unit tests for ofa.agent.detach function
+    Unit tests for ofa.agent.click_detach function
     """
 
     @classmethod
@@ -73,7 +74,7 @@ class Test_ofa_agent_detach(TestCase):
         manager = db.session.execute(query).first()
         if manager:
             db.session.delete(manager[0])
-            db.session.commit()
+        db.session.commit()
 
     def test_detach(self, *args):
         """
@@ -85,7 +86,10 @@ class Test_ofa_agent_detach(TestCase):
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.create_producer()
-        ofa.agent.detach(agent1)
+
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check producer was removed
         query = select(DockerContainer).where(DockerContainer.name == "test1-producer")
@@ -104,17 +108,18 @@ class Test_ofa_agent_detach(TestCase):
         """
         Test if user_notification called correctly
         """
-        user_notification = Mock()
         node, agent1, agent2 = self.setup_infrastructure()
-
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.create_producer()
-        ofa.agent.detach(agent1, user_notification=user_notification)
 
-        # check if user_notification called
-        user_notification.assert_called_once_with('TEST1-PRODUCER removed successfully')
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.output,
+                         'TEST1-PRODUCER removed successfully\nAgent TEST1-AGENT detached successfully\n')
 
         # clean up
         self.cleanup()
