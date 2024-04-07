@@ -12,7 +12,7 @@ def rm(agent, user_notification=print):
     agent_uuid = agent.uuid
     session = Session.object_session(agent)
 
-    ofa.agent.detach(agent, user_notification)
+    agent.detach(user_notification)
     session.delete(agent)
     session.commit()
     user_notification(f"{agent_uuid} removed successfully")

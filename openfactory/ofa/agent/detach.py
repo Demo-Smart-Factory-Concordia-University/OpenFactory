@@ -6,15 +6,6 @@ from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
 
-def detach(agent, user_notification=print):
-    """ Detach a Kafka producer from an MTConnect agent """
-    session = Session.object_session(agent)
-    if agent.producer_container:
-        session.delete(agent.producer_container)
-        session.commit()
-        user_notification(f"{agent.producer_uuid} removed successfully")
-
-
 @click.command(name='detach')
 @click.argument('agent_uuid', nargs=1)
 def click_detach(agent_uuid):
@@ -22,7 +13,8 @@ def click_detach(agent_uuid):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = db.session.execute(query).one_or_none()
     if agent is None:
-        print(f'No Agent {agent_uuid} defined in OpenFactory')
+        click.echo(f'No Agent {agent_uuid} defined in OpenFactory')
+        exit(1)
     else:
-        detach(agent[0])
-        print(f'Agent {agent_uuid} detached successfully')
+        agent[0].detach()
+        click.echo(f'Agent {agent_uuid} detached successfully')

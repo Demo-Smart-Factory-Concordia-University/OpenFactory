@@ -9,5 +9,4 @@ from openfactory.ofa.agent.run import run
 from openfactory.ofa.agent.ls import ls
 from openfactory.ofa.agent.attach import attach
 from openfactory.ofa.agent.attach import click_attach
-from openfactory.ofa.agent.detach import detach
 from openfactory.ofa.agent.detach import click_detach
