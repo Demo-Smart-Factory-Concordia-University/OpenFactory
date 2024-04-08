@@ -1,3 +1,4 @@
+from sqlalchemy import event
 from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -183,3 +184,12 @@ class Agent(Base):
 
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"
+
+
+@event.listens_for(Agent, 'after_delete')
+def agent_after_delete(mapper, connection, target):
+    """
+    Detach agent
+    """
+    if target.producer_container:
+        print(f"{target.producer_uuid} removed successfully")
