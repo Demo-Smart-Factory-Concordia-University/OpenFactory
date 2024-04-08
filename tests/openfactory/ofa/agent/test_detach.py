@@ -123,3 +123,13 @@ class Test_ofa_agent_detach(TestCase):
 
         # clean up
         self.cleanup()
+
+    def test_detach_with_wrong_agent_uuid(self, *args):
+        """
+        Test error message in case of wrong agent_uuid
+        """
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_detach, ['none-existing-agent'])
+        self.assertEqual(result.exit_code, 1)
+        self.assertEqual(result.output,
+                         'No Agent none-existing-agent defined in OpenFactory\n')
