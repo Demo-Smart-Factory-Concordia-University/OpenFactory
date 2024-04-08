@@ -1,20 +1,8 @@
 import click
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
-
-
-def rm(agent, user_notification=print):
-    """ Remove an MTConnect agent defined in OpenFactory """
-    agent_uuid = agent.uuid
-    session = Session.object_session(agent)
-
-    agent.detach(user_notification)
-    session.delete(agent)
-    session.commit()
-    user_notification(f"{agent_uuid} removed successfully")
 
 
 @click.command(name='rm')
@@ -24,6 +12,10 @@ def click_rm(agent_uuid):
     query = select(Agent).where(Agent.uuid == agent_uuid)
     agent = db.session.execute(query).one_or_none()
     if agent is None:
-        print(f'No Agent {agent_uuid} defined in OpenFactory')
+        click.echo(f'No Agent {agent_uuid} defined in OpenFactory')
+        exit(1)
     else:
-        rm(agent[0])
+        agent[0].detach()
+        db.session.delete(agent[0])
+        db.session.commit()
+        click.echo(f"{agent_uuid} removed successfully")

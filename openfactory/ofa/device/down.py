@@ -28,4 +28,6 @@ def down(yaml_config_file):
             continue
         ofa.agent.stop(agent[0])
         agent[0].detach()
-        ofa.agent.rm(agent[0])
+        db.session.delete(agent[0])
+        db.session.commit()
+        click.echo(f"{agent_uuid} removed successfully")
