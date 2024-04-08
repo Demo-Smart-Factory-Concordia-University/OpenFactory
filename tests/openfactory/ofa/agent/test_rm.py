@@ -141,3 +141,13 @@ class Test_ofa_agent_rm(TestCase):
 
         # clean up
         self.cleanup()
+
+    def test_rm_with_wrong_agent_uuid(self, *args):
+        """
+        Test error message in case of wrong agent_uuid
+        """
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_rm, ['none-existing-agent'])
+        self.assertEqual(result.exit_code, 1)
+        self.assertEqual(result.output,
+                         'No Agent none-existing-agent defined in OpenFactory\n')
