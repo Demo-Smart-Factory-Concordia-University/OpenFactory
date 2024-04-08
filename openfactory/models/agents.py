@@ -107,6 +107,16 @@ class Agent(Base):
         self.agent_container.start()
         user_notification(f"Agent {self.uuid} started successfully")
 
+    def stop(self, user_notification=print):
+        """ Stop agent """
+        if self.external:
+            user_notification("This is an external agent. It cannot be started by OpenFactory")
+            return
+        if not self.status == 'running':
+            return
+        self.agent_container.stop()
+        user_notification(f"Agent {self.uuid} stopped successfully")
+
     def detach(self, user_notification=print):
         """ Detach agent by removing producer """
         if self.producer_container:

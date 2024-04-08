@@ -236,6 +236,40 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
+    def test_stop(self, *args):
+        """
+        Test if Docker container is stopped
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.agent_container.stop = Mock()
+        agent.stop()
+
+        # check agent Docker container was started
+        agent.agent_container.stop.assert_called_once()
+
+        # clean up
+        self.cleanup()
+
+    def test_stop_user_notification(self, *args):
+        """
+        Test if user_notification called correctly in stop method
+        """
+        mock_notification = Mock()
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.stop(user_notification=mock_notification)
+
+        # check if user_notification called
+        mock_notification.assert_called_once_with('Agent TEST-AGENT stopped successfully')
+
+        # clean up
+        self.cleanup()
+
     def test_detach(self, *args):
         """
         Test if producer is removed
