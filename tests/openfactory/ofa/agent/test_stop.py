@@ -73,7 +73,7 @@ class Test_ofa_agent_stop(TestCase):
         manager = db.session.execute(query).first()
         if manager:
             db.session.delete(manager[0])
-            db.session.commit()
+        db.session.commit()
 
     def test_stop(self, *args):
         """
