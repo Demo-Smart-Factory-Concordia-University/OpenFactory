@@ -85,7 +85,7 @@ class TestAgent(TestCase):
 
     def test_agent_setup(self, *args):
         """
-        Test setup and tear down of an Agent
+        Test setup of an Agent
         """
         self.setup_agent()
 
@@ -94,6 +94,35 @@ class TestAgent(TestCase):
         self.assertEqual(agent[0].uuid, 'TEST-AGENT')
         self.assertEqual(agent[0].agent_port, 5000)
         self.assertEqual(agent[0].external, False)
+
+        # clean-up
+        self.cleanup()
+
+    def test_agent_teardown(self, *args):
+        """
+        Test tear down of an Agent
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+        container_name = agent.agent_container.name
+        producer_name = agent.producer_container.name
+
+        # tear down agent
+        db.session.delete(agent)
+        db.session.commit()
+
+        # check Docker container was removed
+        query = select(DockerContainer).where(DockerContainer.name == container_name)
+        cont = db.session.execute(query).first()
+        self.assertEqual(cont, None)
+
+        # check producer was removed
+        query = select(DockerContainer).where(DockerContainer.name == producer_name)
+        cont = db.session.execute(query).first()
+        self.assertEqual(cont, None)
 
         # clean-up
         self.cleanup()
@@ -216,11 +245,12 @@ class TestAgent(TestCase):
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
         agent.create_producer()
+        producer_name = agent.producer_container.name
         agent.detach()
 
         # check producer was removed
         self.assertEqual(agent.producer_container, None)
-        query = select(DockerContainer).where(DockerContainer.name == agent.producer_uuid)
+        query = select(DockerContainer).where(DockerContainer.name == producer_name)
         cont = db.session.execute(query).first()
         self.assertEqual(cont, None)
 
