@@ -1,6 +1,7 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch
+from click.testing import CliRunner
 from sqlalchemy import select
 
 import tests.mocks as mock
@@ -16,7 +17,7 @@ from openfactory.models.containers import DockerContainer
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_ofa_agent_rm(TestCase):
     """
-    Unit tests for ofa.agent.rm function
+    Unit tests for ofa.agent.click_rm function
     """
 
     @classmethod
@@ -81,7 +82,9 @@ class Test_ofa_agent_rm(TestCase):
         """
         node, agent1, agent2 = self.setup_infrastructure()
 
-        ofa.agent.rm(agent1)
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_rm, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check agent was removed
         query = select(Agent).where(Agent.uuid == "TEST1-AGENT")
@@ -100,13 +103,15 @@ class Test_ofa_agent_rm(TestCase):
         """
         Test if user_notification called correctly
         """
-        mock_notification = Mock()
         node, agent1, agent2 = self.setup_infrastructure()
 
-        ofa.agent.rm(agent1, user_notification=mock_notification)
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_rm, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check if user_notification called
-        mock_notification.assert_called_once_with('TEST1-AGENT removed successfully')
+        self.assertEqual(result.output,
+                         'TEST1-AGENT removed successfully\n')
 
         # clean up
         self.cleanup()
@@ -115,14 +120,15 @@ class Test_ofa_agent_rm(TestCase):
         """
         Test if producer of agent is removed
         """
-        mock_notification = Mock()
         node, agent1, agent2 = self.setup_infrastructure()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_device.xml')
         agent1.create_container('123.456.7.500', 7878, device_file, 1)
         agent1.create_producer()
 
-        ofa.agent.rm(agent1, user_notification=mock_notification)
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_rm, [agent1.uuid])
+        self.assertEqual(result.exit_code, 0)
 
         # check producer was removed
         query = select(DockerContainer).where(DockerContainer.name == "test1-producer")
@@ -130,9 +136,8 @@ class Test_ofa_agent_rm(TestCase):
         self.assertEqual(cont, None)
 
         # check if user_notification called
-        calls = mock_notification.call_args_list
-        self.assertEqual(calls[0], call('TEST1-PRODUCER removed successfully'))
-        self.assertEqual(calls[1], call('TEST1-AGENT removed successfully'))
+        self.assertEqual(result.output,
+                         'TEST1-PRODUCER removed successfully\nTEST1-AGENT removed successfully\n')
 
         # clean up
         self.cleanup()
