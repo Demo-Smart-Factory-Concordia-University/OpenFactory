@@ -2,7 +2,6 @@ import click
 import yaml
 from sqlalchemy import select
 
-import openfactory.ofa as ofa
 from openfactory.ofa.db import db
 from openfactory.models.agents import Agent
 
@@ -26,7 +25,7 @@ def down(yaml_config_file):
         if agent is None:
             print(f'No Agent {agent_uuid} defined in OpenFactory')
             continue
-        ofa.agent.stop(agent[0])
+        agent[0].stop()
         agent[0].detach()
         db.session.delete(agent[0])
         db.session.commit()

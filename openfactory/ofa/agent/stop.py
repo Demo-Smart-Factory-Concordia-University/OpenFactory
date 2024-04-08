@@ -32,4 +32,4 @@ def click_stop(agent_uuid):
     if agent is None:
         print(f'No Agent {agent_uuid} defined in OpenFactory')
     else:
-        stop(agent[0])
+        agent[0].stop()
