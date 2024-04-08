@@ -1,7 +1,6 @@
 from openfactory.ofa.agent.create import create_from_config_file
 from openfactory.ofa.agent.create import click_create
 from openfactory.ofa.agent.start import click_start
-from openfactory.ofa.agent.stop import stop
 from openfactory.ofa.agent.stop import click_stop
 from openfactory.ofa.agent.rm import click_rm
 from openfactory.ofa.agent.run import run
