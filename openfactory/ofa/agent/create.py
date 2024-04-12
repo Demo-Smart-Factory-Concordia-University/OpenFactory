@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 
 import openfactory.config as config
-import openfactory.ofa as ofa
 from openfactory.exceptions import OFAException
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
@@ -85,7 +84,7 @@ def create_from_config_file(yaml_config_file, run=False, attach=False):
                     if 'cpus' in device['runtime']['producer']:
                         cpus = device['runtime']['producer']['cpus']
             try:
-                ofa.agent.attach(agent, cpus)
+                agent.attach(cpus)
             except OFAException as err:
                 print("Could not attach", device['UUID'].upper() + "-AGENT")
                 print("Error was:", err)
