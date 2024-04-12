@@ -2,9 +2,13 @@ import os
 from unittest import TestCase
 from unittest.mock import patch, call, Mock
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from httpx import HTTPError
+from paramiko.ssh_exception import SSHException
 
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
@@ -32,6 +36,16 @@ class TestAgent(TestCase):
         print("\nTear down in memory sqlite db")
         Base.metadata.drop_all(db.engine)
         db.session.close()
+
+    @classmethod
+    def setUp(self):
+        """ Start a new session """
+        db.session = Session(db.engine)
+
+        """ Reset mocks """
+        mock.docker_client.reset_mock()
+        mock.docker_container.reset_mock()
+        mock.docker_images.reset_mock()
 
     def tearDown(self):
         """ Rollback all transactions """
@@ -266,6 +280,81 @@ class TestAgent(TestCase):
 
         # check if user_notification called
         mock_notification.assert_called_once_with('Agent TEST-AGENT stopped successfully')
+
+        # clean up
+        self.cleanup()
+
+    def test_attach(self, *args):
+        """
+        Test if producer is attached
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        agent.create_ksqldb_tables = Mock()
+        agent.attach(cpus=3)
+
+        # check ksqldb_tables created
+        agent.create_ksqldb_tables.assert_called_once()
+
+        # check producer was created
+        cont = agent.producer_container
+        self.assertEqual(cont.image, config.MTCONNECT_PRODUCER_IMAGE)
+        self.assertEqual(cont.name, 'test-producer')
+        self.assertEqual(cont.cpus, 3)
+        self.assertEqual(cont.node, agent.node)
+        self.assertEqual(cont.ports, [])
+
+        # check container was started
+        agent.producer_container.container.start.assert_called_once()
+
+        # clean up
+        self.cleanup()
+
+    def test_attach_no_container_error(self, *args):
+        """
+        Test if error is raised in attach when no Agent container
+        """
+        agent = self.setup_agent()
+
+        # check OFAException raised if no Agent container
+        self.assertRaises(OFAException, agent.attach)
+
+        # clean up
+        self.cleanup()
+
+    @patch('pyksql.ksql.KSQL.__init__', side_effect=HTTPError('test'))
+    def test_attach_ksqlDB_error(self, *args):
+        """
+        Test if error is raised in attach if ksqlDB cannot be reached
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        # check OFAException raised if ksqlDB can not be reached
+        self.assertRaises(OFAException, agent.attach)
+
+        # clean up
+        self.cleanup()
+
+    def test_attach_producer_error(self, *args):
+        """
+        Test if errors is raised in attach if producer container cannot be created
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        agent.create_ksqldb_tables = Mock()
+        agent.create_producer = Mock(side_effect=SSHException('test'))
+
+        # check OFAException raised if ksqlDB can not be reached
+        self.assertRaises(OFAException, agent.attach)
 
         # clean up
         self.cleanup()

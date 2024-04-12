@@ -10,9 +10,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+from sqlalchemy.exc import PendingRollbackError
 from pyksql.ksql import KSQL
+from httpx import HTTPError
+from paramiko.ssh_exception import SSHException
 
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 from .base import Base
 from .containers import DockerContainer, EnvVar, Port
 from typing import TYPE_CHECKING
@@ -116,6 +120,33 @@ class Agent(Base):
             return
         self.agent_container.stop()
         user_notification(f"Agent {self.uuid} stopped successfully")
+
+    def attach(self, cpus=0, user_notification=print):
+        """ Attach a Kafka producer to an MTConnect agent """
+        if self.agent_container is None:
+            raise OFAException(f"Agent {self.uuid} has no existing container")
+        session = Session.object_session(self)
+
+        # Create ksqlDB table for agent
+        try:
+            self.create_ksqldb_tables()
+        except HTTPError:
+            raise OFAException(f"Could not connect to ksqlDB {config.KSQLDB}")
+        user_notification((f"ksqlDB tables {self.device_uuid.replace('-', '_')}, "
+                           f"{self.uuid.upper().replace('-', '_')} and "
+                           f"{self.producer_uuid.replace('-', '_')} created successfully"))
+
+        # create producer
+        try:
+            self.create_producer(cpus)
+        except (PendingRollbackError, SSHException) as err:
+            session.rollback()
+            raise OFAException(f'Kafka producer for agent {self.device_uuid} could not be created. Error was: {err}')
+        user_notification(f'Kafka producer {self.producer_uuid} created successfully')
+
+        # Start producer
+        self.producer_container.start()
+        user_notification(f'Kafka producer {self.producer_uuid} started successfully')
 
     def detach(self, user_notification=print):
         """ Detach agent by removing producer """
