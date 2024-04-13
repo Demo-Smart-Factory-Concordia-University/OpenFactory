@@ -38,9 +38,43 @@ class TestNodes(TestCase):
 
     @classmethod
     def tearDown(self):
-        """ rollback all transactions """
-        self.session.rollback()
+        """ Close session """
         self.session.close()
+
+    def setup_nodes(self, *args):
+        """
+        Setup a manager and a node
+        """
+        manager = Node(
+            node_name='manager',
+            node_ip='123.456.7.891',
+            network='test-net'
+        )
+        self.session.add_all([manager])
+        self.session.commit()
+        node = Node(
+            node_name='node',
+            node_ip='123.456.7.901'
+        )
+        self.session.add_all([node])
+        self.session.commit()
+        return manager, node
+
+    def cleanup(self, *args):
+        """
+        Clean up all nodes
+        """
+        self.session.rollback()
+        # remove nodes
+        for node in self.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                self.session.delete(node)
+        # remove manager
+        query = select(Node).where(Node.node_name == "manager")
+        manager = self.session.execute(query).first()
+        if manager:
+            self.session.delete(manager[0])
+        self.session.commit()
 
     def test_class_parent(self, *args):
         """
@@ -58,8 +92,10 @@ class TestNodes(TestCase):
         """
         Test setup and tear down of a manager node
         """
+        # reset mocks
         mock_DockerClient.reset_mock()
         mock.docker_client.reset_mock()
+
         # setup manager node
         node = Node(
             node_name='manager',
@@ -96,7 +132,7 @@ class TestNodes(TestCase):
         self.assertEqual(manager[0].manager, manager[0])
 
         # tear down manager node
-        self.session.delete(node)
+        self.session.delete(manager[0])
         self.session.commit()
 
         # use correct docker client
@@ -111,27 +147,14 @@ class TestNodes(TestCase):
         """
         Test setup and tear down of an OpenFactory node
         """
-        manager_node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        node = Node(
-            node_name='node1',
-            node_ip='123.456.7.901'
-        )
-
-        self.session.add_all([manager_node])
-        self.session.commit()
-        self.session.add_all([node])
-        self.session.commit()
+        self.setup_nodes()
 
         # entry in database is correct
         query = select(Node).where(Node.node_name == "manager")
         manager = self.session.execute(query).first()
-        query = select(Node).where(Node.node_name == "node1")
+        query = select(Node).where(Node.node_name == "node")
         n = self.session.execute(query).first()
-        self.assertEqual(n[0].node_name, 'node1')
+        self.assertEqual(n[0].node_name, 'node')
         self.assertEqual(n[0].network, 'test-net')
         self.assertEqual(n[0].node_ip, '123.456.7.901')
         self.assertEqual(n[0].cpus, 5)
@@ -140,7 +163,7 @@ class TestNodes(TestCase):
         self.assertEqual(n[0].docker_url, 'ssh://' + config.OPENFACTORY_USER + '@123.456.7.901')
         self.assertEqual(n[0].manager, manager[0])
 
-        self.session.delete(node)
+        self.session.delete(n[0])
         self.session.commit()
 
         # use correct docker client
@@ -156,85 +179,46 @@ class TestNodes(TestCase):
         self.assertEqual(args[0], 'a node id')
         self.assertEqual(kwargs['force'], True)
 
-        self.session.delete(manager_node)
-        self.session.commit()
+        # clean-up
+        self.cleanup()
 
     def test_node_name_unique(self, *args):
         """
         Test Node.node_name is required to be unique
         """
-        manager_node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        self.session.add_all([manager_node])
-        self.session.commit()
-
-        node1 = Node(
-            node_name='node1',
-            node_ip='123.456.7.901'
-        )
+        self.setup_nodes()
         node2 = Node(
-            node_name='node1',
+            node_name='node',
             node_ip='123.456.7.902'
         )
-        self.session.add_all([node1, node2])
+        self.session.add_all([node2])
         self.assertRaises(IntegrityError, self.session.commit)
-        self.session.rollback()
 
-        self.session.delete(manager_node)
-        self.session.commit()
+        # clean-up
+        self.cleanup()
 
     def test_node_ip_unique(self, *args):
         """
         Test Node.node_ip is required to be unique
         """
-        manager_node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        self.session.add_all([manager_node])
-        self.session.commit()
-
-        node1 = Node(
-            node_name='node1',
-            node_ip='123.456.7.901'
-        )
+        self.setup_nodes()
         node2 = Node(
             node_name='node2',
             node_ip='123.456.7.901'
         )
-        self.session.add_all([node1, node2])
+        self.session.add_all([node2])
         self.assertRaises(IntegrityError, self.session.commit)
-        self.session.rollback()
 
-        self.session.delete(manager_node)
-        self.session.commit()
+        # clean-up
+        self.cleanup()
 
     def test_node_status(self, *args):
         """
         Test hybride property 'status' of an OpenFactory node
         """
-        manager_node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        node = Node(
-            node_name='node2',
-            node_ip='123.456.7.902'
-        )
-
-        self.session.add_all([manager_node])
-        self.session.commit()
-        self.session.add_all([node])
-        self.session.commit()
+        manager, node = self.setup_nodes()
 
         self.assertEqual(node.status, 'ready')
 
-        self.session.delete(node)
-        self.session.commit()
-        self.session.delete(manager_node)
-        self.session.commit()
+        # clean-up
+        self.cleanup()
