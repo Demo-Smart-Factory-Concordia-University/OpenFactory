@@ -52,10 +52,25 @@ class TestDockerContainer(TestCase):
         mock.docker_container.reset_mock()
         mock.docker_images.reset_mock()
 
-    @classmethod
-    def tearDown(self, *args):
-        """ rollback all transactions """
+    def cleanup(self, *args):
+        """
+        Clean up all containers and nodes
+        """
         self.session.rollback()
+        # remove containers
+        for cont in self.session.scalars(select(DockerContainer)):
+            self.session.delete(cont)
+            self.session.commit()
+        # remove nodes
+        for node in self.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                self.session.delete(node)
+        # remove manager
+        query = select(Node).where(Node.node_name == "manager")
+        manager = self.session.execute(query).first()
+        if manager:
+            self.session.delete(manager[0])
+            self.session.commit()
 
     def test_class_parent(self, *args):
         """
@@ -130,8 +145,7 @@ class TestDockerContainer(TestCase):
         mock.docker_container.remove.assert_called_once()
 
         # clean up
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_cpus(self, *args):
         """
@@ -166,10 +180,7 @@ class TestDockerContainer(TestCase):
         self.assertEqual(cont_2[0].cpus, 5)
 
         # clean up
-        self.session.delete(cont1)
-        self.session.delete(cont2)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_name_unique(self, *args):
         """
@@ -194,9 +205,7 @@ class TestDockerContainer(TestCase):
         self.assertRaises(IntegrityError, self.session.commit)
 
         # clean up
-        self.session.rollback()
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_docker_url(self, *args):
         """
@@ -215,9 +224,7 @@ class TestDockerContainer(TestCase):
         self.assertEqual(container.docker_url, node.docker_url)
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_network(self, *args):
         """
@@ -236,9 +243,7 @@ class TestDockerContainer(TestCase):
         self.assertEqual(container.network, 'test-net')
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_container(self, mock_DockerClient):
         """
@@ -266,9 +271,7 @@ class TestDockerContainer(TestCase):
         self.assertEqual(docker_cont, mock.docker_container)
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_status(self, *args):
         """
@@ -287,9 +290,7 @@ class TestDockerContainer(TestCase):
         self.assertEqual(container.status, 'running')
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_add_file(self, mock_DockerClient):
         """
@@ -323,9 +324,7 @@ class TestDockerContainer(TestCase):
 
         # clean up
         tmp_dir.cleanup()
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_start(self, mock_DockerClient):
         """
@@ -353,9 +352,7 @@ class TestDockerContainer(TestCase):
         mock.docker_container.start.assert_called_once()
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
 
     def test_stop(self, mock_DockerClient):
         """
@@ -383,6 +380,4 @@ class TestDockerContainer(TestCase):
         mock.docker_container.stop.assert_called_once()
 
         # clean up
-        self.session.delete(container)
-        self.session.delete(node)
-        self.session.commit()
+        self.cleanup()
