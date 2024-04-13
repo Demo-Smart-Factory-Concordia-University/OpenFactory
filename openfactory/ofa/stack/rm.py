@@ -5,7 +5,9 @@ from openfactory.exceptions import OFAException
 
 
 def rm(db_session, stack_id, user_notification_success=print, user_notification_fail=print):
-    """ Removes an infrastructure stack """
+    """
+    Removes an infrastructure stack
+    """
     query = select(InfraStack).where(InfraStack.id == stack_id)
     stack = db_session.execute(query).one()
     stack = stack[0]
