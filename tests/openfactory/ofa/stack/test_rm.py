@@ -15,7 +15,7 @@ from openfactory.models.nodes import Node
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_ofa_stack_rm(TestCase):
     """
-    Unit tests for ofa.stack.up function
+    Unit tests for ofa.stack.rm function
     """
 
     @classmethod
