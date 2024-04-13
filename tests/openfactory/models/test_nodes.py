@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 from unittest.mock import patch
 from sqlalchemy import create_engine
@@ -7,8 +8,10 @@ from sqlalchemy.exc import IntegrityError
 
 import tests.mocks as mock
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
+from openfactory.models.agents import Agent
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
@@ -62,9 +65,12 @@ class TestNodes(TestCase):
 
     def cleanup(self, *args):
         """
-        Clean up all nodes
+        Clean up all agents and nodes
         """
         self.session.rollback()
+        # remove agents
+        for agent in self.session.scalars(select(Agent)):
+            self.session.delete(agent)
         # remove nodes
         for node in self.session.scalars(select(Node)):
             if node.node_name != 'manager':
@@ -219,6 +225,44 @@ class TestNodes(TestCase):
         manager, node = self.setup_nodes()
 
         self.assertEqual(node.status, 'ready')
+
+        # clean-up
+        self.cleanup()
+
+    def test_remove_node(self, *args):
+        """
+        Tests if an empty node can be removed
+        """
+        manager, node = self.setup_nodes()
+        self.session.delete(node)
+
+        query = select(Node).where(Node.node_name == "node")
+        self.assertEqual(self.session.execute(query).one_or_none(), None)
+
+        # clean-up
+        self.cleanup()
+
+    def test_remove_node_with_container(self, *args):
+        """
+        Tests if a node with running containers can not be removed
+        """
+        manager, node = self.setup_nodes()
+        agent = Agent(uuid='TEST-AGENT',
+                      node=node,
+                      agent_port=5000)
+        self.session.add_all([agent])
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        # check exception is raised
+        self.session.delete(node)
+        self.assertRaises(OFAException, self.session.commit)
+        self.session.rollback()
+
+        # check node was not removed
+        query = select(Node).where(Node.node_name == "node")
+        self.assertEqual(self.session.execute(query).one_or_none()[0], node)
 
         # clean-up
         self.cleanup()

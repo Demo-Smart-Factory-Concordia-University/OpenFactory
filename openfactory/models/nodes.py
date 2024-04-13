@@ -13,6 +13,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -104,6 +105,15 @@ def node_before_insert(mapper, connection, target):
 
     client.close()
     node_client.close()
+
+
+@event.listens_for(Node, 'before_delete')
+def node_before_delete(mapper, connection, target):
+    """
+    Checks if node can be removed
+    """
+    if target.containers or target.compose_projects:
+        raise OFAException(f"Cannot remove node '{target.node_name}': containers/Docker compose projects are running on it")
 
 
 @event.listens_for(Node, 'after_delete')

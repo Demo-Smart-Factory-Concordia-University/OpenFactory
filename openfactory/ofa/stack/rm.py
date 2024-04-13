@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
+from openfactory.exceptions import OFAException
 
 
 def rm(db_session, stack_id, user_notification_success=print, user_notification_fail=print):
@@ -12,20 +13,25 @@ def rm(db_session, stack_id, user_notification_success=print, user_notification_
     for node in stack.nodes:
         if node.node_name == 'manager':
             continue
-        if node.containers or node.compose_projects:
-            user_notification_fail(f"Cannot remove node {node.node_name} as containers/Docker compose projects are running on it")
-        else:
+        try:
             node_name = node.node_name
             db_session.delete(node)
             db_session.commit()
             user_notification_success(f"Removed node {node_name}")
+        except OFAException as err:
+            db_session.rollback()
+            user_notification_fail(err)
 
     if len(stack.nodes) == 1:
         if stack.nodes[0].node_name == 'manager':
             if len(db_session.query(Node).all()) == 1:
-                db_session.delete(stack.nodes[0])
-                db_session.commit()
-                user_notification_success("Removed manager node")
+                try:
+                    db_session.delete(stack.nodes[0])
+                    db_session.commit()
+                    user_notification_success("Removed manager node")
+                except OFAException as err:
+                    db_session.rollback()
+                    user_notification_fail(err)
             else:
                 user_notification_fail("Manager node not removed as other nodes exist")
 
