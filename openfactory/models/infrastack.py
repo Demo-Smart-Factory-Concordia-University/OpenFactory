@@ -1,9 +1,11 @@
 from typing import List
+from sqlalchemy import event
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
+from openfactory.exceptions import OFAException
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -31,3 +33,12 @@ class InfraStack(Base):
         if not self.nodes:
             return None
         return self.nodes[0].manager
+
+
+@event.listens_for(InfraStack, 'before_delete')
+def infrastack_before_delete(mapper, connection, target):
+    """
+    Checks if stack can be removed
+    """
+    if target.nodes:
+        raise OFAException(f"Cannot remove stack '{target.stack_name}': none-empty nodes are part of it")

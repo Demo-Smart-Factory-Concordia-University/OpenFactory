@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from openfactory.exceptions import OFAException
 from openfactory.models.base import Base
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
@@ -40,6 +41,25 @@ class TestInfraStack(TestCase):
         self.session.rollback()
         self.session.close()
 
+    def cleanup(self, *args):
+        """
+        Clean up all nodes and stacks
+        """
+        # remove nodes
+        for node in self.session.scalars(select(Node)):
+            if node.node_name != 'manager':
+                self.session.delete(node)
+        # remove manager
+        query = select(Node).where(Node.node_name == "manager")
+        manager = self.session.execute(query).first()
+        if manager:
+            self.session.delete(manager[0])
+        self.session.commit()
+        # remove stacks
+        for stack in self.session.scalars(select(InfraStack)):
+            self.session.delete(stack)
+        self.session.commit()
+
     def test_class_parent(self, *args):
         """
         Test parent of class is Base
@@ -64,8 +84,8 @@ class TestInfraStack(TestCase):
         stack = self.session.execute(query).first()
         self.assertEqual(stack[0].stack_name, 'Test Stack')
 
-        self.session.delete(stack[0])
-        self.session.commit()
+        # clean up
+        self.cleanup()
 
     def test_stack_name_unique(self, *args):
         """
@@ -93,18 +113,24 @@ class TestInfraStack(TestCase):
         self.session.add_all([manager_node])
         self.session.commit()
 
-        # teardown stack
+        # check stack cannot be removed if nodes are still present
         self.session.delete(inrastack)
-        self.session.commit()
+        self.assertRaises(OFAException, self.session.commit)
+        self.session.rollback()
 
         # check nodes are still present
         query = select(Node).where(Node.node_name == "manager")
         manager = self.session.execute(query).first()
         self.assertEqual(manager[0], manager_node)
 
-        # clean-up
+        # check stack can be removed if no nodes are present
         self.session.delete(manager_node)
         self.session.commit()
+        self.session.delete(inrastack)
+        self.session.commit()
+
+        # clean up
+        self.cleanup()
 
     def test_manager(self, *args):
         """
@@ -129,7 +155,5 @@ class TestInfraStack(TestCase):
         # test manager is set correcty if nodes are in stack
         self.assertEqual(inrastack.manager, manager_node)
 
-        # clean-up
-        self.session.delete(inrastack)
-        self.session.delete(manager_node)
-        self.session.commit()
+        # clean up
+        self.cleanup()

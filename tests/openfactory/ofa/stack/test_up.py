@@ -46,16 +46,17 @@ class Test_ofa_stack_up(TestCase):
         for node in db.session.scalars(select(Node)):
             if node.node_name != 'manager':
                 db.session.delete(node)
-        # remove stacks
-        for stack in db.session.scalars(select(InfraStack)):
-            db.session.delete(stack)
-            db.session.commit()
+        db.session.commit()
         # remove manager
         query = select(Node).where(Node.node_name == "manager")
         manager = db.session.execute(query).first()
         if manager:
             db.session.delete(manager[0])
             db.session.commit()
+        # remove stacks
+        for stack in db.session.scalars(select(InfraStack)):
+            db.session.delete(stack)
+        db.session.commit()
 
     def test_return_stack(self, *args):
         """
