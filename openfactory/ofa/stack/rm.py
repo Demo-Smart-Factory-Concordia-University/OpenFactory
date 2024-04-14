@@ -42,4 +42,4 @@ def rm(db_session, stack_id, user_notification_success=print, user_notification_
     else:
         db_session.delete(stack)
         db_session.commit()
-        user_notification_success(f'Removed successfully stack {stack_name}')
+        user_notification_success(f"Removed successfully stack '{stack_name}'")
