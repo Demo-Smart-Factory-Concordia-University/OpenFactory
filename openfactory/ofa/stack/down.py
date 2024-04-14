@@ -5,7 +5,7 @@ from openfactory.models.infrastack import InfraStack
 from openfactory.exceptions import OFAException
 
 
-def down(db_session, stack_config_file, user_notification=print, user_notification_fail=print):
+def down(db_session, stack_config_file, user_notification_success=print, user_notification_fail=print):
     """
     Tear down an infrastructure stack based on config file
     """
@@ -23,7 +23,7 @@ def down(db_session, stack_config_file, user_notification=print, user_notificati
         try:
             db_session.delete(n)
             db_session.commit()
-            user_notification(f"Removed node {node}")
+            user_notification_success(f"Removed node {node}")
         except OFAException as err:
             db_session.rollback()
             user_notification_fail(err)
@@ -35,7 +35,7 @@ def down(db_session, stack_config_file, user_notification=print, user_notificati
             try:
                 db_session.delete(manager[0])
                 db_session.commit()
-                user_notification("Removed manager node")
+                user_notification_success("Removed manager node")
             except OFAException as err:
                 db_session.rollback()
                 user_notification_fail(err)
@@ -45,11 +45,12 @@ def down(db_session, stack_config_file, user_notification=print, user_notificati
     # remove stack if stack empty
     if 'stack' in stack:
         query = select(InfraStack).where(InfraStack.stack_name == stack['stack'])
-        stack = db_session.execute(query).one_or_none()
-        if stack:
+        infra_stack = db_session.execute(query).one_or_none()
+        if infra_stack:
             try:
-                db_session.delete(stack[0])
+                db_session.delete(infra_stack[0])
                 db_session.commit()
+                user_notification_success(f"Removed successfully stack '{stack['stack']}'")
             except OFAException as err:
                 db_session.rollback()
                 user_notification_fail(err)

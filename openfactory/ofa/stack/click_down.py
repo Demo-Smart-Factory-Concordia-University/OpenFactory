@@ -1,4 +1,5 @@
 import click
+import openfactory.ofa as ofa
 from openfactory.ofa.db import db
 from .down import down
 
@@ -9,4 +10,6 @@ from .down import down
                 nargs=1)
 def click_down(yaml_config_file):
     """ Tear down OpenFactory stack """
-    down(db.session, yaml_config_file)
+    down(db.session, yaml_config_file,
+         user_notification_success=ofa.success_msg,
+         user_notification_fail=ofa.fail_msg)
