@@ -17,3 +17,7 @@ MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
 MTCONNECT_AGENT_CFG_FILE: ${MTCONNECT_AGENT_CFG_FILE}
 MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer
 
+# Colors for ofa cli
+OFA_SUCCSESS: "\e[0;32m"
+OFA_FAIL: "\e[0;31m"
+OFA_END: "\e[0m"
