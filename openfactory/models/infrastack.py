@@ -41,4 +41,4 @@ def infrastack_before_delete(mapper, connection, target):
     Checks if stack can be removed
     """
     if target.nodes:
-        raise OFAException(f"Cannot remove stack '{target.stack_name}': none-empty nodes are part of it")
+        raise OFAException(f"Cannot remove stack '{target.stack_name}': non-empty nodes are part of it")
