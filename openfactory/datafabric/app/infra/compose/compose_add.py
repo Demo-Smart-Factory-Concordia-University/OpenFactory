@@ -19,7 +19,7 @@ from wtforms.validators import DataRequired, Regexp, ValidationError
 from wtforms_sqlalchemy.fields import QuerySelectField
 
 from openfactory.datafabric.app import db
-from openfactory.utils import get_configuration
+from openfactory.models.configurations import get_configuration
 from openfactory.models.compose import ComposeProject
 from openfactory.models.nodes import Node
 

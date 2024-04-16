@@ -11,7 +11,7 @@ from flask_wtf.file import FileField, FileRequired
 from wtforms import SubmitField
 from wtforms.validators import ValidationError
 
-from openfactory.utils import get_configuration
+from openfactory.models.configurations import get_configuration
 
 
 class StackAddForm(FlaskForm):

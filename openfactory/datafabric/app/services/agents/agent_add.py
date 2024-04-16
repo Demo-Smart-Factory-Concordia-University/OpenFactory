@@ -19,7 +19,7 @@ from flask.views import MethodView
 
 import openfactory.config as config
 from openfactory.datafabric.app import db
-from openfactory.utils import get_configuration
+from openfactory.models.configurations import get_configuration
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer, EnvVar, Port
 from openfactory.models.nodes import Node

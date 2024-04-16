@@ -9,7 +9,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
 from .base import Base
-from openfactory.utils import get_configuration
+from .configurations import get_configuration
 from openfactory.utils import docker_compose_up
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
