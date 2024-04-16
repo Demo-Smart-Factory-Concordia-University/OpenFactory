@@ -17,6 +17,7 @@ from paramiko.ssh_exception import SSHException
 
 import openfactory.config as config
 from openfactory.exceptions import OFAException
+from .user_notifications import user_notify
 from .base import Base
 from .containers import DockerContainer, EnvVar, Port
 from typing import TYPE_CHECKING
@@ -100,28 +101,28 @@ class Agent(Base):
         else:
             return "no"
 
-    def start(self, user_notification=print):
+    def start(self):
         """ Start agent """
         if self.external:
-            user_notification("This is an external agent. It cannot be started by OpenFactory")
+            user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
         if self.producer_container:
             self.producer_container.start()
-            user_notification(f"Producer {self.producer_uuid} started successfully")
+            user_notify.success(f"Producer {self.producer_uuid} started successfully")
         self.agent_container.start()
-        user_notification(f"Agent {self.uuid} started successfully")
+        user_notify.success(f"Agent {self.uuid} started successfully")
 
-    def stop(self, user_notification=print):
+    def stop(self):
         """ Stop agent """
         if self.external:
-            user_notification("This is an external agent. It cannot be started by OpenFactory")
+            user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
         if not self.status == 'running':
             return
         self.agent_container.stop()
-        user_notification(f"Agent {self.uuid} stopped successfully")
+        user_notify.success(f"Agent {self.uuid} stopped successfully")
 
-    def attach(self, cpus=0, user_notification=print):
+    def attach(self, cpus=0):
         """ Attach a Kafka producer to an MTConnect agent """
         if self.agent_container is None:
             raise OFAException(f"Agent {self.uuid} has no existing container")
@@ -132,9 +133,6 @@ class Agent(Base):
             self.create_ksqldb_tables()
         except HTTPError:
             raise OFAException(f"Could not connect to ksqlDB {config.KSQLDB}")
-        user_notification((f"ksqlDB tables {self.device_uuid.replace('-', '_')}, "
-                           f"{self.uuid.upper().replace('-', '_')} and "
-                           f"{self.producer_uuid.replace('-', '_')} created successfully"))
 
         # create producer
         try:
@@ -142,18 +140,17 @@ class Agent(Base):
         except (PendingRollbackError, SSHException) as err:
             session.rollback()
             raise OFAException(f'Kafka producer for agent {self.device_uuid} could not be created. Error was: {err}')
-        user_notification(f'Kafka producer {self.producer_uuid} created successfully')
 
         # Start producer
         self.producer_container.start()
-        user_notification(f'Kafka producer {self.producer_uuid} started successfully')
+        user_notify.success(f'Kafka producer {self.producer_uuid} started successfully')
 
-    def detach(self, user_notification=print):
+    def detach(self):
         """ Detach agent by removing producer """
         if self.producer_container:
             self.producer_container = None
             Session.object_session(self).commit()
-            user_notification(f"{self.producer_uuid} removed successfully")
+            user_notify.success(f"Producer {self.producer_uuid} removed successfully")
 
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
@@ -181,6 +178,7 @@ class Agent(Base):
         session.commit()
         container.add_file(mtc_device_file, '/home/agent/device.xml')
         container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
+        user_notify.success(f'Agent {self.uuid} created successfully')
 
     def create_ksqldb_tables(self):
         """ Create ksqlDB tables related to the agent """
@@ -203,6 +201,9 @@ class Agent(Base):
                                       FROM devices_stream
                                       WHERE device_uuid = '{self.producer_uuid}'
                                       GROUP BY id;""")
+        user_notify.success((f"ksqlDB tables {self.device_uuid.replace('-', '_')}, "
+                             f"{self.uuid.upper().replace('-', '_')} and "
+                             f"{self.producer_uuid.replace('-', '_')} created successfully"))
 
     def create_producer(self, cpus=0):
         """ Create Kafka producer for agent """
@@ -222,6 +223,7 @@ class Agent(Base):
         session.add_all([container])
         self.producer_container = container
         session.commit()
+        user_notify.success(f'Kafka producer {self.producer_uuid} created successfully')
 
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"

@@ -10,6 +10,7 @@ from paramiko.ssh_exception import SSHException
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
+from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
@@ -30,6 +31,8 @@ class TestAgent(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        user_notify.setup(success_msg=Mock(),
+                          fail_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
@@ -46,6 +49,8 @@ class TestAgent(TestCase):
         mock.docker_client.reset_mock()
         mock.docker_container.reset_mock()
         mock.docker_images.reset_mock()
+        user_notify.success.reset_mock()
+        user_notify.fail.reset_mock()
 
     def tearDown(self):
         """ Rollback all transactions """
@@ -227,23 +232,23 @@ class TestAgent(TestCase):
         """
         Test if user_notification called correctly in start method
         """
-        mock_notification = Mock()
         agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.start(user_notification=mock_notification)
+        user_notify.success.reset_mock()
+        agent.start()
 
         # check if user_notification called
-        mock_notification.assert_called_once_with('Agent TEST-AGENT started successfully')
+        user_notify.success.assert_called_once_with('Agent TEST-AGENT started successfully')
 
         # add producer
         agent.create_producer()
-        mock_notification.reset_mock()
-        agent.start(user_notification=mock_notification)
+        user_notify.success.reset_mock()
+        agent.start()
 
         # check if user_notification called
-        calls = mock_notification.call_args_list
+        calls = user_notify.success.call_args_list
         self.assertEqual(calls[0], call('Producer TEST-PRODUCER started successfully'))
         self.assertEqual(calls[1], call('Agent TEST-AGENT started successfully'))
 
@@ -271,15 +276,15 @@ class TestAgent(TestCase):
         """
         Test if user_notification called correctly in stop method
         """
-        mock_notification = Mock()
         agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.stop(user_notification=mock_notification)
+        user_notify.success.reset_mock()
+        agent.stop()
 
         # check if user_notification called
-        mock_notification.assert_called_once_with('Agent TEST-AGENT stopped successfully')
+        user_notify.success.assert_called_once_with('Agent TEST-AGENT stopped successfully')
 
         # clean up
         self.cleanup()
@@ -387,16 +392,16 @@ class TestAgent(TestCase):
         """
         Test if user_notification called correctly in detach method
         """
-        user_notification = Mock()
         agent = self.setup_agent()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')
         agent.create_container('123.456.7.500', 7878, device_file, 1)
         agent.create_producer()
-        agent.detach(user_notification=user_notification)
+        user_notify.success.reset_mock()
+        agent.detach()
 
         # check if user_notification called
-        user_notification.assert_called_once_with('TEST-PRODUCER removed successfully')
+        user_notify.success.assert_called_once_with('Producer TEST-PRODUCER removed successfully')
 
         # clean up
         self.cleanup()

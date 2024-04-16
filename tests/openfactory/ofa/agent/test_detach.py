@@ -119,7 +119,7 @@ class Test_ofa_agent_detach(TestCase):
 
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.output,
-                         'TEST1-PRODUCER removed successfully\nAgent TEST1-AGENT detached successfully\n')
+                         'Agent TEST1-AGENT detached successfully\n')
 
         # clean up
         self.cleanup()

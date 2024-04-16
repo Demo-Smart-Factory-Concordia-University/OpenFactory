@@ -137,7 +137,7 @@ class Test_ofa_agent_rm(TestCase):
 
         # check if user_notification called
         self.assertEqual(result.output,
-                         'TEST1-PRODUCER removed successfully\nTEST1-AGENT removed successfully\n')
+                         'TEST1-AGENT removed successfully\n')
 
         # clean up
         self.cleanup()

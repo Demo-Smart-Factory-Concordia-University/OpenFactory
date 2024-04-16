@@ -33,6 +33,7 @@ def create_from_config_file(yaml_config_file, run=False, attach=False):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
+        print(f"{device['UUID']}:")
 
         if not _validate(device, db_session):
             continue
@@ -72,7 +73,6 @@ def create_from_config_file(yaml_config_file, run=False, attach=False):
                                device['agent']['adapter']['PORT'],
                                device_xml,
                                cpus)
-        print(f"Agent {agent.uuid} created successfully")
 
         if run:
             agent.start()

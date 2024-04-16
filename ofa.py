@@ -1,4 +1,5 @@
 import click
+from openfactory.models.user_notifications import user_notify
 import openfactory.ofa as ofa
 from openfactory.ofa.db import db
 import openfactory.config as config
@@ -48,10 +49,13 @@ cli.add_command(device)
 device.add_command(ofa.device.up)
 device.add_command(ofa.device.down)
 
+# setup user notifications
+user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{config.OFA_END}"),
+                  fail_msg=lambda msg: print(f"{config.OFA_FAIL}{msg}{config.OFA_END}"))
+
 # connect to database
 db.conn_uri = config.SQL_ALCHEMY_CONN
 db.connect()
-
 
 if __name__ == '__main__':
     cli()
