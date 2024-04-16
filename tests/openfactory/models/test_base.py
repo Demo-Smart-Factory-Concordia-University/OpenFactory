@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase
 from openfactory.models.base import Base
 
 
-class TestNodes(TestCase):
+class TestBase(TestCase):
     """
     Unit tests for Base model
     """
