@@ -1,0 +1,12 @@
+# Extends test_base_stack with a node
+# Here manager is defined again but conflicting with test_base_stack.manager
+
+stack: test_base_stack
+
+network: test-net
+
+manager: 123.456.7.700
+
+nodes:
+
+   node5: 123.456.7.805
