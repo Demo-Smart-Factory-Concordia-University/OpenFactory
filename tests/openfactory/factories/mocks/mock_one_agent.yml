@@ -1,0 +1,18 @@
+# Mock configuration of one agent
+
+devices:
+
+  zaix-001:
+    UUID: TEST-ZAIX-001
+    NODE: manager
+    agent:
+      PORT: 3001
+      DEVICE_XML: mock_device.xml
+      adapter:
+        IP: adapter1.test.org
+        PORT: 7878
+    runtime:
+      agent:
+        cpus: 1.5
+      producer:
+        cpus: 1

@@ -1,0 +1,53 @@
+<!-- ==========================================================
+ 
+       MTConnect Device file for a DHT sensor
+       (c) Rolf Wuthrich
+           2024 Concordia University
+
+     ========================================================== -->
+
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="DHT-GEN" id="dht" name="ESP8266-DHT">
+
+      <!-- General information -->
+      <Description>
+         Humidity and Temperature Sensor (DHT)
+      </Description>
+      <DataItems>
+        <DataItem category="EVENT" id="avail" type="AVAILABILITY"/>
+      </DataItems>
+
+      <!-- Components -->
+      <Components>
+
+        <!-- Sensor -->
+        <Sensor id="sensor">
+
+          <!-- Configuration -->
+          <Configuration>
+            <SensorConfiguration>
+              <FirmwareVersion>0.1</FirmwareVersion>
+              <Channels>
+                 <Channel number="1" name="Temperature">
+                   <Description>Temperature in celcius</Description>
+                 </Channel>
+                 <Channel number="2" name="Humidity">
+                   <Description>Relative humidity</Description>
+                 </Channel>
+              </Channels>
+            </SensorConfiguration>
+          </Configuration>
+
+          <!-- DataItems -->
+          <DataItems>
+            <DataItem category="SAMPLE" id="Temp" type="TEMPERATURE" units="CELCIUS"/>
+            <DataItem category="SAMPLE" id="Humi" type="HUMIDITY_RELATIVE" units="PERCENT"/>
+          </DataItems>
+
+        </Sensor>
+
+      </Components>
+    </Device>
+  </Devices>
+</MTConnectDevices>
