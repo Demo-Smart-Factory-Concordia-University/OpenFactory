@@ -32,7 +32,8 @@ class TestAgent(TestCase):
         db.connect()
         Base.metadata.create_all(db.engine)
         user_notify.setup(success_msg=Mock(),
-                          fail_msg=Mock())
+                          fail_msg=Mock(),
+                          info_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
