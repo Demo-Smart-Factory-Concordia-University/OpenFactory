@@ -6,6 +6,7 @@ from sqlalchemy import select
 import tests.mocks as mock
 import openfactory.ofa as ofa
 from openfactory.ofa.db import db
+from openfactory.factories import create_infrastack
 from openfactory.models.base import Base
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
@@ -64,7 +65,7 @@ class Test_ofa_stack_rm(TestCase):
         # setup base stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        stack = ofa.stack.up(db.session, config_file)
+        stack = create_infrastack(db.session, config_file)
 
         # remove stack
         ofa.stack.rm(db.session, stack.id)
@@ -83,12 +84,12 @@ class Test_ofa_stack_rm(TestCase):
         # setup base stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
+        create_infrastack(db.session, config_file)
 
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add1_infra_mock.yml')
-        stack2 = ofa.stack.up(db.session, config_file)
+        stack2 = create_infrastack(db.session, config_file)
 
         # remove additional stack
         ofa.stack.rm(db.session, stack2.id)
@@ -119,12 +120,12 @@ class Test_ofa_stack_rm(TestCase):
         # setup stacks
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        stack1 = ofa.stack.up(db.session, config_file)
+        stack1 = create_infrastack(db.session, config_file)
 
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add2_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
+        create_infrastack(db.session, config_file)
 
         # remove stack
         ofa.stack.rm(db.session, stack1.id)

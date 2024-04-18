@@ -6,6 +6,7 @@ from sqlalchemy import select
 import tests.mocks as mock
 import openfactory.ofa as ofa
 from openfactory.ofa.db import db
+from openfactory.factories import create_infrastack
 from openfactory.models.base import Base
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
@@ -64,7 +65,7 @@ class Test_ofa_stack_down(TestCase):
         # setup base stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
+        create_infrastack(db.session, config_file)
 
         # remove stack
         ofa.stack.down(db.session, config_file)
@@ -83,12 +84,12 @@ class Test_ofa_stack_down(TestCase):
         # setup base stack
         config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_base)
+        create_infrastack(db.session, config_base)
 
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add1_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
+        create_infrastack(db.session, config_file)
 
         # remove additional stack
         ofa.stack.down(db.session, config_file)
@@ -112,7 +113,7 @@ class Test_ofa_stack_down(TestCase):
         # setup additional stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/add1_infra_mock.yml')
-        ofa.stack.up(db.session, config_file)
+        create_infrastack(db.session, config_file)
 
         # check base stack cannot be removed
         ofa.stack.down(db.session, config_base)
@@ -137,12 +138,12 @@ class Test_ofa_stack_down(TestCase):
         # setup stacks
         config_file1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mock/infra/base_infra_mock.yml')
-        ofa.stack.up(db.session, config_file1)
+        create_infrastack(db.session, config_file1)
 
         # setup additional stack
         config_file2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mock/infra/add2_infra_mock.yml')
-        ofa.stack.up(db.session, config_file2)
+        create_infrastack(db.session, config_file2)
 
         # remove stack
         ofa.stack.down(db.session, config_file1)
