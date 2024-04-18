@@ -1,10 +1,10 @@
 import click
 from sqlalchemy import select
 
-from openfactory.models.infrastack import InfraStack
 from openfactory.ofa.db import db
+from openfactory.exceptions import OFAException
+from openfactory.models.infrastack import InfraStack
 from openfactory.models.user_notifications import user_notify
-from .rm import rm
 
 
 @click.command(name='rm')
@@ -16,6 +16,10 @@ def click_rm(stack_name):
     if stack is None:
         user_notify.fail(f"No OpenFactory stack {stack_name} in OpenFactory database")
         return
-    rm(db.session, stack[0].id,
-       user_notification_success=user_notify.success,
-       user_notification_fail=user_notify.fail)
+    stack[0].clear()
+    try:
+        db.session.delete(stack[0])
+        db.session.commit()
+    except OFAException as err:
+        db.session.rollback()
+        user_notify.fail(err)
