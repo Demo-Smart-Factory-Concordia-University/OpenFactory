@@ -108,7 +108,7 @@ class Agent(Base):
             return
         if self.producer_container:
             self.producer_container.start()
-            user_notify.success(f"Producer {self.producer_uuid} started successfully")
+            user_notify.success(f"Kafka producer {self.producer_uuid} started successfully")
         self.agent_container.start()
         user_notify.success(f"Agent {self.uuid} started successfully")
 
@@ -150,7 +150,7 @@ class Agent(Base):
         if self.producer_container:
             self.producer_container = None
             Session.object_session(self).commit()
-            user_notify.success(f"Producer {self.producer_uuid} removed successfully")
+            user_notify.success(f"Kafka producer {self.producer_uuid} removed successfully")
 
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
@@ -235,4 +235,5 @@ def agent_after_delete(mapper, connection, target):
     Detach agent
     """
     if target.producer_container:
-        print(f"{target.producer_uuid} removed successfully")
+        user_notify.success(f"Kafka producer {target.producer_uuid} removed successfully")
+    user_notify.success(f"Agent {target.uuid} removed successfully")

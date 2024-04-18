@@ -147,6 +147,42 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
+    def test_agent_teardown_notifications(self, *args):
+        """
+        Test user notifications when tear down of an Agent
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_producer()
+
+        # tear down agent
+        user_notify.success.reset_mock()
+        db.session.delete(agent)
+        db.session.commit()
+
+        # check notfications were emitted
+        calls = user_notify.success.call_args_list
+        self.assertEqual(calls[0], call('Kafka producer TEST-PRODUCER removed successfully'))
+        self.assertEqual(calls[1], call('Agent TEST-AGENT removed successfully'))
+
+        # agent without producer
+        self.cleanup()
+        agent = self.setup_agent()
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+
+        # tear down agent
+        user_notify.success.reset_mock()
+        db.session.delete(agent)
+        db.session.commit()
+
+        # check notfications were emitted
+        user_notify.success.called_once_with('Agent TEST-AGENT removed successfully')
+
+        # clean-up
+        self.cleanup()
+
     def test_agent_uuid_unique(self, *args):
         """
         Test Agent.uuid is required to be unique
@@ -250,7 +286,7 @@ class TestAgent(TestCase):
 
         # check if user_notification called
         calls = user_notify.success.call_args_list
-        self.assertEqual(calls[0], call('Producer TEST-PRODUCER started successfully'))
+        self.assertEqual(calls[0], call('Kafka producer TEST-PRODUCER started successfully'))
         self.assertEqual(calls[1], call('Agent TEST-AGENT started successfully'))
 
         # clean up
@@ -402,7 +438,7 @@ class TestAgent(TestCase):
         agent.detach()
 
         # check if user_notification called
-        user_notify.success.assert_called_once_with('Producer TEST-PRODUCER removed successfully')
+        user_notify.success.assert_called_once_with('Kafka producer TEST-PRODUCER removed successfully')
 
         # clean up
         self.cleanup()
