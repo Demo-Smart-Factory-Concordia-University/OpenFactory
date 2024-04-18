@@ -15,7 +15,6 @@ def click_rm(agent_uuid):
         click.echo(f'No Agent {agent_uuid} defined in OpenFactory')
         exit(1)
     else:
-        agent[0].detach()
         db.session.delete(agent[0])
         db.session.commit()
         click.echo(f"{agent_uuid} removed successfully")
