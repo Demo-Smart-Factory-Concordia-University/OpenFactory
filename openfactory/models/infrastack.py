@@ -1,15 +1,15 @@
 from typing import List
 from sqlalchemy import event
 from sqlalchemy import String
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from openfactory.exceptions import OFAException
+from .user_notifications import user_notify
 from .base import Base
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from .node import Node
+from .nodes import Node
 
 
 class InfraStack(Base):
@@ -33,6 +33,40 @@ class InfraStack(Base):
         if not self.nodes:
             return None
         return self.nodes[0].manager
+
+    def clear(self):
+        """ Clear stack """
+        db_session = Session.object_session(self)
+
+        # remove all none-manager nodes
+        manager = None
+        for node in self.nodes:
+            if node.node_name == 'manager':
+                manager = node
+                continue
+            try:
+                node_name = node.node_name
+                db_session.delete(node)
+                db_session.commit()
+                user_notify.success(f"Removed node '{node_name}' successfully")
+            except OFAException as err:
+                db_session.rollback()
+                user_notify.info(err)
+
+        # remove manager node if allowed
+        if manager:
+            if len(db_session.query(Node).all()) == 1:
+                try:
+                    db_session.delete(manager)
+                    db_session.commit()
+                    user_notify.success("Removed manager node successfully")
+                except OFAException as err:
+                    db_session.rollback()
+                    user_notify.fail(err)
+            else:
+                user_notify.info("Manager node not removed as other nodes exist")
+
+        user_notify.success(f"Cleared stack '{self.stack_name}' successfully")
 
 
 @event.listens_for(InfraStack, 'before_delete')
