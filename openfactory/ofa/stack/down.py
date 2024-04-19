@@ -23,7 +23,6 @@ def down(db_session, stack_config_file, user_notification_success=print, user_no
         try:
             db_session.delete(n)
             db_session.commit()
-            user_notification_success(f"Removed node {node}")
         except OFAException as err:
             db_session.rollback()
             user_notification_fail(err)
@@ -35,7 +34,6 @@ def down(db_session, stack_config_file, user_notification_success=print, user_no
             try:
                 db_session.delete(manager[0])
                 db_session.commit()
-                user_notification_success("Removed manager node")
             except OFAException as err:
                 db_session.rollback()
                 user_notification_fail(err)

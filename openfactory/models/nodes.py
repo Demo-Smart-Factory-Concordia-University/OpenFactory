@@ -14,6 +14,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 import openfactory.config as config
 from openfactory.exceptions import OFAException
+from .user_notifications import user_notify
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -82,9 +83,11 @@ def node_before_insert(mapper, connection, target):
         client.networks.create(target.network,
                                driver='overlay',
                                attachable=True)
+        user_notify.success(f"Created network {target.network} successfully")
         target.cpus = client.info()['NCPU']
         target.memory = client.info()['MemTotal'] / 1073741824
         client.close()
+        user_notify.success("Attached manager node successfully")
         return
 
     # get manager token
@@ -105,6 +108,7 @@ def node_before_insert(mapper, connection, target):
 
     client.close()
     node_client.close()
+    user_notify.success(f"Attached node '{target.node_name}' successfully")
 
 
 @event.listens_for(Node, 'before_delete')
@@ -127,6 +131,7 @@ def node_after_delete(mapper, connection, target):
     if target.node_name == "manager":
         client.swarm.leave(force=True)
         client.close()
+        user_notify.success("Removed manager node successfully")
         return
 
     client.swarm.leave()
@@ -134,4 +139,4 @@ def node_after_delete(mapper, connection, target):
     client = docker.APIClient(target.manager.docker_url)
     client.remove_node(target.docker_node_id, force=True)
     client.close()
-    return
+    user_notify.success(f"Removed node '{target.node_name}' successfully")

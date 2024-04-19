@@ -45,10 +45,8 @@ class InfraStack(Base):
                 manager = node
                 continue
             try:
-                node_name = node.node_name
                 db_session.delete(node)
                 db_session.commit()
-                user_notify.success(f"Removed node '{node_name}' successfully")
             except OFAException as err:
                 db_session.rollback()
                 user_notify.info(err)
@@ -59,7 +57,6 @@ class InfraStack(Base):
                 try:
                     db_session.delete(manager)
                     db_session.commit()
-                    user_notify.success("Removed manager node successfully")
                 except OFAException as err:
                     db_session.rollback()
                     user_notify.fail(err)

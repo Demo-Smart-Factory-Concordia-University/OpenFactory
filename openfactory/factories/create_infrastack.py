@@ -1,6 +1,5 @@
 from sqlalchemy import select
 from openfactory.utils import load_yaml
-from openfactory.models.user_notifications import user_notify
 from openfactory.models.nodes import Node
 from openfactory.models.infrastack import InfraStack
 from openfactory.exceptions import OFAConfigurationException
@@ -43,7 +42,6 @@ def create_infrastack(db_session, stack_config_file):
             raise OFAConfigurationException('Manager missing in configuration file')
         if 'network' not in infra:
             raise OFAConfigurationException('Network missing in configuration file')
-        user_notify.success("Setting up manager and network")
         node = Node(
             node_name='manager',
             node_ip=infra['manager'],
@@ -57,7 +55,6 @@ def create_infrastack(db_session, stack_config_file):
     for node_name, host in infra['nodes'].items():
         query = select(Node).where(Node.node_name == node_name)
         if db_session.execute(query).one_or_none() is None:
-            user_notify.success(f"Attaching {node_name}")
             node = Node(
                 node_name=node_name,
                 node_ip=host,
