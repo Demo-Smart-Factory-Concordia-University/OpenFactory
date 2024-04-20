@@ -3,7 +3,7 @@ User notifcations emmited by the OpenFactory models
 """
 
 
-class UserNotifcations:
+class UserNotifications:
 
     success = print
     fail = print
@@ -15,4 +15,4 @@ class UserNotifcations:
         self.info = info_msg
 
 
-user_notify = UserNotifcations()
+user_notify = UserNotifications()
