@@ -4,9 +4,9 @@ from unittest.mock import patch
 from sqlalchemy import select
 
 import tests.mocks as mock
-import openfactory.ofa as ofa
 from openfactory.ofa.db import db
 from openfactory.factories import create_infrastack
+from openfactory.factories import remove_infrastack
 from openfactory.models.base import Base
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
@@ -68,7 +68,7 @@ class Test_remove_infrastack(TestCase):
         create_infrastack(db.session, config_file)
 
         # remove stack
-        ofa.stack.down(db.session, config_file)
+        remove_infrastack(db.session, config_file)
 
         # check stack and nodes were removed
         self.assertEqual(len(db.session.query(InfraStack).all()), 0)
@@ -92,7 +92,7 @@ class Test_remove_infrastack(TestCase):
         create_infrastack(db.session, config_file)
 
         # remove additional stack
-        ofa.stack.down(db.session, config_file)
+        remove_infrastack(db.session, config_file)
 
         # check stack and nodes were removed
         query = select(InfraStack).where(InfraStack.stack_name == "test_add_stack")
@@ -116,7 +116,7 @@ class Test_remove_infrastack(TestCase):
         create_infrastack(db.session, config_file)
 
         # check base stack cannot be removed
-        ofa.stack.down(db.session, config_base)
+        remove_infrastack(db.session, config_base)
         query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
         self.assertEqual(len(db.session.execute(query).one()), 1)
         query = select(Node).where(Node.node_name == "manager")
@@ -146,7 +146,7 @@ class Test_remove_infrastack(TestCase):
         create_infrastack(db.session, config_file2)
 
         # remove stack
-        ofa.stack.down(db.session, config_file1)
+        remove_infrastack(db.session, config_file1)
 
         # check nodes were removed
         query = select(Node).where(Node.node_name == "node1")
