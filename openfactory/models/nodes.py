@@ -118,6 +118,9 @@ def node_before_delete(mapper, connection, target):
     """
     if target.containers or target.compose_projects:
         raise OFAException(f"Cannot remove node '{target.node_name}': containers/Docker compose projects are running on it")
+    if target.node_name == "manager":
+        if len(Session.object_session(target).query(Node).all()) > 1:
+            raise OFAException("Manager node not removed as other nodes exist")
 
 
 @event.listens_for(Node, 'after_delete')

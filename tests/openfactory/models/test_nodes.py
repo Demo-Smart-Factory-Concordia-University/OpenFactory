@@ -284,6 +284,20 @@ class TestNodes(TestCase):
         # clean-up
         self.cleanup()
 
+    def test_node_remove_manager(self, *args):
+        """
+        Test if error raised when manager is removed while nodes exist
+        """
+        manager, node = self.setup_nodes()
+
+        # check exception is raised if manager is attempted to be removed
+        self.session.delete(manager)
+        self.assertRaises(OFAException, self.session.commit)
+        self.session.rollback()
+
+        # clean-up
+        self.cleanup()
+
     def test_node_remove_notifications(self, *args):
         """
         Test if user notifications are emitted correctly when node removed
