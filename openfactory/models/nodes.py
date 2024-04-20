@@ -83,7 +83,7 @@ def node_before_insert(mapper, connection, target):
         client.networks.create(target.network,
                                driver='overlay',
                                attachable=True)
-        user_notify.success(f"Created network {target.network} successfully")
+        user_notify.success(f"Created network '{target.network}' successfully")
         target.cpus = client.info()['NCPU']
         target.memory = client.info()['MemTotal'] / 1073741824
         client.close()

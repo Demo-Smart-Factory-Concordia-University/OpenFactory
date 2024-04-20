@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock, call
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 import tests.mocks as mock
 import openfactory.config as config
 from openfactory.exceptions import OFAException
+from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
@@ -188,6 +189,22 @@ class TestNodes(TestCase):
         # clean-up
         self.cleanup()
 
+    def test_node_setup_notifications(self, *args):
+        """
+        Test if user notifications are emitted correctly when node created
+        """
+        user_notify.success = Mock()
+        self.setup_nodes()
+
+        # check notifications emitted
+        args = user_notify.success.call_args_list
+        self.assertEqual(args[0], call("Created network 'test-net' successfully"))
+        self.assertEqual(args[1], call('Attached manager node successfully'))
+        self.assertEqual(args[2], call("Attached node 'node' successfully"))
+
+        # clean-up
+        self.cleanup()
+
     def test_node_name_unique(self, *args):
         """
         Test Node.node_name is required to be unique
@@ -263,6 +280,24 @@ class TestNodes(TestCase):
         # check node was not removed
         query = select(Node).where(Node.node_name == "node")
         self.assertEqual(self.session.execute(query).one_or_none()[0], node)
+
+        # clean-up
+        self.cleanup()
+
+    def test_node_remove_notifications(self, *args):
+        """
+        Test if user notifications are emitted correctly when node removed
+        """
+        self.setup_nodes()
+
+        # remove nodes
+        user_notify.success = Mock()
+        self.cleanup()
+
+        # check notifications emitted
+        args = user_notify.success.call_args_list
+        self.assertEqual(args[0], call("Removed node 'node' successfully"))
+        self.assertEqual(args[1], call('Removed manager node successfully'))
 
         # clean-up
         self.cleanup()
