@@ -10,7 +10,7 @@ from openfactory.models.agents import Agent
 @click.argument('yaml_config_file',
                 type=click.Path(exists=True),
                 nargs=1)
-def down(yaml_config_file):
+def click_down(yaml_config_file):
     """ Stop and remove devices """
 
     # Load yaml description file
