@@ -51,17 +51,14 @@ class InfraStack(Base):
                 db_session.rollback()
                 user_notify.info(err)
 
-        # remove manager node if allowed
+        # remove manager node
         if manager:
-            if len(db_session.query(Node).all()) == 1:
-                try:
-                    db_session.delete(manager)
-                    db_session.commit()
-                except OFAException as err:
-                    db_session.rollback()
-                    user_notify.fail(err)
-            else:
-                user_notify.info("Manager node not removed as other nodes exist")
+            try:
+                db_session.delete(manager)
+                db_session.commit()
+            except OFAException as err:
+                db_session.rollback()
+                user_notify.info(err)
 
         user_notify.success(f"Cleared stack '{self.stack_name}' successfully")
 
