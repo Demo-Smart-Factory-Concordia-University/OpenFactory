@@ -1,2 +1,2 @@
 from openfactory.ofa.device.down import down
-from openfactory.ofa.device.up import up
+from .up import click_up

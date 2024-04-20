@@ -46,7 +46,7 @@ agent.add_command(ofa.agent.click_attach)
 agent.add_command(ofa.agent.click_detach)
 
 cli.add_command(device)
-device.add_command(ofa.device.up)
+device.add_command(ofa.device.click_up)
 device.add_command(ofa.device.down)
 
 # setup user notifications
