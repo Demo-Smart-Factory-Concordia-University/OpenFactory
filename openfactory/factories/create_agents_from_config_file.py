@@ -19,7 +19,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        print(f"{device['UUID']}:")
+        user_notify.info(f"{device['UUID']}:")
 
         query = select(Agent).where(Agent.uuid == device['UUID'].upper() + '-AGENT')
         if db_session.execute(query).one_or_none() is not None:
