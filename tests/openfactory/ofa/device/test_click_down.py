@@ -37,7 +37,7 @@ class TestDeviceDown(TestCase):
         mock_remove_devices_from_config_file.called_once_with(db.session, config_file)
         self.assertEqual(result.exit_code, 0)
 
-    def test_stack_down_none_existent_file(self, *args):
+    def test_device_down_none_existent_file(self, *args):
         """
         Test ofa.device.click_down with none exisitng config file
         """
