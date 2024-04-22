@@ -1,9 +1,6 @@
 import click
-import yaml
-from sqlalchemy import select
-
 from openfactory.ofa.db import db
-from openfactory.models.agents import Agent
+from openfactory.factories.remove_devices_from_config_file import remove_devices_from_config_file
 
 
 @click.command(name='down')
@@ -12,22 +9,4 @@ from openfactory.models.agents import Agent
                 nargs=1)
 def click_down(yaml_config_file):
     """ Stop and remove devices """
-
-    # Load yaml description file
-    with open(yaml_config_file, 'r') as stream:
-        cfg = yaml.safe_load(stream)
-
-    for dev in cfg['devices']:
-        device = cfg['devices'][dev]
-        print(f"{device['UUID']}:")
-        agent_uuid = device['UUID'].upper() + "-AGENT"
-        query = select(Agent).where(Agent.uuid == agent_uuid)
-        agent = db.session.execute(query).one_or_none()
-        if agent is None:
-            print(f'No Agent {agent_uuid} defined in OpenFactory')
-            continue
-        agent[0].stop()
-        agent[0].detach()
-        db.session.delete(agent[0])
-        db.session.commit()
-        print(f"{device['UUID']} removed successfully")
+    remove_devices_from_config_file(db.session, yaml_config_file)
