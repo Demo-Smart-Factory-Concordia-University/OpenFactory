@@ -1,4 +1,6 @@
-# OpenFactory Infrastructure definition
+# OpenFactory Infrastructure definition example
+
+stack: base
 
 network: factory-net
 
@@ -7,3 +9,4 @@ manager: ${MANAGER_IP}
 nodes:
 
    node1: ${NODE1_IP}
+   node2: ${NODE2_IP}
