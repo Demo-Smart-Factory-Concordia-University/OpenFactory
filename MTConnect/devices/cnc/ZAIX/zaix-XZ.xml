@@ -1,0 +1,69 @@
+<!-- ========================================================
+ 
+       MTConnect Device file for ZAIX X-Z axis
+       (c) Rolf Wuthrich
+           2024 Concordia University
+     ======================================================== -->
+
+
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="ZAIX-4-GEN" id="device" name="Zaix-4">
+      <!-- General information -->
+      <Description manufacturer="ANNOY TOOLS"/>
+      <DataItems>
+        <DataItem category="EVENT" id="avail" type="AVAILABILITY"/>
+        <DataItem category="EVENT" id="operator" subType="OPERATOR" type="USER"/>
+        <DataItem category="EVENT" id="exp_start" type="MESSAGE"/>
+        <DataItem category="EVENT" id="exp_end" type="MESSAGE"/>
+      </DataItems>
+
+      <!-- Components -->
+      <Components>
+
+        <!-- Axes -->
+        <Axes id="axes" name="Axes">
+          <Components>
+            <Linear id="Z-axis" name="X">
+              <DataItems>
+                <DataItem category="SAMPLE" id="Xact" name="Xact" nativeUnits="MILLIMETER" subType="ACTUAL" type="POSITION" units="MILLIMETER"/>
+              </DataItems>
+            </Linear>
+            <Linear id="Z-axis" name="Z">
+              <DataItems>
+                <DataItem category="SAMPLE" id="Zact" name="Zact" nativeUnits="MILLIMETER" subType="ACTUAL" type="POSITION" units="MILLIMETER"/>
+              </DataItems>
+            </Linear>
+          </Components>
+        </Axes>
+
+        <!-- Controller -->
+        <Controller id="ctrl" name="controller">
+          <!-- General information on the controller -->
+          <DataItems>
+            <DataItem category="EVENT" id="firmeware" type="APPLICATION" subType="VERSION"/>
+            <DataItem category="EVENT" id="msg" type="MESSAGE"/>
+            <DataItem category="EVENT" id="estop" type="EMERGENCY_STOP"/>
+            <DataItem category="CONDITION" id="grbl" type="LOGIC_PROGRAM"/>
+            <DataItem category="CONDITION" id="motion" type="MOTION_PROGRAM"/>
+          </DataItems>
+          <Components>
+            <!-- State of the controller -->
+            <Path id="path" name="path">
+              <DataItems>
+                <DataItem category="EVENT" id="block" name="block" type="BLOCK"/>
+                <DataItem category="EVENT" id="mode" name="mode" type="CONTROLLER_MODE"/>
+                <DataItem category="EVENT" id="line" name="line" type="LINE_NUMBER" subType="ABSOLUTE"/>
+                <DataItem category="EVENT" id="prog" name="program" type="PROGRAM"/>
+                <DataItem category="EVENT" id="exec" name="execution" type="EXECUTION"/>
+                <DataItem category="EVENT" id="tool" name="tool_id" type="TOOL_ID"/>
+                <DataItem category="SAMPLE" id="Frt" nativeUnits="MILLIMETER/MINUTE" subType="ACTUAL" type="PATH_FEEDRATE" units="MILLIMETER/SECOND"/>
+              </DataItems>
+            </Path>
+          </Components>
+        </Controller>
+
+      </Components>
+    </Device>
+  </Devices>
+</MTConnectDevices>
