@@ -15,6 +15,7 @@ from openfactory.models.containers import DockerContainer
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 class Test_ofa_agent_rm(TestCase):
     """
     Unit tests for ofa.agent.click_rm function

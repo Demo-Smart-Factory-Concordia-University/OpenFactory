@@ -18,6 +18,7 @@ from openfactory.models.containers import DockerContainer
 import tests.mocks as mock
 
 
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 class TestAgent(TestCase):
     """
@@ -596,6 +597,85 @@ class TestAgent(TestCase):
         query = select(DockerContainer).where(DockerContainer.name == "test-producer")
         cont = db.session.execute(query).first()
         self.assertEqual(cont, None)
+
+        # clean-up
+        self.cleanup()
+
+    def test_kafka_producer_setup_on_load(self, *args):
+        """
+        Test if kafka_producer setup when agent loaded from database
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_ksqldb_tables = Mock()
+        agent.attach()
+
+        # reload same instance
+        db.session.close()
+        db.session = Session(db.engine)
+        query = select(Agent).where(Agent.uuid == "TEST-AGENT")
+        agent_reload = db.session.execute(query).one()
+        agent_reload = agent_reload[0]
+
+        # check kafka_producer setup
+        self.assertNotEqual(agent_reload.kafka_producer, None)
+
+        # clean-up
+        self.cleanup()
+
+    def test_unavailable_sent_on_detach(self, *args):
+        """
+        Test if Kafka message sent when agent detached
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_ksqldb_tables = Mock()
+        agent.attach()
+        agent.detach()
+
+        # check Kafka messages sent
+        agent.kafka_producer.send_producer_availability.called_once_with('UNAVAILABLE')
+
+        # clean-up
+        self.cleanup()
+
+    def test_unavailable_sent_on_stop(self, *args):
+        """
+        Test if Kafka message sent when agent stopped
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_ksqldb_tables = Mock()
+        agent.attach()
+        agent.stop()
+
+        # check Kafka messages sent
+        agent.kafka_producer.send_agent_availability.called_once_with('UNAVAILABLE')
+
+        # clean-up
+        self.cleanup()
+
+    def test_unavailable_sent_on_delete(self, *args):
+        """
+        Test if Kafka messages sent when agent deleted
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.create_ksqldb_tables = Mock()
+        agent.attach()
+        db.session.delete(agent)
+
+        # check Kafka messages sent
+        agent.kafka_producer.send_producer_availability.called_once_with('UNAVAILABLE')
+        agent.kafka_producer.send_agent_availability.called_once_with('UNAVAILABLE')
 
         # clean-up
         self.cleanup()

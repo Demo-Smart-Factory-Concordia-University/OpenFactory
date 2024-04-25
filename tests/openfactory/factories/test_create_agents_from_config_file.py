@@ -14,6 +14,7 @@ from openfactory.models.agents import Agent
 from openfactory.factories import create_agents_from_config_file
 
 
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_create_agents_from_config_file(TestCase):
