@@ -16,6 +16,7 @@ from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
 
 
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_remove_devices_from_config_file(TestCase):

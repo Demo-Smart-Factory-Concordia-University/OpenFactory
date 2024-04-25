@@ -12,6 +12,7 @@ from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 
 
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_ofa_agent_stop(TestCase):

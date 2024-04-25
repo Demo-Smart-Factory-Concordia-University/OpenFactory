@@ -14,6 +14,7 @@ from sqlalchemy.exc import PendingRollbackError
 from pyksql.ksql import KSQL
 from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
+from mtc2kafka.connectors import MTCSourceConnector
 
 import openfactory.config as config
 from openfactory.exceptions import OFAException
@@ -41,6 +42,17 @@ agent_producer_table = Table(
 )
 
 
+class AgentKafkaProducer(MTCSourceConnector):
+    """ Kafka producer for Agent """
+
+    bootstrap_servers = [config.KAFKA_BROKER]
+
+    def __init__(self, agent):
+        self.mtc_agent = f"{agent.agent_container.name}:5000"
+        self.kafka_producer_uuid = agent.producer_uuid
+        super().__init__()
+
+
 class Agent(Base):
     """
     MTConnect Agent
@@ -60,6 +72,9 @@ class Agent(Base):
     producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table,
                                                                cascade="all, delete-orphan",
                                                                single_parent=True)
+
+    # Kafka producer used to send messages
+    kafka_producer = None
 
     @hybrid_property
     def agent_url(self):
@@ -120,6 +135,8 @@ class Agent(Base):
         if not self.status == 'running':
             return
         self.agent_container.stop()
+        if self.kafka_producer:
+            self.kafka_producer.send_agent_availability('UNAVAILABLE')
         user_notify.success(f"Agent {self.uuid} stopped successfully")
 
     def attach(self, cpus=0):
@@ -144,12 +161,15 @@ class Agent(Base):
         # Start producer
         self.producer_container.start()
         user_notify.success(f'Kafka producer {self.producer_uuid} started successfully')
+        self.kafka_producer = AgentKafkaProducer(self)
 
     def detach(self):
         """ Detach agent by removing producer """
         if self.producer_container:
             self.producer_container = None
             Session.object_session(self).commit()
+            if self.kafka_producer:
+                self.kafka_producer.send_producer_availability('UNAVAILABLE')
             user_notify.success(f"Kafka producer {self.producer_uuid} removed successfully")
 
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
@@ -229,6 +249,16 @@ class Agent(Base):
         return f"Agent (id={self.id}, uuid={self.uuid})"
 
 
+@event.listens_for(Agent, 'load')
+def agent_load(target, context):
+    """
+    Create kafka_producer if an agent is running
+    """
+    if target.agent_container:
+        if target.agent_container.status == 'running':
+            target.kafka_producer = AgentKafkaProducer(target)
+
+
 @event.listens_for(Agent, 'after_delete')
 def agent_after_delete(mapper, connection, target):
     """
@@ -236,4 +266,9 @@ def agent_after_delete(mapper, connection, target):
     """
     if target.producer_container:
         user_notify.success(f"Kafka producer {target.producer_uuid} removed successfully")
+        if target.kafka_producer:
+            target.kafka_producer.send_producer_availability('UNAVAILABLE')
+
+    if target.kafka_producer:
+        target.kafka_producer.send_agent_availability('UNAVAILABLE')
     user_notify.success(f"Agent {target.uuid} removed successfully")

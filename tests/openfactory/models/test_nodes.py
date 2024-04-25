@@ -15,6 +15,7 @@ from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 
 
+@patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class TestNodes(TestCase):
@@ -95,7 +96,7 @@ class TestNodes(TestCase):
         """
         self.assertEqual(Node.__tablename__, 'ofa_nodes')
 
-    def test_manager_setup(self, mock_DockerAPIClient, mock_DockerClient):
+    def test_manager_setup(self, mock_DockerAPIClient, mock_DockerClient, *args):
         """
         Test setup and tear down of a manager node
         """
@@ -150,7 +151,7 @@ class TestNodes(TestCase):
         args, kwargs = mock.docker_swarm.leave.call_args
         self.assertEqual(kwargs['force'], True)
 
-    def test_node_setup(self, mock_DockerAPIClient, mock_DockerClient):
+    def test_node_setup(self, mock_DockerAPIClient, mock_DockerClient, *args):
         """
         Test setup and tear down of an OpenFactory node
         """
