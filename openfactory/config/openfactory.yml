@@ -10,7 +10,7 @@ SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
 KAFKA_BROKER: broker:29092
 
 # ksqlDB server
-KSQLDB: http://localhost:8088
+KSQLDB: http://ksqldb-server:8088
 
 # Docker Images
 MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
