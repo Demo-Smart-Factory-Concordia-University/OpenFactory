@@ -1,0 +1,30 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "docker-build",
+			"label": "docker-build",
+			"dockerBuild": {
+				"tag": "ofa/ofa:latest",
+				"dockerfile": "${workspaceFolder}/Dockerfile",
+				"context": "${workspaceFolder}",
+				"pull": true
+			}
+		},
+		{
+			"type": "docker-run",
+			"label": "docker-run: debug",
+			"dependsOn": [
+				"docker-build"
+			],
+			"dockerRun": {
+				"image": "ofa/ofa",
+				"command": "bash",
+				"containerName": "ofa-cli",
+				"network": "factory-net",
+				"remove": true,
+				"customOptions": "--interactive"
+			}
+		}
+	]
+}
