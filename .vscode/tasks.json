@@ -5,6 +5,10 @@
 			"type": "docker-build",
 			"label": "docker-build",
 			"dockerBuild": {
+				"buildArgs": {
+					"UNAME": "ofauser",
+					"UID": "1001",
+				},
 				"tag": "ofa/ofa:latest",
 				"dockerfile": "${workspaceFolder}/Dockerfile",
 				"context": "${workspaceFolder}",
@@ -20,7 +24,15 @@
 			"dockerRun": {
 				"image": "ofa/ofa",
 				"command": "bash",
-				"containerName": "ofa-cli",
+				"containerName": "ofa-dev",
+				"env": {
+					"SQL_ALCHEMY_CONN": "sqlite:////home/ofauser/local/openfact.db"
+				},
+				"volumes": [{
+					"localPath": "./local",
+					"containerPath": "/home/ofauser/local",
+					"permissions": "rw"
+				}],
 				"network": "factory-net",
 				"remove": true,
 				"customOptions": "--interactive"
