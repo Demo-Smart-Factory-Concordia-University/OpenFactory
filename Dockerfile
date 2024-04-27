@@ -24,7 +24,6 @@ COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
 WORKDIR /ofa
-COPY . /ofa
 
 # Creates a non-root user with an explicit UID
 RUN adduser --uid ${UID} --disabled-password --gecos "" ${UNAME}

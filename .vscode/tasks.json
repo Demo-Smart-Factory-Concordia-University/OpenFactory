@@ -29,6 +29,11 @@
 					"SQL_ALCHEMY_CONN": "sqlite:////home/ofauser/local/openfact.db"
 				},
 				"volumes": [{
+					"localPath": ".",
+					"containerPath": "/ofa",
+					"permissions": "rw"
+				},
+				{
 					"localPath": "./local",
 					"containerPath": "/home/ofauser/local",
 					"permissions": "rw"
