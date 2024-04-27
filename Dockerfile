@@ -7,6 +7,10 @@
 
 FROM python:3.10
 
+# Build arguments
+ARG UNAME=ofauser
+ARG UID=1001
+
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 
@@ -23,13 +27,18 @@ WORKDIR /ofa
 COPY . /ofa
 
 # Creates a non-root user with an explicit UID
+RUN adduser --uid ${UID} --disabled-password --gecos "" ${UNAME}
+
 # Copies secrets
-# Adds permission to access the /ofa folder
-RUN mkdir -p /home/appuser/.ssh
-COPY ./openfactory/config/secrets /home/appuser/.ssh
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /ofa
-RUN chown -R appuser /home/appuser
-USER appuser
-RUN echo "alias ofa='python ofa.py'" > /home/appuser/.bashrc
+RUN mkdir -p /home/${UNAME}/.ssh
+COPY ./openfactory/config/secrets /home/${UNAME}/.ssh
+
+# Adds folder permissions
+RUN chown -R ${UNAME} /ofa
+RUN chown -R ${UNAME} /home/${UNAME}
+
+# Switches to non-root user
+USER ${UNAME}
+RUN echo "alias ofa='python ofa.py'" > /home/${UNAME}/.bashrc
 
 CMD ["python", "ofa.py"]
