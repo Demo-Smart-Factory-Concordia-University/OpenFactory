@@ -1,0 +1,26 @@
+services:
+
+  ofa_dev:
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        UNAME: "ofauser"
+        UID: ${USER_UID}
+    image: ofa/ofa
+    container_name: ofa-dev
+    entrypoint: "tail -F anything"
+    environment:
+      - SQL_ALCHEMY_CONN=sqlite:////home/ofauser/local/openfact.db
+    volumes:
+      - ./local:/home/ofauser/local
+    networks:
+      - factory-net
+
+networks:
+
+  factory-net:
+    name: factory-net
+    driver: overlay
+    external: true
