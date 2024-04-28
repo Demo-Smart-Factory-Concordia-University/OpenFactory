@@ -34,7 +34,7 @@ class TestAgentCreate(TestCase):
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_device.xml')
         result = runner.invoke(ofa.agent.click_create, [config_file])
-        mock_create_agents_from_config_file.called_once_with(db.session, config_file, run=False, attach=False)
+        mock_create_agents_from_config_file.assert_called_once_with(db.session, config_file, run=False, attach=False)
         self.assertEqual(result.exit_code, 0)
 
     def test_create_none_existent_file(self, mock_create_agents_from_config_file):
