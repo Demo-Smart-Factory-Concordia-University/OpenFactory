@@ -57,6 +57,8 @@ services:
     <<: *datafabric-common
     container_name: redis-worker-dev
     entrypoint: "python rq_worker.py"
+    depends_on:
+      - redis
 
 networks:
   factory-net:
