@@ -4,7 +4,7 @@ x-openfactory-common:
       context: .
       dockerfile: Dockerfile
       args:
-        UNAME: "ofauser"
+        UNAME: ofauser
         UID: ${USER_UID}
   image: ofa/ofa
   environment:
@@ -56,7 +56,7 @@ services:
   redis-worker-dev:
     <<: *datafabric-common
     container_name: redis-worker-dev
-    entrypoint: "tail -F anything"
+    entrypoint: "python rq_worker.py"
 
 networks:
   factory-net:
