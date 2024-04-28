@@ -1,26 +1,64 @@
-services:
-
-  ofa-dev:
-
-    build:
+x-openfactory-common:
+  &openfactory-common
+  build:
       context: .
       dockerfile: Dockerfile
       args:
         UNAME: "ofauser"
         UID: ${USER_UID}
-    image: ofa/ofa
-    container_name: ofa-dev
-    entrypoint: "tail -F anything"
-    environment:
+  image: ofa/ofa
+  environment:
       - SQL_ALCHEMY_CONN=sqlite:////home/ofauser/local/openfact.db
-    volumes:
+  volumes:
       - ./local:/home/ofauser/local
       - .:/ofa
+  networks:
+      - factory-net
+
+x-datafabric-common:
+  &datafabric-common
+  <<: *openfactory-common
+  environment:
+      - DATABASE_URL=sqlite:////home/ofauser/local/openfact.db
+      - FLASK_APP=openfactory.datafabric.datafabric
+      - REDIS_URL=redis://redis:6379
+
+
+services:
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    restart: always
     networks:
       - factory-net
 
-networks:
+  ofa-dev:
+    <<: *openfactory-common
+    container_name: ofa-dev
+    entrypoint: "tail -F anything"
 
+  datafabric-dev:
+    <<: *datafabric-common
+    container_name: datafabric-dev
+    entrypoint: "flask run --debug"
+    ports:
+      - 4000:4000
+
+  redis-worker-dev:
+    <<: *datafabric-common
+    container_name: redis-worker-dev
+    entrypoint: "tail -F anything"
+
+networks:
   factory-net:
     name: factory-net
     driver: overlay
