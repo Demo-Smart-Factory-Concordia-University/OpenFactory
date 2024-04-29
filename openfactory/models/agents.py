@@ -23,7 +23,7 @@ from .base import Base
 from .containers import DockerContainer, EnvVar, Port
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node import Node
+    from .nodes import Node
 
 
 agent_container_table = Table(
@@ -170,7 +170,6 @@ class Agent(Base):
             Session.object_session(self).commit()
             if self.kafka_producer:
                 self.kafka_producer.send_producer_availability('UNAVAILABLE')
-            user_notify.success(f"Kafka producer {self.producer_uuid} removed successfully")
 
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
@@ -265,10 +264,19 @@ def agent_after_delete(mapper, connection, target):
     Detach agent
     """
     if target.producer_container:
-        user_notify.success(f"Kafka producer {target.producer_uuid} removed successfully")
         if target.kafka_producer:
             target.kafka_producer.send_producer_availability('UNAVAILABLE')
 
     if target.kafka_producer:
         target.kafka_producer.send_agent_availability('UNAVAILABLE')
-    user_notify.success(f"Agent {target.uuid} removed successfully")
+
+
+@event.listens_for(Session, 'persistent_to_deleted')
+def receive_persistent_to_deleted(session, instance):
+    """
+    Sends user notifications when objects are deleted
+    """
+    if isinstance(instance, Agent):
+        user_notify.success(f"Agent {instance.uuid} removed successfully")
+    if isinstance(instance, DockerContainer):
+        user_notify.success(f"Container {instance.name} removed successfully")

@@ -179,10 +179,10 @@ class Test_remove_devices_from_config_file(TestCase):
         self.assertEqual(calls[2], call('No Agent TEST-ZAIX-002-AGENT defined in OpenFactory'))
 
         calls = user_notify.success.call_args_list
-        self.assertEqual(calls[0], call('Agent TEST-ZAIX-001-AGENT stopped successfully'))
-        self.assertEqual(calls[1], call('Kafka producer TEST-ZAIX-001-PRODUCER removed successfully'))
-        self.assertEqual(calls[2], call('Agent TEST-ZAIX-001-AGENT removed successfully'))
-        self.assertEqual(calls[3], call('TEST-ZAIX-001 removed successfully'))
+        self.assertIn(call('Agent TEST-ZAIX-001-AGENT stopped successfully'), calls)
+        self.assertIn(call('Container test-zaix-001-producer removed successfully'), calls)
+        self.assertIn(call('Agent TEST-ZAIX-001-AGENT removed successfully'), calls)
+        self.assertIn(call('Container test-zaix-001-agent removed successfully'), calls)
 
         # clean up
         self.cleanup()

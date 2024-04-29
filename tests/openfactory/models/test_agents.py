@@ -165,8 +165,9 @@ class TestAgent(TestCase):
 
         # check notfications were emitted
         calls = user_notify.success.call_args_list
-        self.assertEqual(calls[0], call('Kafka producer TEST-PRODUCER removed successfully'))
-        self.assertEqual(calls[1], call('Agent TEST-AGENT removed successfully'))
+        self.assertIn(call('Agent TEST-AGENT removed successfully'), calls)
+        self.assertIn(call('Container test-agent removed successfully'), calls)
+        self.assertIn(call('Container test-producer removed successfully'), calls)
 
         # agent without producer
         self.cleanup()
@@ -439,7 +440,7 @@ class TestAgent(TestCase):
         agent.detach()
 
         # check if user_notification called
-        user_notify.success.assert_called_once_with('Kafka producer TEST-PRODUCER removed successfully')
+        user_notify.success.assert_called_once_with('Container test-producer removed successfully')
 
         # clean up
         self.cleanup()
