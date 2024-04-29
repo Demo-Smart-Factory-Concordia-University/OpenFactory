@@ -47,7 +47,7 @@ class User(UserMixin, db.Model):
 
     def send_notification(self, message, type='success'):
         """ Send a user notifcation """
-        notification = Notification(message=message,
+        notification = Notification(message=str(message),
                                     type=type,
                                     user=self)
         db.session.add(notification)
