@@ -78,15 +78,10 @@ class NodeAdd(MethodView):
     def post(self):
         form = NodeAddForm()
         if form.validate_on_submit():
-            task = current_user.submit_RQ_task('node_up',
-                                               'Setting up node ' + form.node_name.data + ' ...',
-                                               form.node_name.data,
-                                               form.node_ip.data)
-            # wait task is done
-            while task.get_rq_job().result is None:
-                pass
-            if task.get_rq_job().result:
-                flash(f'Added successfully node {form.node_name.data}', "success")
+            current_user.submit_RQ_task('node_up',
+                                        'Setting up node ' + form.node_name.data + ' ...',
+                                        form.node_name.data,
+                                        form.node_ip.data)
             return redirect(url_for('infra.home'))
         else:
             flash('Cannot create the desired node. Some entries are not valid', "danger")
