@@ -17,11 +17,9 @@ from wtforms_sqlalchemy.fields import QuerySelectField
 from wtforms.validators import DataRequired, IPAddress, Regexp, NumberRange, Optional, ValidationError
 from flask.views import MethodView
 
-import openfactory.config as config
 from openfactory.datafabric.app import db
 from openfactory.models.configurations import get_configuration
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer, EnvVar, Port
 from openfactory.models.nodes import Node
 
 
@@ -135,39 +133,20 @@ class AgentAdd(MethodView):
         form = AgentAddForm()
         if form.validate_on_submit():
 
-            # configure Docker container of agent
-            container = DockerContainer(
-                node_id=form.node.data.id,
-                node=form.node.data,
-                image=config.MTCONNECT_AGENT_IMAGE,
-                name=form.device_uuid.data.lower() + '-agent',
-                ports=[
-                    Port(container_port='5000/tcp', host_port=form.port.data)
-                ],
-                environment=[
-                    EnvVar(variable='MTC_AGENT_UUID', value=form.device_uuid.data.upper() + "-AGENT"),
-                    EnvVar(variable='ADAPTER_UUID', value=form.device_uuid.data.upper()),
-                    EnvVar(variable='ADAPTER_IP', value=form.adapter_ip.data),
-                    EnvVar(variable='ADAPTER_PORT', value=form.adapter_port.data),
-                    EnvVar(variable='DOCKER_GATEWAY', value='172.17.0.1')
-                ],
-                command='mtcagent run agent.cfg',
-                cpus=float(form.agent_cpus.data)
-            )
-
-            # configure agent
             agent = Agent(
                 uuid=form.device_uuid.data.upper() + '-AGENT',
                 external=False,
                 agent_port=form.port.data,
                 node_id=form.node.data.id,
-                agent_container=container
             )
 
             current_user.submit_RQ_task('agent_up',
                                         f'Deploying MTConnect agent {form.device_uuid.data.upper()} on {form.node.data} (this may take a while) ...',
-                                        agent, container,
+                                        agent,
+                                        form.adapter_ip.data,
+                                        form.adapter_port.data,
                                         os.path.join(get_configuration('datastore_system'), 'device.xml'),
+                                        float(form.agent_cpus.data),
                                         float(form.producer_cpus.data))
             return redirect(url_for('services.agents'))
         else:
