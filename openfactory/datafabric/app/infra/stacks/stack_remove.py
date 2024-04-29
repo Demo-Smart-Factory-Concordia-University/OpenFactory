@@ -17,5 +17,5 @@ class StackRemove(View):
         stack_name = stack.stack_name
         current_user.submit_RQ_task('remove_stack',
                                     'Removing stack ' + stack_name + '...',
-                                    stack)
+                                    stack.id)
         return redirect(url_for('infra.home'))
