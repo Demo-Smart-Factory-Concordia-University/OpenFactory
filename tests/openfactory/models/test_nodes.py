@@ -311,8 +311,8 @@ class TestNodes(TestCase):
 
         # check notifications emitted
         args = user_notify.success.call_args_list
-        self.assertEqual(args[0], call("Removed node 'node' successfully"))
-        self.assertEqual(args[1], call('Removed manager node successfully'))
+        self.assertEqual(args[0], call("Node 'node' removed successfully"))
+        self.assertEqual(args[1], call("Node 'manager' removed successfully"))
 
         # clean-up
         self.cleanup()

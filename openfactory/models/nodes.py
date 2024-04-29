@@ -134,7 +134,6 @@ def node_after_delete(mapper, connection, target):
     if target.node_name == "manager":
         client.swarm.leave(force=True)
         client.close()
-        user_notify.success("Removed manager node successfully")
         return
 
     client.swarm.leave()
@@ -142,4 +141,3 @@ def node_after_delete(mapper, connection, target):
     client = docker.APIClient(target.manager.docker_url)
     client.remove_node(target.docker_node_id, force=True)
     client.close()
-    user_notify.success(f"Removed node '{target.node_name}' successfully")
