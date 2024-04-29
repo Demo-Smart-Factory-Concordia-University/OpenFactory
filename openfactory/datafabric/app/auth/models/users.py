@@ -51,7 +51,6 @@ class User(UserMixin, db.Model):
                                     type=type,
                                     user=self)
         db.session.add(notification)
-        db.session.commit()
         return notification
 
     def clear_notifications(self):
