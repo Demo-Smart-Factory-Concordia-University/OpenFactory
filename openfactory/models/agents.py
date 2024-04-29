@@ -269,14 +269,3 @@ def agent_after_delete(mapper, connection, target):
 
     if target.kafka_producer:
         target.kafka_producer.send_agent_availability('UNAVAILABLE')
-
-
-@event.listens_for(Session, 'persistent_to_deleted')
-def receive_persistent_to_deleted(session, instance):
-    """
-    Sends user notifications when objects are deleted
-    """
-    if isinstance(instance, Agent):
-        user_notify.success(f"Agent {instance.uuid} removed successfully")
-    if isinstance(instance, DockerContainer):
-        user_notify.success(f"Container {instance.name} removed successfully")
