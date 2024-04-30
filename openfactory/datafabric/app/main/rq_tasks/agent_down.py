@@ -11,11 +11,7 @@ def agent_down(agent):
     """ Tears down an MTConnect Agent """
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
-
-    # setup user notifications
-    user_notify.success = lambda msg: rq_task.user.send_notification(msg, "success")
-    user_notify.info = lambda msg: rq_task.user.send_notification(msg, "info")
-    user_notify.fail = lambda msg: rq_task.user.send_notification(msg, "danger")
+    user_notify.user = rq_task.user
 
     # remove agent
     db.session.delete(agent)
@@ -24,4 +20,4 @@ def agent_down(agent):
     # clear rq-task
     rq_task.complete = True
     db.session.commit()
-    return True
+    user_notify.user = None

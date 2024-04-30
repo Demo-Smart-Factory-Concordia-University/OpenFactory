@@ -16,11 +16,7 @@ def node_up(node_name, node_ip):
 
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
-
-    # Setup user notifications
-    user_notify.success = lambda msg: rq_task.user.send_notification(msg, "success")
-    user_notify.info = lambda msg: rq_task.user.send_notification(msg, "info")
-    user_notify.fail = lambda msg: rq_task.user.send_notification(msg, "danger")
+    user_notify.user = rq_task.user
 
     # create new node
     node = Node(
@@ -37,6 +33,6 @@ def node_up(node_name, node_ip):
     finally:
         rq_task.complete = True
         if docker_error:
-            rq_task.user.send_notification(f'Node "{node_name}" could not be setup. Error was:<br>"{docker_error}"', "danger")
+            user_notify.fail(f'Node "{node_name}" could not be setup. Error was:<br>"{docker_error}"')
         db.session.commit()
-    return (not docker_error)
+        user_notify.user = None

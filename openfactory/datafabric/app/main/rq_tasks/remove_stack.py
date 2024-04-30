@@ -15,11 +15,7 @@ def remove_stack(stack_id):
     """
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
-
-    # Setup user notifications
-    user_notify.success = lambda msg: rq_task.user.send_notification(msg, "success")
-    user_notify.info = lambda msg: rq_task.user.send_notification(msg, "info")
-    user_notify.fail = lambda msg: rq_task.user.send_notification(msg, "danger")
+    user_notify.user = rq_task.user
 
     # Object needs to be loaed in worker
     # It can not be passed by DataFabric as it would have no session associated
@@ -35,3 +31,4 @@ def remove_stack(stack_id):
     finally:
         rq_task.complete = True
         db.session.commit()
+        user_notify.user = None

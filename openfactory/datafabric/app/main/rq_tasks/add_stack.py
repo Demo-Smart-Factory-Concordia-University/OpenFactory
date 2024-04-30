@@ -18,17 +18,14 @@ def add_stack(stack_config_file):
     """
     job = get_current_job()
     rq_task = db.session.get(RQTask, job.get_id())
-
-    # setup user notifications
-    user_notify.success = lambda msg: rq_task.user.send_notification(msg, "success")
-    user_notify.info = lambda msg: rq_task.user.send_notification(msg, "info")
-    user_notify.fail = lambda msg: rq_task.user.send_notification(msg, "danger")
+    user_notify.user = rq_task.user
 
     try:
         create_infrastack(db.session, stack_config_file)
     except (OFAConfigurationException, APIError, SSHException, PendingRollbackError) as err:
         db.session.rollback()
-        rq_task.user.send_notification(f'Infrastructure stack could not be setup. Error was:<br>"{err}"', 'danger')
+        user_notify.fail(f'Infrastructure stack could not be setup. Error was:<br>"{err}"')
     finally:
         rq_task.complete = True
         db.session.commit()
+        user_notify.user = None
