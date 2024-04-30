@@ -198,3 +198,16 @@ class Test_create_agents_from_config_file(TestCase):
 
         # clean-up
         self.cleanup()
+
+    def test_create_agents_no_agent_device_file(self, mock_attach, *args):
+        """
+        Test if OFAException raised when agent device file is missing
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_agents_bug_device_file.yml')
+
+        # check error raised
+        self.assertRaises(OFAException, create_agents_from_config_file, db.session, config_file)
+
+        # clean-up
+        self.cleanup()

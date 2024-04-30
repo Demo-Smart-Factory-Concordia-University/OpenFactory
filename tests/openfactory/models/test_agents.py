@@ -483,6 +483,37 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
+    def test_create_container_no_agent_config_file(self, *args):
+        """
+        Test creation of Docker container for agent when agent config file is missing
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        backup = config.MTCONNECT_AGENT_CFG_FILE
+        config.MTCONNECT_AGENT_CFG_FILE = '/this/does/not/exist/agent.cfg.'
+
+        # check error raised
+        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
+
+        # clean-up
+        config.MTCONNECT_AGENT_CFG_FILE = backup
+        self.cleanup()
+
+    def test_create_container_no_agent_device_file(self, *args):
+        """
+        Test creation of Docker container for agent when agent device file is missing
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   '/this//does/not/exsit/device.xml')
+
+        # check error raised
+        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
+
+        # clean-up
+        self.cleanup()
+
     def test_container(self, *args):
         """
         Test hybrid_property 'container'

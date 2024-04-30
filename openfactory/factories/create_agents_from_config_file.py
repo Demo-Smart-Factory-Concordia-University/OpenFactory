@@ -56,10 +56,16 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         db_session.commit()
 
         # create agent
-        agent.create_container(device['agent']['adapter']['IP'],
-                               device['agent']['adapter']['PORT'],
-                               device_xml,
-                               cpus)
+        try:
+            agent.create_container(device['agent']['adapter']['IP'],
+                                   device['agent']['adapter']['PORT'],
+                                   device_xml,
+                                   cpus)
+        except OFAException as err:
+            db_session.delete(agent)
+            user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\nError was: {err}")
+            db_session.commit()
+            return
 
         if run:
             agent.start()

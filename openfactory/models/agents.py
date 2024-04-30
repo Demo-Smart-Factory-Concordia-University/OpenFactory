@@ -195,8 +195,14 @@ class Agent(Base):
         session.add_all([container])
         self.agent_container = container
         session.commit()
-        container.add_file(mtc_device_file, '/home/agent/device.xml')
-        container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
+        try:
+            container.add_file(mtc_device_file, '/home/agent/device.xml')
+        except FileNotFoundError:
+            raise OFAException(f"Could not find the MTConnect model file '{mtc_device_file}'")
+        try:
+            container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
+        except FileNotFoundError:
+            raise OFAException(f"Could not find the MTConnect agent configuration file '{config.MTCONNECT_AGENT_CFG_FILE}'")
         user_notify.success(f'Agent {self.uuid} created successfully')
 
     def create_ksqldb_tables(self):
