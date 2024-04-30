@@ -17,7 +17,7 @@ def remove_stack(stack_id):
     rq_task = db.session.get(RQTask, job.get_id())
     user_notify.user = rq_task.user
 
-    # Object needs to be loaed in worker
+    # Object needs to be loaded in worker
     # It can not be passed by DataFabric as it would have no session associated
     stack = db.session.get(InfraStack, stack_id)
 
