@@ -52,15 +52,16 @@ def create_infrastack(db_session, stack_config_file):
         db_session.commit()
 
     # attach nodes to swarm cluster
-    for node_name, host in infra['nodes'].items():
-        query = select(Node).where(Node.node_name == node_name)
-        if db_session.execute(query).one_or_none() is None:
-            node = Node(
-                node_name=node_name,
-                node_ip=host,
-                stack=stack
-            )
-            db_session.add_all([node])
-            db_session.commit()
+    if 'nodes' in infra:
+        for node_name, host in infra['nodes'].items():
+            query = select(Node).where(Node.node_name == node_name)
+            if db_session.execute(query).one_or_none() is None:
+                node = Node(
+                    node_name=node_name,
+                    node_ip=host,
+                    stack=stack
+                )
+                db_session.add_all([node])
+                db_session.commit()
 
     return stack

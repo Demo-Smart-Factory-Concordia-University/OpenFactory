@@ -146,6 +146,40 @@ class Test_create_infrastack(TestCase):
         # clean up
         self.cleanup()
 
+    def test_setup_no_nodes_stack(self, *args):
+        """
+        Test setup of a stack with no nodes except mamanger node
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/infra/no_nodes_stack_mock.yml')
+        stack = create_infrastack(db.session, config_file)
+
+        # check if manager is setup correctly
+        manager = stack.manager
+        self.assertEqual(manager.network, 'test-net')
+        self.assertEqual(manager.node_ip, '123.456.7.800')
+        self.assertTrue(manager in stack.nodes)
+
+        # clean up
+        self.cleanup()
+
+    def test_setup_no_nodes_infa(self, *args):
+        """
+        Test setup of a infrastructure with no nodes except mamanger node
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/infra/no_nodes_stack_mock.yml')
+        create_infrastack(db.session, config_file)
+
+        # check if manager is setup correctly
+        query = select(Node).where(Node.node_name == "manager")
+        manager = db.session.execute(query).one()
+        self.assertEqual(manager[0].network, 'test-net')
+        self.assertEqual(manager[0].node_ip, '123.456.7.800')
+
+        # clean up
+        self.cleanup()
+
     def test_extend_stack(self, *args):
         """
         Test extending a stack with nodes
