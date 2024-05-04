@@ -1,0 +1,26 @@
+<!-- ===================================================
+ 
+       MTConnect Device file for PROXIMITY-001 sensor
+       (c) Rolf Wuthrich
+           2024 Concordia University
+
+     =================================================== -->
+
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="PROXIMITY-001" id="proximity_001" name="SICK-IMC30-PROXIMITY">
+
+      <!-- General information -->
+      <Description>
+         Inductive Proximity Sensor IMC30-15BPPVC0SA71
+      </Description>
+
+      <DataItems>
+        <DataItem category="EVENT" id="avail" type="AVAILABILITY"/>
+        <DataItem category="EVENT" id="trigger" type="TRIGGER"/>
+        <DataItem category="EVENT" id="operator" subType="OPERATOR" type="USER"/>
+      </DataItems>
+        
+    </Device>
+  </Devices>
+</MTConnectDevices>
