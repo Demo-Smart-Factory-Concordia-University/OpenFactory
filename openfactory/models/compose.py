@@ -13,7 +13,7 @@ from .configurations import get_configuration
 from openfactory.utils import docker_compose_up
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node import Node
+    from .nodes import Node
 
 
 class ComposeProject(Base):
