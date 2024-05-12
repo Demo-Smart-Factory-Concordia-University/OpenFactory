@@ -16,7 +16,7 @@ from sqlalchemy.orm import mapped_column
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .node import Node
+    from .nodes import Node
 
 
 class DockerContainer(Base):
