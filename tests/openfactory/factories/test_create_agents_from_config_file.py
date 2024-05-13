@@ -1,6 +1,7 @@
 import os
+import filecmp
 from unittest import TestCase
-from unittest.mock import patch, call, Mock
+from unittest.mock import patch, call, Mock, ANY
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -119,14 +120,38 @@ class Test_create_agents_from_config_file(TestCase):
 
         # check containers were created correctly
         args = mock_create_container.call_args_list
-        dev_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                'mocks/mock_device.xml')
         self.assertEqual(mock_create_container.call_count, 2)
-        self.assertTrue(call('adapter1.test.org', 7878, dev_file, 1.5) in args)
-        self.assertTrue(call('adapter2.test.org', 7879, dev_file, 1.0) in args)
+        self.assertTrue(call('adapter1.test.org', 7878, ANY, 1.5) in args)
+        self.assertTrue(call('adapter2.test.org', 7879, ANY, 1.0) in args)
 
         # clean-up
         self.cleanup()
+
+    @patch("openfactory.models.agents.Agent.create_container")
+    @patch("tempfile.TemporaryDirectory")
+    def test_create_agents_xml_file(self, mock_tempdir, *args):
+        """
+        Test if agents are created with correct device xml file
+        """
+        # redirect TemporaryDirectory to a known folder
+        tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mocks')
+        mock_tempdir.return_value.__enter__.return_value = tmp_dir
+
+        # create agents using 'mock_device.xml' as device xml file
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_agents.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check xml-file downloaded by 'create_agents_from_config_file' is correct
+        xml_file = os.path.join(tmp_dir, 'device.xml')
+        self.assertTrue(filecmp.cmp(xml_file,
+                                    os.path.join(tmp_dir, 'mock_device.xml'),
+                                    shallow=False))
+
+        # clean-up
+        self.cleanup()
+        os.remove(xml_file)
 
     @patch("openfactory.models.agents.Agent.start")
     def test_create_agents_run(self, mock_start, *args):

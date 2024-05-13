@@ -1,8 +1,11 @@
 import yaml
 import os
+import tempfile
+from fsspec.core import split_protocol
 from sqlalchemy import select
 
 from openfactory.exceptions import OFAException
+from openfactory.utils import open_ofa
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
 from openfactory.models.nodes import Node
@@ -13,7 +16,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
     Create MTConnect agent(s) based on a yaml configuration file
     """
 
-    # Load yaml description file
+    # load yaml description file
     with open(yaml_config_file, 'r') as stream:
         cfg = yaml.safe_load(stream)
 
@@ -32,12 +35,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         if node is None:
             raise OFAException(f"Node {device['NODE']} is not configured in OpenFactory")
 
-        # compute device xml-model absolute path
-        if os.path.isabs(device['agent']['DEVICE_XML']):
-            device_xml = device['agent']['DEVICE_XML']
-        else:
-            device_xml = os.path.join(os.path.dirname(yaml_config_file), device['agent']['DEVICE_XML'])
-
         # get number of cpus
         cpus = 0
         if 'runtime' in device:
@@ -55,17 +52,39 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         db_session.add_all([agent])
         db_session.commit()
 
-        # create agent
-        try:
-            agent.create_container(device['agent']['adapter']['IP'],
-                                   device['agent']['adapter']['PORT'],
-                                   device_xml,
-                                   cpus)
-        except OFAException as err:
-            db_session.delete(agent)
-            user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\nError was: {err}")
-            db_session.commit()
-            return
+        # compute device xml-model absolute path
+        device_xml_uri = device['agent']['DEVICE_XML']
+        protocol, _ = split_protocol(device_xml_uri)
+        if not protocol:
+            if not os.path.isabs(device_xml_uri):
+                device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
+
+        print(tempfile.TemporaryDirectory())
+        with tempfile.TemporaryDirectory() as tmpdir:
+
+            # copy device xml-model to a local file device_xml
+            device_xml = os.path.join(tmpdir, 'device.xml')
+            try:
+                with open_ofa(device_xml_uri) as f_remote:
+                    with open(device_xml, 'w') as f_tmp:
+                        f_tmp.write(f_remote.read())
+            except OFAException as err:
+                db_session.delete(agent)
+                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\n{err}")
+                db_session.commit()
+                return
+
+            # create agent
+            try:
+                agent.create_container(device['agent']['adapter']['IP'],
+                                       device['agent']['adapter']['PORT'],
+                                       device_xml,
+                                       cpus)
+            except OFAException as err:
+                db_session.delete(agent)
+                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\nError was: {err}")
+                db_session.commit()
+                return
 
         if run:
             agent.start()
