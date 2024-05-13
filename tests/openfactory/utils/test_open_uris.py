@@ -31,10 +31,12 @@ class test_open_uris(TestCase):
         mock_open.assert_called_with(uri)
 
     @patch("fsspec.open")
-    def test_open_github_no_tokens(self, mock_fsspec_open):
+    @patch("openfactory.utils.open_uris.get_configuration")
+    def test_open_github_no_tokens(self, mock_get_configuration, mock_fsspec_open):
         """
         Test if public repo download is attempted when no tokens are defined
         """
+        mock_get_configuration.return_value = None
         uri = 'github://somerepo:from_user@/some/path'
         path = 'somerepo:from_user@/some/path'
         open_github(uri, path)
