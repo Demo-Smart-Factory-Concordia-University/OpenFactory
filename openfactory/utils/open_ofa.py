@@ -11,7 +11,6 @@ def open_github(uri, path):
     """
     repo = path.split('@', 1)[0]
     tokens = get_configuration('github_access_tokens')
-    tokens = None
 
     # validate GitHub token
     if tokens:
