@@ -128,6 +128,27 @@ class Test_create_agents_from_config_file(TestCase):
         self.cleanup()
 
     @patch("openfactory.models.agents.Agent.create_container")
+    @patch("openfactory.factories.agents.open_ofa")
+    def test_create_agents_use_open_ofa(self, mock_open_ofa,  *args):
+        """
+        Test if create_agents_from_config_file uses open_ofa
+        """
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mocks/mock_device.xml')
+        mock_open_ofa.return_value = open(device_file, 'r')
+
+        # create an agent using 'mock_device.xml' as device xml file
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_one_agent.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check it used 'open_ofa' to get the device file
+        mock_open_ofa.assert_called_with(device_file)
+
+        # clean-up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.Agent.create_container")
     @patch("tempfile.TemporaryDirectory")
     def test_create_agents_xml_file(self, mock_tempdir, *args):
         """
