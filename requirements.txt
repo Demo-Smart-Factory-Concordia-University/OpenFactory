@@ -8,6 +8,7 @@ git+https://github.com/rwuthric/PyKSQL.git
 git+https://github.com/rwuthric/python-mtc2kafka.git
 python-dotenv
 PyGithub
+fsspec
 
 # DataFabric WebApp
 flask
