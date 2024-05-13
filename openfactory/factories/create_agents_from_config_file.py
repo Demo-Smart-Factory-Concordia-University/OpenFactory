@@ -59,7 +59,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             if not os.path.isabs(device_xml_uri):
                 device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
 
-        print(tempfile.TemporaryDirectory())
         with tempfile.TemporaryDirectory() as tmpdir:
 
             # copy device xml-model to a local file device_xml
