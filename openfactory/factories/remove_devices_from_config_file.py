@@ -15,8 +15,8 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        user_notify.info(f"{device['UUID']}:")
-        agent_uuid = device['UUID'].upper() + "-AGENT"
+        user_notify.info(f"{device['uuid']}:")
+        agent_uuid = device['uuid'].upper() + "-AGENT"
         query = select(Agent).where(Agent.uuid == agent_uuid)
         agent = db_session.execute(query).one_or_none()
         if agent is None:
@@ -26,4 +26,4 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
         agent[0].detach()
         db_session.delete(agent[0])
         db_session.commit()
-        user_notify.success(f"{device['UUID']} removed successfully")
+        user_notify.success(f"{device['uuid']} removed successfully")
