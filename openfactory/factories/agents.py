@@ -22,18 +22,18 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
 
     for dev in cfg['devices']:
         device = cfg['devices'][dev]
-        user_notify.info(f"{device['UUID']}:")
+        user_notify.info(f"{device['uuid']}:")
 
-        query = select(Agent).where(Agent.uuid == device['UUID'].upper() + '-AGENT')
+        query = select(Agent).where(Agent.uuid == device['uuid'].upper() + '-AGENT')
         if db_session.execute(query).one_or_none() is not None:
-            user_notify.info(f"Agent {device['UUID'].upper()}-AGENT exists already and was not created")
+            user_notify.info(f"Agent {device['uuid'].upper()}-AGENT exists already and was not created")
             continue
 
         # get node
-        query = select(Node).where(Node.node_name == device['NODE'])
+        query = select(Node).where(Node.node_name == device['node'])
         node = db_session.execute(query).one_or_none()
         if node is None:
-            raise OFAException(f"Node {device['NODE']} is not configured in OpenFactory")
+            raise OFAException(f"Node {device['node']} is not configured in OpenFactory")
 
         # get number of cpus
         cpus = 0
@@ -44,16 +44,16 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
 
         # configure agent
         agent = Agent(
-            uuid=device['UUID'].upper() + '-AGENT',
+            uuid=device['uuid'].upper() + '-AGENT',
             external=False,
-            agent_port=device['agent']['PORT'],
+            agent_port=device['agent']['port'],
             node_id=node[0].id
         )
         db_session.add_all([agent])
         db_session.commit()
 
         # compute device xml-model absolute path
-        device_xml_uri = device['agent']['DEVICE_XML']
+        device_xml_uri = device['agent']['device_xml']
         protocol, _ = split_protocol(device_xml_uri)
         if not protocol:
             if not os.path.isabs(device_xml_uri):
@@ -69,19 +69,19 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
                         f_tmp.write(f_remote.read())
             except OFAException as err:
                 db_session.delete(agent)
-                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT.\n{err}")
+                user_notify.fail(f"Could not create {device['uuid'].upper()}-AGENT.\n{err}")
                 db_session.commit()
                 return
 
             # create agent
             try:
-                agent.create_container(device['agent']['adapter']['IP'],
-                                       device['agent']['adapter']['PORT'],
+                agent.create_container(device['agent']['adapter']['ip'],
+                                       device['agent']['adapter']['port'],
                                        device_xml,
                                        cpus)
             except OFAException as err:
                 db_session.delete(agent)
-                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\nError was: {err}")
+                user_notify.fail(f"Could not create {device['uuid'].upper()}-AGENT\nError was: {err}")
                 db_session.commit()
                 return
 
@@ -97,4 +97,4 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             try:
                 agent.attach(cpus)
             except OFAException as err:
-                user_notify.fail(f"Could not attach {device['UUID'].upper()}-AGENT\nError was: {err}")
+                user_notify.fail(f"Could not attach {device['uuid'].upper()}-AGENT\nError was: {err}")

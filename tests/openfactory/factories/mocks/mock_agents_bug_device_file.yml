@@ -3,14 +3,14 @@
 devices:
 
   zaix-001:
-    UUID: TEST-ZAIX-001
-    NODE: manager
+    uuid: TEST-ZAIX-001
+    node: manager
     agent:
-      PORT: 3001
-      DEVICE_XML: does_not_exist_device.xml
+      port: 3001
+      device_xml: does_not_exist_device.xml
       adapter:
-        IP: adapter1.test.org
-        PORT: 7878
+        ip: adapter1.test.org
+        port: 7878
     runtime:
       agent:
         cpus: 1.5
