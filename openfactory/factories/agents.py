@@ -69,7 +69,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
                         f_tmp.write(f_remote.read())
             except OFAException as err:
                 db_session.delete(agent)
-                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT\n{err}")
+                user_notify.fail(f"Could not create {device['UUID'].upper()}-AGENT.\n{err}")
                 db_session.commit()
                 return
 
