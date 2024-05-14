@@ -37,6 +37,8 @@ def open_github(uri, path):
         raise OFAException(f"Could not download '{uri}'. File was not found")
     except HTTPError:
         raise OFAException(f"Could not download '{uri}'. Permission denied")
+    except (TypeError, ValueError):
+        raise OFAException(f"Could not interpret '{uri}'.\nCheck it follows the format 'github://repo:owner@/path'")
 
     return f
 

@@ -132,3 +132,25 @@ class test_open_uris(TestCase):
         uri = 'github://somerepo:myuser@/some/path'
         path = 'somerepo:myuser@/some/path'
         self.assertRaises(OFAException, open_github, uri, path)
+
+    @patch("fsspec.open")
+    @patch("openfactory.utils.open_uris.get_configuration")
+    def test_open_github_wrong_format_in_uri(self, mock_get_configuration, mock_fsspec_open):
+        """
+        Test if error raised if uri is misformatted
+        """
+        tokens = '{"somerepo:myuser": {"token": "some_token", "user": "boss"} }'
+        mock_get_configuration.return_value = tokens
+        mock_fsspec_open.side_effect = HTTPError()
+
+        uri = 'github://somerepo/myuser/some/path'
+        path = 'somerepo/myuser/some/path'
+        self.assertRaises(OFAException, open_github, uri, path)
+
+        uri = 'github://somerepo/myuser@/some/path'
+        path = 'somerepo/myuser@/some/path'
+        self.assertRaises(OFAException, open_github, uri, path)
+
+        uri = 'github://somerepo:myuser/some/path'
+        path = 'somerepo:myuser/some/path'
+        self.assertRaises(OFAException, open_github, uri, path)
