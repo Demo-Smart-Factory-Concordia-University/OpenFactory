@@ -107,6 +107,7 @@ class TestDockerContainer(TestCase):
         mock.docker_client.close.assert_called_once_with()
 
         # pull Docker image
+        mock.docker_images.get.assert_called_once_with('tester/test')
         mock.docker_images.pull.assert_called_once_with('tester/test')
 
         # create correctly container
