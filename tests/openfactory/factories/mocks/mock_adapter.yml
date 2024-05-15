@@ -1,0 +1,24 @@
+# Mock configuration of one agent
+
+devices:
+
+  zaix-001:
+    uuid: TEST-ZAIX-001
+    node: manager
+    agent:
+      port: 3001
+      device_xml: mock_device.xml
+      adapter:
+        image: ofa/ofa_adapter
+        port: 7878
+        environment:
+          VAR1: value1
+          VAR2: value2
+
+    runtime:
+      agent:
+        cpus: 1.5
+      producer:
+        cpus: 1
+      adapter:
+        cpus: 2.5
