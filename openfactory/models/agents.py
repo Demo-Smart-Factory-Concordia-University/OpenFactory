@@ -34,6 +34,14 @@ agent_container_table = Table(
 )
 
 
+agent_adapter_table = Table(
+    "agent_adapter_association",
+    Base.metadata,
+    Column('agent_id', ForeignKey('mtc_agents.id')),
+    Column('adapter_id', ForeignKey('docker_container.id')),
+)
+
+
 agent_producer_table = Table(
     "agent_producer_association",
     Base.metadata,
@@ -69,6 +77,9 @@ class Agent(Base):
     agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table,
                                                             cascade="all, delete-orphan",
                                                             single_parent=True)
+    adapter_container: Mapped[DockerContainer] = relationship(secondary=agent_adapter_table,
+                                                              cascade="all, delete-orphan",
+                                                              single_parent=True)
     producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table,
                                                                cascade="all, delete-orphan",
                                                                single_parent=True)
@@ -204,6 +215,22 @@ class Agent(Base):
         except FileNotFoundError:
             raise OFAException(f"Could not find the MTConnect agent configuration file '{config.MTCONNECT_AGENT_CFG_FILE}'")
         user_notify.success(f'Agent {self.uuid} created successfully')
+
+    def create_adapter(self, adapter_image, cpus=0, environment=[]):
+        """ Create Docker container for adapter """
+        container = DockerContainer(
+            node_id=self.node_id,
+            node=self.node,
+            image=adapter_image,
+            name=self.device_uuid.lower() + '-adapter',
+            cpus=cpus,
+            environment=environment
+        )
+        session = Session.object_session(self)
+        session.add_all([container])
+        self.adapter_container = container
+        session.commit()
+        user_notify.success(f'Adapter {container.name} created successfully')
 
     def create_ksqldb_tables(self):
         """ Create ksqlDB tables related to the agent """
