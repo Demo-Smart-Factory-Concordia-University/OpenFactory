@@ -179,8 +179,7 @@ class Test_create_agents_from_config_file(TestCase):
         """
         Test if agents are started
         """
-        manager, node = self.setup_nodes()
-
+        self.setup_nodes()
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_agents.yml')
         create_agents_from_config_file(db.session, config_file, run=True)
@@ -196,7 +195,7 @@ class Test_create_agents_from_config_file(TestCase):
         """
         Test if agents producers are created correctly
         """
-        manager, node = self.setup_nodes()
+        self.setup_nodes()
 
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_agents.yml')
@@ -211,7 +210,7 @@ class Test_create_agents_from_config_file(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_create_agents_missing_node(self, mock_attach, *args):
+    def test_create_agents_missing_node(self, *args):
         """
         Test if OFAException raised when node is missing
         """
@@ -224,11 +223,11 @@ class Test_create_agents_from_config_file(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_create_agents_agent_exist(self, mock_attach, *args):
+    def test_create_agents_agent_exist(self, *args):
         """
         Test if user_notify.info called if an agent already exists
         """
-        manager, node = self.setup_nodes()
+        self.setup_nodes()
 
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_agents.yml')
@@ -245,7 +244,7 @@ class Test_create_agents_from_config_file(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_create_agents_no_agent_device_file(self, mock_attach, *args):
+    def test_create_agents_no_agent_device_file(self, *args):
         """
         Test if OFAException raised when agent device file is missing
         """
@@ -256,4 +255,98 @@ class Test_create_agents_from_config_file(TestCase):
         self.assertRaises(OFAException, create_agents_from_config_file, db.session, config_file)
 
         # clean-up
+        self.cleanup()
+
+    def test_create_adapter(self, *args):
+        """
+        Test if adapter is created correctly
+        """
+        manager, node = self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_adapter.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check adapter configuration
+        query = select(Agent).where(Agent.uuid == "TEST-ZAIX-001-AGENT")
+        agent = db.session.execute(query).one()
+        adapter = agent[0].adapter_container
+        self.assertEqual(adapter.node, manager)
+        self.assertEqual(adapter.image, 'ofa/ofa_adapter')
+        self.assertEqual(adapter.name, 'test-zaix-001-adapter')
+        self.assertEqual(adapter.environment[0].variable, 'VAR1')
+        self.assertEqual(adapter.environment[0].value, 'value1')
+        self.assertEqual(adapter.environment[1].variable, 'VAR2')
+        self.assertEqual(adapter.environment[1].value, 'value2')
+        self.assertEqual(adapter.cpus, 2.5)
+
+        # clean-up
+        self.cleanup()
+
+    @patch("openfactory.models.containers.DockerContainer.start")
+    def test_start_adapter(self, mock_container_start, *args):
+        """
+        Test if adapter is started
+        """
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_adapter.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check adapter is started
+        mock_container_start.assert_called_once()
+
+        # clean-up
+        self.cleanup()
+
+    def test_adapter_user_notifications(self, *args):
+        """
+        Test user notifications for adapter
+        """
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_adapter.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check user_notify.success called
+        args = user_notify.success.call_args_list
+        self.assertTrue(call('Adapter test-zaix-001-adapter started successfully') in args)
+
+        # clean-up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.Agent.create_container")
+    def test_adapter_ip(self, mock_create_container, *args):
+        """
+        Test adapter IP is set correctly when an adapter container is created
+        """
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_adapter.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check adapter IP
+        args = mock_create_container.call_args_list
+        self.assertEqual(mock_create_container.call_count, 1)
+        self.assertTrue(call('test-zaix-001-adapter', 7878, ANY, 1.5) in args)
+
+        # clean-up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.Agent.create_adapter")
+    def test_adapter_create_error(self, mock_create_adapter, *args):
+        """
+        Test if adapter create error handled
+        """
+        mock_create_adapter.side_effect = OFAException('Mock error')
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_adapter.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check adapter IP
+        args = user_notify.fail.call_args_list
+        self.assertTrue(call('Could not create test-zaix-001-adapter\nError was: Mock error') in args)
+
+        # clean-up
+        mock_create_adapter.side_effect = None
         self.cleanup()

@@ -8,6 +8,7 @@ from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
+from openfactory.models.containers import EnvVar
 from openfactory.models.nodes import Node
 
 
@@ -35,13 +36,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         if node is None:
             raise OFAException(f"Node {device['node']} is not configured in OpenFactory")
 
-        # get number of cpus
-        cpus = 0
-        if 'runtime' in device:
-            if 'agent' in device['runtime']:
-                if 'cpus' in device['runtime']['agent']:
-                    cpus = device['runtime']['agent']['cpus']
-
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
@@ -51,6 +45,28 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         )
         db_session.add_all([agent])
         db_session.commit()
+
+        # configure adapter
+        if 'image' in device['agent']['adapter']:
+            cpus = device.get('runtime', {}).get('adapter', {}).get('cpus', 0)
+            env = []
+            if 'environment' in device['agent']['adapter']:
+                for var, val in device['agent']['adapter']['environment'].items():
+                    env.append(EnvVar(variable=var, value=val))
+            try:
+                agent.create_adapter(device['agent']['adapter']['image'],
+                                     cpus=cpus, environment=env)
+            except OFAException as err:
+                db_session.rollback()
+                db_session.delete(agent)
+                user_notify.fail(f"Could not create {device['uuid'].lower()}-adapter\nError was: {err}")
+                db_session.commit()
+                return
+            agent.adapter_container.start()
+            user_notify.success(f"Adapter {agent.adapter_container.name} started successfully")
+            adapter_ip = agent.device_uuid.lower() + '-adapter'
+        else:
+            adapter_ip = device['agent']['adapter']['ip']
 
         # compute device xml-model absolute path
         device_xml_uri = device['agent']['device_xml']
@@ -74,8 +90,9 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
                 return
 
             # create agent
+            cpus = device.get('runtime', {}).get('agent', {}).get('cpus', 0)
             try:
-                agent.create_container(device['agent']['adapter']['ip'],
+                agent.create_container(adapter_ip,
                                        device['agent']['adapter']['port'],
                                        device_xml,
                                        cpus)
@@ -89,11 +106,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             agent.start()
 
         if attach:
-            cpus = 0
-            if 'runtime' in device:
-                if 'producer' in device['runtime']:
-                    if 'cpus' in device['runtime']['producer']:
-                        cpus = device['runtime']['producer']['cpus']
+            cpus = device.get('runtime', {}).get('producer', {}).get('cpus', 0)
             try:
                 agent.attach(cpus)
             except OFAException as err:

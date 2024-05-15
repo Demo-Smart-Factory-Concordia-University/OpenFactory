@@ -1,6 +1,7 @@
 import tempfile
 import os
 import tarfile
+import docker
 from unittest import TestCase
 from unittest.mock import patch
 from sqlalchemy import create_engine
@@ -107,6 +108,7 @@ class TestDockerContainer(TestCase):
         mock.docker_client.close.assert_called_once_with()
 
         # pull Docker image
+        mock.docker_images.get.assert_called_once_with('tester/test')
         mock.docker_images.pull.assert_called_once_with('tester/test')
 
         # create correctly container
@@ -145,6 +147,35 @@ class TestDockerContainer(TestCase):
         mock.docker_container.remove.assert_called_once()
 
         # clean up
+        self.cleanup()
+
+    def test_delete_db_entry_if_no_docker_container(self, *args):
+        """
+        Test databse entry is removed even if Docker container does not exist
+        """
+        node = create_node()
+        self.session.add_all([node])
+        self.session.commit()
+
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            cpus=1,
+            node=node)
+        self.session.add_all([container])
+        self.session.commit()
+
+        mock.docker_containers.get.side_effect = docker.errors.DockerException()
+        self.session.delete(container)
+        self.session.commit()
+
+        # check databse entry was removed
+        query = select(DockerContainer).where(DockerContainer.name == "test_cont")
+        self.assertIsNone(self.session.execute(query).one_or_none())
+
+        # clean up
+        mock.docker_containers.get.side_effect = None
         self.cleanup()
 
     def test_cpus(self, *args):

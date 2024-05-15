@@ -2,6 +2,8 @@
 Mocks for Python Docker SDK objects
 """
 from unittest.mock import Mock
+import docker
+import docker.errors
 
 
 """ Python Docker SDK Swarm object """
@@ -49,7 +51,9 @@ docker_containers.get = Mock(return_value=docker_container)
 
 """ Python Docker SDK Images object """
 docker_images = Mock()
-docker_containers.pull = Mock()
+docker_images.pull = Mock()
+docker_images.get = Mock()
+docker_images.get.side_effect = docker.errors.ImageNotFound('Mocking error')
 
 
 """ return value of DockerClient.info() """

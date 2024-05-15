@@ -3,6 +3,7 @@ import os
 import tarfile
 from tempfile import TemporaryDirectory
 from typing import List
+import docker.errors
 from sqlalchemy import event
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 from .base import Base
+from openfactory.exceptions import OFAException
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .nodes import Node
@@ -112,7 +114,13 @@ def dockerContainer_after_insert(mapper, connection, target):
         env.append(f"{var.variable}={var.value}")
 
     docker_client = docker.DockerClient(base_url=target.docker_url)
-    docker_client.images.pull(target.image)
+    try:
+        docker_client.images.get(target.image)
+    except docker.errors.ImageNotFound:
+        try:
+            docker_client.images.pull(target.image)
+        except docker.errors.ImageNotFound:
+            raise OFAException(f"Could not find Docker image '{target.image}'")
     docker_client.containers.create(target.image,
                                     name=target.name,
                                     detach=True,
@@ -130,10 +138,17 @@ def dockerContainer_after_delete(mapper, connection, target):
     Remove Docker container when database object is deleted
     """
     docker_client = docker.DockerClient(base_url=target.docker_url)
-    container = docker_client.containers.get(target.name)
-    container.stop()
-    container.remove()
-    docker_client.close()
+    try:
+        container = docker_client.containers.get(target.name)
+        container.stop()
+        container.remove()
+    except docker.errors.DockerException:
+        # in case the container doesnt exist
+        # (e.g. was removed by other ways than ofa)
+        # ignore error and proceed with deleting database entry
+        pass
+    finally:
+        docker_client.close()
 
 
 class EnvVar(Base):

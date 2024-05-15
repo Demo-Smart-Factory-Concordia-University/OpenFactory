@@ -18,4 +18,4 @@ def click_ls(verbose):
             print(f'  {node.node_name:15} {node.cpus:3} cpus    {node.status}')
             if verbose:
                 for cont in node.containers:
-                    print(f'    • {cont.name:20} {cont.cpus:3} cpus   {cont.status}')
+                    print(f'    • {cont.name:30} {cont.cpus:3} cpus   {cont.status}')

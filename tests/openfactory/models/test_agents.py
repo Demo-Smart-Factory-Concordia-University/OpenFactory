@@ -14,7 +14,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer
+from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
 
@@ -510,6 +510,33 @@ class TestAgent(TestCase):
 
         # check error raised
         self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
+
+        # clean-up
+        self.cleanup()
+
+    def test_create_adapter(self, *args):
+        """
+        Test creation of Docker container for an adapter
+        """
+        agent = self.setup_agent()
+        env = [EnvVar(variable='MyVar', value='MyValue'),
+               EnvVar(variable='MyOtherVar', value='MyOtherValue')]
+        agent.create_adapter('/someone/some_img', 1.5, env)
+
+        # check if created correctly container
+        cont = agent.adapter_container
+        self.assertEqual(cont.image, '/someone/some_img')
+        self.assertEqual(cont.name, 'test-adapter')
+        self.assertEqual(cont.cpus, 1.5)
+        self.assertEqual(cont.node, agent.node)
+        self.assertEqual(cont.environment, env)
+
+        # check adapter is removed as agent is removed
+        db.session.delete(agent)
+        db.session.commit()
+
+        query = select(DockerContainer).where(DockerContainer.name == 'test-adapter')
+        self.assertIsNone(db.session.execute(query).one_or_none())
 
         # clean-up
         self.cleanup()
