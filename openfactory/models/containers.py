@@ -138,10 +138,17 @@ def dockerContainer_after_delete(mapper, connection, target):
     Remove Docker container when database object is deleted
     """
     docker_client = docker.DockerClient(base_url=target.docker_url)
-    container = docker_client.containers.get(target.name)
-    container.stop()
-    container.remove()
-    docker_client.close()
+    try:
+        container = docker_client.containers.get(target.name)
+        container.stop()
+        container.remove()
+    except docker.errors.DockerException:
+        # in case the container doesnt exist
+        # (e.g. was removed by other ways than ofa)
+        # ignore error and proceed with deleting database entry
+        pass
+    finally:
+        docker_client.close()
 
 
 class EnvVar(Base):
