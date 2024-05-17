@@ -12,8 +12,8 @@ devices:
         image: ofa/ofa_adapter
         port: 7878
         environment:
-          VAR1: value1
-          VAR2: value2
+          - VAR1=value1
+          - VAR2=value2
 
     runtime:
       agent:
