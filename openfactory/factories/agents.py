@@ -51,8 +51,9 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             cpus = device.get('runtime', {}).get('adapter', {}).get('cpus', 0)
             env = []
             if 'environment' in device['agent']['adapter']:
-                for var, val in device['agent']['adapter']['environment'].items():
-                    env.append(EnvVar(variable=var, value=val))
+                for item in device['agent']['adapter']['environment']:
+                    var, val = item.split('=')
+                    env.append(EnvVar(variable=var.strip(), value=val.strip()))
             try:
                 agent.create_adapter(device['agent']['adapter']['image'],
                                      cpus=cpus, environment=env)
