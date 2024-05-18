@@ -1,5 +1,5 @@
-import yaml
 from sqlalchemy import select
+from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
 
@@ -10,12 +10,12 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
     """
 
     # Load yaml description file
-    with open(yaml_config_file, 'r') as stream:
-        cfg = yaml.safe_load(stream)
+    devices = get_devices_from_config_file(yaml_config_file)
+    if devices is None:
+        return
 
-    for dev in cfg['devices']:
-        device = cfg['devices'][dev]
-        user_notify.info(f"{device['uuid']}:")
+    for dev_name, device in devices.items():
+        user_notify.info(f"{dev_name}:")
         agent_uuid = device['uuid'].upper() + "-AGENT"
         query = select(Agent).where(Agent.uuid == agent_uuid)
         agent = db_session.execute(query).one_or_none()

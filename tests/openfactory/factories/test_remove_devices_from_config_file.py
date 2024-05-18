@@ -174,8 +174,8 @@ class Test_remove_devices_from_config_file(TestCase):
 
         # check notifications
         calls = user_notify.info.call_args_list
-        self.assertEqual(calls[0], call('TEST-ZAIX-001:'))
-        self.assertEqual(calls[1], call('TEST-ZAIX-002:'))
+        self.assertEqual(calls[0], call('zaix-001:'))
+        self.assertEqual(calls[1], call('zaix-003:'))
         self.assertEqual(calls[2], call('No Agent TEST-ZAIX-002-AGENT defined in OpenFactory'))
 
         calls = user_notify.success.call_args_list

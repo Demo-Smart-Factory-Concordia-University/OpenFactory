@@ -122,7 +122,7 @@ class Test_create_agents_from_config_file(TestCase):
         args = mock_create_container.call_args_list
         self.assertEqual(mock_create_container.call_count, 2)
         self.assertTrue(call('adapter1.test.org', 7878, ANY, 1.5) in args)
-        self.assertTrue(call('adapter2.test.org', 7879, ANY, 1.0) in args)
+        self.assertTrue(call('adapter2.test.org', 7879, ANY, 0) in args)
 
         # clean-up
         self.cleanup()
@@ -205,7 +205,7 @@ class Test_create_agents_from_config_file(TestCase):
         args = mock_attach.call_args_list
         self.assertEqual(mock_attach.call_count, 2)
         self.assertTrue(call(1.0) in args)
-        self.assertTrue(call(0.5) in args)
+        self.assertTrue(call(0) in args)
 
         # clean-up
         self.cleanup()
@@ -279,6 +279,18 @@ class Test_create_agents_from_config_file(TestCase):
         self.assertEqual(adapter.environment[1].value, 'value2')
         self.assertEqual(adapter.cpus, 2.5)
 
+        query = select(Agent).where(Agent.uuid == "TEST-ZAIX-002-AGENT")
+        agent = db.session.execute(query).one()
+        adapter = agent[0].adapter_container
+        self.assertEqual(adapter.node, manager)
+        self.assertEqual(adapter.image, 'ofa/ofa_adapter')
+        self.assertEqual(adapter.name, 'test-zaix-002-adapter')
+        self.assertEqual(adapter.environment[0].variable, 'VAR11')
+        self.assertEqual(adapter.environment[0].value, 'value11')
+        self.assertEqual(adapter.environment[1].variable, 'VAR12')
+        self.assertEqual(adapter.environment[1].value, 'value12')
+        self.assertEqual(adapter.cpus, 5)
+
         # clean-up
         self.cleanup()
 
@@ -292,8 +304,8 @@ class Test_create_agents_from_config_file(TestCase):
                                    'mocks/mock_adapter.yml')
         create_agents_from_config_file(db.session, config_file)
 
-        # check adapter is started
-        mock_container_start.assert_called_once()
+        # check adapters started
+        self.assertEqual(mock_container_start.call_count, 2)
 
         # clean-up
         self.cleanup()
@@ -326,8 +338,9 @@ class Test_create_agents_from_config_file(TestCase):
 
         # check adapter IP
         args = mock_create_container.call_args_list
-        self.assertEqual(mock_create_container.call_count, 1)
+        self.assertEqual(mock_create_container.call_count, 2)
         self.assertTrue(call('test-zaix-001-adapter', 7878, ANY, 1.5) in args)
+        self.assertTrue(call('test-zaix-002-adapter', 7878, ANY, 0) in args)
 
         # clean-up
         self.cleanup()
