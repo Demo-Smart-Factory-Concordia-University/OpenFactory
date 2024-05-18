@@ -26,8 +26,3 @@ devices:
       adapter:
         ip: adapter2.test.org
         port: 7879
-    runtime:
-      agent:
-        cpus: 1
-      producer:
-        cpus: 0.5
