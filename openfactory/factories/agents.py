@@ -1,4 +1,3 @@
-import yaml
 import os
 import tempfile
 from fsspec.core import split_protocol
@@ -6,6 +5,7 @@ from sqlalchemy import select
 
 from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
+from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
 from openfactory.models.containers import EnvVar
@@ -18,12 +18,12 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
     """
 
     # load yaml description file
-    with open(yaml_config_file, 'r') as stream:
-        cfg = yaml.safe_load(stream)
+    devices = get_devices_from_config_file(yaml_config_file)
+    if devices is None:
+        return
 
-    for dev in cfg['devices']:
-        device = cfg['devices'][dev]
-        user_notify.info(f"{device['uuid']}:")
+    for dev_name, device in devices.items():
+        user_notify.info(f"{dev_name}:")
 
         query = select(Agent).where(Agent.uuid == device['uuid'].upper() + '-AGENT')
         if db_session.execute(query).one_or_none() is not None:
@@ -47,8 +47,8 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         db_session.commit()
 
         # configure adapter
-        if 'image' in device['agent']['adapter']:
-            cpus = device.get('runtime', {}).get('adapter', {}).get('cpus', 0)
+        if device['agent']['adapter']['image']:
+            cpus = 0 if device.get('runtime') is None else device['runtime'].get('adapter', {}).get('cpus', 0)
             env = []
             if 'environment' in device['agent']['adapter']:
                 for item in device['agent']['adapter']['environment']:
@@ -91,7 +91,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
                 return
 
             # create agent
-            cpus = device.get('runtime', {}).get('agent', {}).get('cpus', 0)
+            cpus = 0 if device.get('runtime') is None else device['runtime'].get('agent', {}).get('cpus', 0)
             try:
                 agent.create_container(adapter_ip,
                                        device['agent']['adapter']['port'],
@@ -107,7 +107,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             agent.start()
 
         if attach:
-            cpus = device.get('runtime', {}).get('producer', {}).get('cpus', 0)
+            cpus = 0 if device.get('runtime') is None else device['runtime'].get('producer', {}).get('cpus', 0)
             try:
                 agent.attach(cpus)
             except OFAException as err:
