@@ -541,18 +541,6 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_container(self, *args):
-        """
-        Test hybrid_property 'container'
-        """
-        agent = self.setup_agent()
-
-        # check container property
-        self.assertEqual(agent.container, 'test-agent')
-
-        # clean-up
-        self.cleanup()
-
     def test_status(self, *args):
         """
         Test hybrid_property 'status'

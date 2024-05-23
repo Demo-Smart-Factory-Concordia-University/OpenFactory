@@ -103,13 +103,6 @@ class Agent(Base):
         return self.uuid.upper().replace('-AGENT', '-PRODUCER')
 
     @hybrid_property
-    def container(self):
-        """ Container of agent """
-        if self.external:
-            return ""
-        return self.uuid.lower()
-
-    @hybrid_property
     def status(self):
         """ Status of agent """
         if self.external:
