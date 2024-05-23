@@ -21,6 +21,10 @@ if TYPE_CHECKING:
     from .nodes import Node
 
 
+# Connections to Docker clients
+_docker_clients = {}
+
+
 class DockerContainer(Base):
     """
     Docker container
@@ -45,6 +49,12 @@ class DockerContainer(Base):
         return f"Container (id={self.id} name={self.name})"
 
     @hybrid_property
+    def docker_client(self):
+        if self.docker_url not in _docker_clients:
+            _docker_clients[self.docker_url] = docker.DockerClient(base_url=self.docker_url)
+        return _docker_clients[self.docker_url]
+
+    @hybrid_property
     def docker_url(self):
         """ docker_url from node on which container is deployed """
         return self.node.docker_url
@@ -58,9 +68,7 @@ class DockerContainer(Base):
     def container(self):
         """ Gets Docker container or None """
         try:
-            client = docker.DockerClient(base_url=self.docker_url)
-            container = client.containers.get(self.name)
-            client.close()
+            container = self.docker_client.containers.get(self.name)
         except docker.errors.NotFound:
             return None
         return container
@@ -119,23 +127,21 @@ def dockerContainer_after_insert(mapper, connection, target):
     for var in target.environment:
         env.append(f"{var.variable}={var.value}")
 
-    docker_client = docker.DockerClient(base_url=target.docker_url)
     try:
-        docker_client.images.get(target.image)
+        target.docker_client.images.get(target.image)
     except docker.errors.ImageNotFound:
         try:
-            docker_client.images.pull(target.image)
+            target.docker_client.images.pull(target.image)
         except docker.errors.ImageNotFound:
             raise OFAException(f"Could not find Docker image '{target.image}'")
-    docker_client.containers.create(target.image,
-                                    name=target.name,
-                                    detach=True,
-                                    environment=env,
-                                    ports=ports_dict,
-                                    command=target.command,
-                                    network=target.network,
-                                    nano_cpus=int(target.cpus*1E9))
-    docker_client.close()
+    target.docker_client.containers.create(target.image,
+                                           name=target.name,
+                                           detach=True,
+                                           environment=env,
+                                           ports=ports_dict,
+                                           command=target.command,
+                                           network=target.network,
+                                           nano_cpus=int(target.cpus*1E9))
 
 
 @event.listens_for(DockerContainer, 'after_delete')
@@ -143,9 +149,8 @@ def dockerContainer_after_delete(mapper, connection, target):
     """
     Remove Docker container when database object is deleted
     """
-    docker_client = docker.DockerClient(base_url=target.docker_url)
     try:
-        container = docker_client.containers.get(target.name)
+        container = target.docker_client.containers.get(target.name)
         container.stop()
         container.remove()
     except docker.errors.DockerException:
@@ -153,8 +158,6 @@ def dockerContainer_after_delete(mapper, connection, target):
         # (e.g. was removed by other ways than ofa)
         # ignore error and proceed with deleting database entry
         pass
-    finally:
-        docker_client.close()
 
 
 class EnvVar(Base):

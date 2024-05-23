@@ -76,7 +76,7 @@ def get_devices_from_config_file(devices_yaml_config_file):
     """
     Loads and validates devices configuration from a YAML file
     Returns dictionary of devices configurations or None in case of errors
-    Side effect: sends user notifactions in case of validation errors
+    Side effect: sends user notifications in case of validation errors
     """
     # load yaml description file
     with open(devices_yaml_config_file, 'r') as stream:

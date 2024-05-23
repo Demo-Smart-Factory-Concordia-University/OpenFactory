@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from openfactory.models.base import Base
-from openfactory.models.containers import DockerContainer
+from openfactory.models.containers import DockerContainer, _docker_clients
 from openfactory.models.nodes import Node
 import tests.mocks as mock
 
@@ -74,6 +74,9 @@ class TestDockerContainer(TestCase):
             self.session.delete(manager[0])
             self.session.commit()
 
+        # clear docker clients
+        _docker_clients.clear()
+
     def test_class_parent(self, *args):
         """
         Test parent of class is Base
@@ -106,7 +109,6 @@ class TestDockerContainer(TestCase):
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once_with()
 
         # pull Docker image
         mock.docker_images.get.assert_called_once_with('tester/test')
@@ -133,12 +135,12 @@ class TestDockerContainer(TestCase):
 
         # tear down container
         mock_DockerClient.reset_mock()
+        del _docker_clients[node.docker_url]  # force to reconnect
         self.session.delete(cont[0])
         self.session.commit()
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once()
 
         # fetch correct container
         mock.docker_containers.get.assert_called_once_with(container.name)
@@ -239,6 +241,40 @@ class TestDockerContainer(TestCase):
         # clean up
         self.cleanup()
 
+    def test_docker_client_connect(self, mock_DockerClient, *args):
+        """
+        Test Docker client connection established when using first time
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            cpus=1,
+            node=node)
+
+        container.docker_client
+        mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
+
+        # clean up
+        self.cleanup()
+
+    def test_docker_client(self, mock_DockerClient, *args):
+        """
+        Test hybride property 'docker_client' of a DockerContainer
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            cpus=1,
+            node=node)
+        self.assertEqual(container.docker_client, _docker_clients[node.docker_url])
+
+        # clean up
+        self.cleanup()
+
     def test_docker_url(self, *args):
         """
         Test hybride property 'docker_url' of a DockerContainer
@@ -292,11 +328,11 @@ class TestDockerContainer(TestCase):
         self.session.commit()
 
         mock_DockerClient.reset_mock()
+        del _docker_clients[node.docker_url]  # force to reconnect
         docker_cont = container.container
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once()
 
         # fetch correct container
         mock.docker_containers.get.assert_called_once_with(container.name)
@@ -319,6 +355,7 @@ class TestDockerContainer(TestCase):
         self.session.add_all([node, container])
         self.session.commit()
 
+        del _docker_clients[container.docker_url]
         mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
         self.assertIsNone(container.container)
 
@@ -359,6 +396,7 @@ class TestDockerContainer(TestCase):
         self.session.add_all([node, container])
         self.session.commit()
 
+        del _docker_clients[container.docker_url]
         mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
         self.assertEqual(container.status, 'no container')
 
@@ -415,11 +453,11 @@ class TestDockerContainer(TestCase):
         self.session.commit()
 
         mock_DockerClient.reset_mock()
+        del _docker_clients[node.docker_url]  # force to reconnect
         container.start()
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once()
 
         # fetch correct container and start it
         mock.docker_containers.get.assert_called_once_with(container.name)
@@ -443,11 +481,11 @@ class TestDockerContainer(TestCase):
         self.session.commit()
 
         mock_DockerClient.reset_mock()
+        del _docker_clients[container.docker_url]  # force to reconnect
         container.stop()
 
         # use correct docker client
         mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-        mock.docker_client.close.assert_called_once()
 
         # fetch correct container and start it
         mock.docker_containers.get.assert_called_once_with(container.name)
