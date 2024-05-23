@@ -4,6 +4,7 @@ import tarfile
 import docker
 from unittest import TestCase
 from unittest.mock import patch
+import docker.errors
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -304,6 +305,27 @@ class TestDockerContainer(TestCase):
         # clean up
         self.cleanup()
 
+    def test_container_none_existent(self, mock_DockerClient):
+        """
+        Test hybride property 'container' of a DockerContainer in case container does not exist
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            cpus=1,
+            node=node)
+        self.session.add_all([node, container])
+        self.session.commit()
+
+        mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
+        self.assertIsNone(container.container)
+
+        # clean up
+        mock_DockerClient.side_effect = None
+        self.cleanup()
+
     def test_status(self, *args):
         """
         Test hybride property 'status' of a DockerContainer
@@ -321,6 +343,27 @@ class TestDockerContainer(TestCase):
         self.assertEqual(container.status, 'running')
 
         # clean up
+        self.cleanup()
+
+    def test_status_no_docker_container(self, mock_DockerClient, *args):
+        """
+        Test hybride property 'status' of a DockerContainer in case no actual Docker container exists
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            cpus=1,
+            node=node)
+        self.session.add_all([node, container])
+        self.session.commit()
+
+        mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
+        self.assertEqual(container.status, 'no container')
+
+        # clean up
+        mock_DockerClient.side_effect = None
         self.cleanup()
 
     def test_add_file(self, mock_DockerClient):

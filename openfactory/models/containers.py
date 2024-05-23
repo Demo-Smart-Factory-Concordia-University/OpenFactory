@@ -56,16 +56,22 @@ class DockerContainer(Base):
 
     @hybrid_property
     def container(self):
-        """ Gets Docker container """
-        client = docker.DockerClient(base_url=self.docker_url)
-        container = client.containers.get(self.name)
-        client.close()
+        """ Gets Docker container or None """
+        try:
+            client = docker.DockerClient(base_url=self.docker_url)
+            container = client.containers.get(self.name)
+            client.close()
+        except docker.errors.NotFound:
+            return None
         return container
 
     @hybrid_property
     def status(self):
         """ Status of container """
-        return self.container.attrs['State']['Status']
+        if self.container:
+            return self.container.attrs['State']['Status']
+        else:
+            return 'no container'
 
     def add_file(self, src, dest):
         """ Copy a file into the Docker container """
