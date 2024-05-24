@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from httpx import HTTPError
+from docker.errors import DockerException
 from paramiko.ssh_exception import SSHException
 
 import openfactory.config as config
@@ -481,6 +482,20 @@ class TestAgent(TestCase):
         self.assertTrue(call(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg') in calls)
 
         # clean-up
+        self.cleanup()
+
+    def test_create_container_docker_error(self, *args):
+        """
+        Test creation of agent Docker container handles DockerError
+        """
+        mock.docker_containers.create.side_effect = DockerException
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
+
+        # clean-up
+        mock.docker_containers.create.side_effect = None
         self.cleanup()
 
     def test_create_container_no_agent_config_file(self, *args):
