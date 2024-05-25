@@ -2,6 +2,7 @@ import os
 from unittest import TestCase
 from unittest.mock import patch, Mock, call
 from sqlalchemy import select
+from paramiko.ssh_exception import SSHException
 
 import tests.mocks as mock
 from openfactory.ofa.db import db
@@ -11,9 +12,10 @@ from openfactory.factories import remove_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer
+from openfactory.models.containers import DockerContainer, _docker_clients
 from openfactory.models.infrastack import InfraStack
 from openfactory.models.nodes import Node
+from openfactory.exceptions import OFAException
 
 
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
@@ -185,4 +187,69 @@ class Test_remove_devices_from_config_file(TestCase):
         self.assertIn(call('Container test-zaix-001-agent removed successfully'), calls)
 
         # clean up
+        self.cleanup()
+
+    def test_remove_devices_capture_OFAException(self, *args):
+        """
+        Test OFAException is handled during device removal
+        """
+        # setup stack and agent
+        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/infra/base_infra_mock.yml')
+        create_infrastack(db.session, config_base)
+        config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    'mocks/mock_one_agent.yml')
+        create_agents_from_config_file(db.session, config_agent)
+
+        # make db_session.execute(query).one_or_none() to return mocked agent instances
+        mock_agent_instance = Mock()
+        mock_db_session = Mock()
+        mock_db_session.execute.return_value.one_or_none.return_value = [mock_agent_instance]
+
+        # make agent.stop to raise OFAException
+        mock_agent_instance.stop = Mock(side_effect=OFAException('Stop error'))
+        remove_devices_from_config_file(mock_db_session, config_agent)
+
+        # make agent.detach to raise OFAException
+        mock_agent_instance.stop.side_effect = None
+        mock_agent_instance.detach = Mock(side_effect=OFAException('Detach error'))
+        remove_devices_from_config_file(mock_db_session, config_agent)
+
+        # make delete agent to raise OFAException
+        mock_agent_instance.detach.side_effect = None
+        mock_db_session.delete = Mock(side_effect=OFAException('Delete error'))
+        remove_devices_from_config_file(mock_db_session, config_agent)
+
+        # check errors were captured and handled
+        calls = user_notify.fail.call_args_list
+        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Stop error'), calls)
+        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Detach error'), calls)
+        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Delete error'), calls)
+
+        # clean up
+        self.cleanup()
+
+    def test_remove_devices_ssh_error(self, mock_docker_apiclient, mock_DockerClient, *args):
+        """
+        Test SSHException is handled during device removal
+        """
+        # setup stack and agent
+        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/infra/base_infra_mock.yml')
+        create_infrastack(db.session, config_base)
+        config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    'mocks/mock_one_agent.yml')
+        create_agents_from_config_file(db.session, config_agent)
+
+        # mock an SSHException
+        _docker_clients.clear()
+        mock_DockerClient.side_effect = SSHException('Mocking SSH connection error')
+
+        # check it is handled correctly
+        remove_devices_from_config_file(db.session, config_agent)
+        calls = user_notify.fail.call_args_list
+        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Cannot remove container test-zaix-001-agent. Node is down'), calls)
+
+        # clean up
+        mock_DockerClient.side_effect = None
         self.cleanup()

@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from openfactory.exceptions import OFAException
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
@@ -22,8 +23,12 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
         if agent is None:
             user_notify.info(f'No Agent {agent_uuid} defined in OpenFactory')
             continue
-        agent[0].stop()
-        agent[0].detach()
-        db_session.delete(agent[0])
-        db_session.commit()
+        try:
+            agent[0].stop()
+            agent[0].detach()
+            db_session.delete(agent[0])
+            db_session.commit()
+        except OFAException as err:
+            db_session.rollback()
+            user_notify.fail(f"Cannot remove {device['uuid']} - {err}")
         user_notify.success(f"{device['uuid']} removed successfully")

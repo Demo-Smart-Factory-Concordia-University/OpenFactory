@@ -2,8 +2,10 @@ import tempfile
 import os
 import tarfile
 import docker
+from requests.exceptions import ConnectionError
+from paramiko.ssh_exception import SSHException
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import docker.errors
 from sqlalchemy import create_engine
 from sqlalchemy import select
@@ -12,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from openfactory.models.base import Base
 from openfactory.models.containers import DockerContainer, _docker_clients
 from openfactory.models.nodes import Node
+from openfactory.exceptions import OFAException
 import tests.mocks as mock
 
 
@@ -152,6 +155,71 @@ class TestDockerContainer(TestCase):
         # clean up
         self.cleanup()
 
+    def test_setup_container_host_down(self, mock_DockerClient):
+        """
+        Test insert of a DockerContainer when host is down
+        """
+        node = create_node()
+        self.session.add_all([node])
+        self.session.commit()
+
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            node=node)
+
+        # Mock SSHException
+        _docker_clients.clear()
+        mock_DockerClient.side_effect = SSHException
+        self.session.add_all([container])
+        self.assertRaises(OFAException, self.session.commit)
+        self.session.rollback()
+
+        # Mock ConnectionError
+        _docker_clients.clear()
+        mock_DockerClient.side_effect = ConnectionError
+        self.session.add_all([container])
+        self.assertRaises(OFAException, self.session.commit)
+        self.session.rollback()
+
+        # clean up
+        mock_DockerClient.side_effect = None
+        self.cleanup()
+
+    def test_delete_container_host_down(self, mock_DockerClient):
+        """
+        Test delete of a DockerContainer when host is down
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            node=node)
+        self.session.add_all([node, container])
+        self.session.commit()
+
+        # mock node down
+        _docker_clients[container.docker_url].ping.side_effect = ConnectionError('Mocking connection error')
+        mock_DockerClient.side_effect = ConnectionError('Mocking connection error')
+
+        # check OFAException exception raised
+        self.session.delete(container)
+        try:
+            self.session.commit()
+        except OFAException:
+            self.session.rollback()
+
+        # check container was not removed
+        query = select(DockerContainer).where(DockerContainer.name == "test_cont")
+        self.assertEqual(self.session.execute(query).one(), (container,))
+
+        # clean up
+        _docker_clients[container.docker_url].ping.side_effect = None
+        mock_DockerClient.side_effect = None
+        self.cleanup()
+
     def test_delete_db_entry_if_no_docker_container(self, *args):
         """
         Test databse entry is removed even if Docker container does not exist
@@ -205,12 +273,12 @@ class TestDockerContainer(TestCase):
 
         # if no cpu provided, use maximal number from node
         query = select(DockerContainer).where(DockerContainer.name == "test_cont1")
-        cont_1 = self.session.execute(query).first()
+        cont_1 = self.session.execute(query).one()
         self.assertEqual(cont_1[0].cpus, 5)
 
         # if too many cpus provided, use maximal number from node
         query = select(DockerContainer).where(DockerContainer.name == "test_cont2")
-        cont_2 = self.session.execute(query).first()
+        cont_2 = self.session.execute(query).one()
         self.assertEqual(cont_2[0].cpus, 5)
 
         # clean up
@@ -350,7 +418,6 @@ class TestDockerContainer(TestCase):
             image='tester/test',
             name='test_cont',
             command='run some cmd',
-            cpus=1,
             node=node)
         self.session.add_all([node, container])
         self.session.commit()
@@ -358,6 +425,29 @@ class TestDockerContainer(TestCase):
         del _docker_clients[container.docker_url]
         mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
         self.assertIsNone(container.container)
+        self.assertEqual(container._status_error, 'no container')
+
+        # clean up
+        mock_DockerClient.side_effect = None
+        self.cleanup()
+
+    def test_container_no_connection_to_node(self, mock_DockerClient):
+        """
+        Test hybride property 'container' of a DockerContainer in case connection to node lost
+        """
+        node = create_node()
+        container = DockerContainer(
+            image='tester/test',
+            name='test_cont',
+            command='run some cmd',
+            node=node)
+        self.session.add_all([node, container])
+        self.session.commit()
+
+        del _docker_clients[container.docker_url]
+        mock_DockerClient.side_effect = SSHException('Mocking SSH connection error')
+        self.assertIsNone(container.container)
+        self.assertEqual(container._status_error, 'node down')
 
         # clean up
         mock_DockerClient.side_effect = None
@@ -382,27 +472,15 @@ class TestDockerContainer(TestCase):
         # clean up
         self.cleanup()
 
-    def test_status_no_docker_container(self, mock_DockerClient, *args):
+    def test_status_no_docker_container(self, *args):
         """
         Test hybride property 'status' of a DockerContainer in case no actual Docker container exists
         """
-        node = create_node()
-        container = DockerContainer(
-            image='tester/test',
-            name='test_cont',
-            command='run some cmd',
-            cpus=1,
-            node=node)
-        self.session.add_all([node, container])
-        self.session.commit()
-
-        del _docker_clients[container.docker_url]
-        mock_DockerClient.side_effect = docker.errors.NotFound('Mocking none existing container')
-        self.assertEqual(container.status, 'no container')
-
-        # clean up
-        mock_DockerClient.side_effect = None
-        self.cleanup()
+        container = DockerContainer()
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            container.container = None
+            container._status_error = 'This should be returned'
+            self.assertEqual(container.status, 'This should be returned')
 
     def test_add_file(self, mock_DockerClient):
         """
@@ -438,58 +516,61 @@ class TestDockerContainer(TestCase):
         tmp_dir.cleanup()
         self.cleanup()
 
-    def test_start(self, mock_DockerClient):
+    def test_add_file_no_container(self, *args):
+        """
+        Test DockerContainer.add_file raises OFAException when no container
+        """
+        # mock some file
+        tmp_dir = tempfile.TemporaryDirectory()
+        src = os.path.join(tmp_dir.name, 'file_to_upload.txt')
+        with open(src, 'w') as f:
+            f.write('Some important text')
+
+        cont = DockerContainer()
+
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            cont.container = None
+            self.assertRaises(OFAException, cont.add_file, src, '/some/destination/folder/data.txt')
+
+        # clean up
+        tmp_dir.cleanup()
+
+    def test_start(self, *args):
         """
         Test DockerContainer.start
         """
-        node = create_node()
-        container = DockerContainer(
-            image='tester/test',
-            name='test_cont',
-            command='run some cmd',
-            cpus=1,
-            node=node)
-        self.session.add_all([node, container])
-        self.session.commit()
+        cont = DockerContainer()
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            cont.container = Mock()
+            cont.container.start = Mock()
+            cont.start()
+            cont.container.start.assert_called()
 
-        mock_DockerClient.reset_mock()
-        del _docker_clients[node.docker_url]  # force to reconnect
-        container.start()
-
-        # use correct docker client
-        mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-
-        # fetch correct container and start it
-        mock.docker_containers.get.assert_called_once_with(container.name)
-        mock.docker_container.start.assert_called_once()
-
-        # clean up
-        self.cleanup()
+    def test_start_no_container(self, *args):
+        """
+        Test DockerContainer.start raises OFAException when no container
+        """
+        cont = DockerContainer()
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            cont.container = None
+            self.assertRaises(OFAException, cont.start)
 
     def test_stop(self, mock_DockerClient):
         """
         Test DockerContainer.start
         """
-        node = create_node()
-        container = DockerContainer(
-            image='tester/test',
-            name='test_cont',
-            command='run some cmd',
-            cpus=1,
-            node=node)
-        self.session.add_all([node, container])
-        self.session.commit()
+        cont = DockerContainer()
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            cont.container = Mock()
+            cont.container.stop = Mock()
+            cont.stop()
+            cont.container.stop.assert_called()
 
-        mock_DockerClient.reset_mock()
-        del _docker_clients[container.docker_url]  # force to reconnect
-        container.stop()
-
-        # use correct docker client
-        mock_DockerClient.assert_called_once_with(base_url=node.docker_url)
-
-        # fetch correct container and start it
-        mock.docker_containers.get.assert_called_once_with(container.name)
-        mock.docker_container.stop.assert_called_once()
-
-        # clean up
-        self.cleanup()
+    def test_stop_no_container(self, *args):
+        """
+        Test DockerContainer.stop raises OFAException when no container
+        """
+        cont = DockerContainer()
+        with patch('openfactory.models.containers.DockerContainer.container'):
+            cont.container = None
+            self.assertRaises(OFAException, cont.stop)

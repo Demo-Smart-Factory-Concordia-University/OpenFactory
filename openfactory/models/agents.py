@@ -13,7 +13,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.exc import PendingRollbackError
 from pyksql.ksql import KSQL
 from httpx import HTTPError
-from docker.errors import DockerException
 from paramiko.ssh_exception import SSHException
 from mtc2kafka.connectors import MTCSourceConnector
 
@@ -201,9 +200,9 @@ class Agent(Base):
         self.agent_container = container
         try:
             session.commit()
-        except DockerException as err:
+        except OFAException as err:
             session.rollback()
-            raise OFAException(f"Could not create container: {err}")
+            raise OFAException(err)
         try:
             container.add_file(mtc_device_file, '/home/agent/device.xml')
         except FileNotFoundError:

@@ -15,7 +15,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer, EnvVar
+from openfactory.models.containers import DockerContainer, EnvVar, _docker_clients
 import tests.mocks as mock
 
 
@@ -496,6 +496,22 @@ class TestAgent(TestCase):
 
         # clean-up
         mock.docker_containers.create.side_effect = None
+        self.cleanup()
+
+    def test_create_container_ssh_error(self, mock_docker_client, *args):
+        """
+        Test creation of agent Docker container handles SSHException
+        """
+        agent = self.setup_agent()
+        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_device.xml')
+
+        mock_docker_client.side_effect = SSHException
+        _docker_clients.clear()
+        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
+
+        # clean-up
+        mock_docker_client.side_effect = None
         self.cleanup()
 
     def test_create_container_no_agent_config_file(self, *args):

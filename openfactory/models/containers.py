@@ -1,6 +1,8 @@
 import docker
 import os
 import tarfile
+from requests.exceptions import ConnectionError
+from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 from tempfile import TemporaryDirectory
 from typing import List
 import docker.errors
@@ -45,13 +47,26 @@ class DockerContainer(Base):
                                                cascade="all, delete-orphan")
     cpus = mapped_column(Double(), default=0)
 
+    _status_error = None
+
     def __repr__(self):
         return f"Container (id={self.id} name={self.name})"
 
     @hybrid_property
     def docker_client(self):
+        """ Return DockerClient to manage the container """
         if self.docker_url not in _docker_clients:
             _docker_clients[self.docker_url] = docker.DockerClient(base_url=self.docker_url)
+
+        # check Docker engine can be reached
+        try:
+            _docker_clients[self.docker_url].ping()
+        except ConnectionError:
+            # re-establish connection in case socket was closed
+            _docker_clients[self.docker_url] = docker.DockerClient(base_url=self.docker_url)
+            # ping again
+            # will raise an error in case connection still absent (to be handled by caller)
+            _docker_clients[self.docker_url].ping()
         return _docker_clients[self.docker_url]
 
     @hybrid_property
@@ -69,8 +84,13 @@ class DockerContainer(Base):
         """ Gets Docker container or None """
         try:
             container = self.docker_client.containers.get(self.name)
-        except docker.errors.NotFound:
+        except (docker.errors.DockerException):
+            self._status_error = 'no container'
             return None
+        except (ConnectionError, NoValidConnectionsError, SSHException):
+            self._status_error = 'node down'
+            return None
+        self._status_error = None
         return container
 
     @hybrid_property
@@ -79,7 +99,7 @@ class DockerContainer(Base):
         if self.container:
             return self.container.attrs['State']['Status']
         else:
-            return 'no container'
+            return self._status_error
 
     def add_file(self, src, dest):
         """ Copy a file into the Docker container """
@@ -92,16 +112,25 @@ class DockerContainer(Base):
             tar.close()
         with open(tmp_file, 'rb') as f:
             data = f.read()
-        self.container.put_archive(os.path.dirname(dest), data)
+        if self.container:
+            self.container.put_archive(os.path.dirname(dest), data)
+        else:
+            raise OFAException(f'Cannot add file to container - {self._status_error}')
         tmp_dir.cleanup()
 
     def start(self):
         """ Start Docker container """
-        self.container.start()
+        if self.container:
+            self.container.start()
+        else:
+            raise OFAException(f'Cannot start container - {self._status_error}')
 
     def stop(self):
         """ Stop Docker container """
-        self.container.stop()
+        if self.container:
+            self.container.stop()
+        else:
+            raise OFAException(f'Cannot stop container - {self._status_error}')
 
 
 @event.listens_for(DockerContainer, 'before_insert')
@@ -129,19 +158,25 @@ def dockerContainer_after_insert(mapper, connection, target):
 
     try:
         target.docker_client.images.get(target.image)
+    except (ConnectionError, NoValidConnectionsError, SSHException):
+        raise OFAException(f"Could not create container {target.name} - Node is down")
     except docker.errors.ImageNotFound:
         try:
             target.docker_client.images.pull(target.image)
         except docker.errors.ImageNotFound:
             raise OFAException(f"Could not find Docker image '{target.image}'")
-    target.docker_client.containers.create(target.image,
-                                           name=target.name,
-                                           detach=True,
-                                           environment=env,
-                                           ports=ports_dict,
-                                           command=target.command,
-                                           network=target.network,
-                                           nano_cpus=int(target.cpus*1E9))
+
+    try:
+        target.docker_client.containers.create(target.image,
+                                               name=target.name,
+                                               detach=True,
+                                               environment=env,
+                                               ports=ports_dict,
+                                               command=target.command,
+                                               network=target.network,
+                                               nano_cpus=int(target.cpus*1E9))
+    except docker.errors.DockerException as err:
+        raise OFAException(f"Could not create container: {err}")
 
 
 @event.listens_for(DockerContainer, 'after_delete')
@@ -154,10 +189,12 @@ def dockerContainer_after_delete(mapper, connection, target):
         container.stop()
         container.remove()
     except docker.errors.DockerException:
-        # in case the container doesnt exist
+        # in case the container doesn't exist
         # (e.g. was removed by other ways than ofa)
         # ignore error and proceed with deleting database entry
         pass
+    except (ConnectionError, SSHException, NoValidConnectionsError):
+        raise OFAException(f'Cannot remove container {target.name}. Node is down')
 
 
 class EnvVar(Base):

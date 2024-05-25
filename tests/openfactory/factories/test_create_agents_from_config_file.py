@@ -4,6 +4,7 @@ from unittest import TestCase
 from unittest.mock import patch, call, Mock, ANY
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from paramiko.ssh_exception import SSHException
 
 import tests.mocks as mock
 from openfactory.exceptions import OFAException
@@ -12,6 +13,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
+from openfactory.models.containers import _docker_clients
 from openfactory.factories import create_agents_from_config_file
 
 
@@ -255,6 +257,31 @@ class Test_create_agents_from_config_file(TestCase):
         self.assertRaises(OFAException, create_agents_from_config_file, db.session, config_file)
 
         # clean-up
+        self.cleanup()
+
+    def test_create_agents_ssh_error(self, mock_docker_apiclient, mock_DockerClient, *args):
+        """
+        Test if SSHException is handled
+        """
+        self.setup_nodes()
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_agents.yml')
+
+        # mock an SSHException
+        _docker_clients.clear()
+        mock_DockerClient.side_effect = SSHException('Mocking SSH connection error')
+
+        # check SSHException is handled correctly
+        create_agents_from_config_file(db.session, config_file, run=True, attach=True)
+        calls = user_notify.fail.call_args_list
+        self.assertIn(call('Could not create TEST-ZAIX-001-AGENT\nError was: Could not create container test-zaix-001-agent - Node is down'), calls)
+
+        # check agent was not created
+        query = select(Agent).where(Agent.uuid == "TEST-ZAIX-001-AGENT")
+        self.assertIsNone(db.session.execute(query).one_or_none())
+
+        # clean-up
+        mock_DockerClient.side_effect = None
         self.cleanup()
 
     def test_create_adapter(self, *args):

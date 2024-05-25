@@ -72,6 +72,7 @@ docker_client.networks = docker_networks
 docker_client.containers = docker_containers
 docker_client.images = docker_images
 docker_client.swarm = docker_swarm
+docker_client.ping = Mock()
 docker_client.close = Mock()
 
 
