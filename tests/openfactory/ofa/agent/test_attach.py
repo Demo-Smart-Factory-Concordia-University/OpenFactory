@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 from click.testing import CliRunner
@@ -10,6 +9,8 @@ from openfactory.ofa.db import db
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
+from openfactory.models.user_notifications import user_notify
+from openfactory.exceptions import OFAException
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
@@ -27,12 +28,22 @@ class Test_ofa_agent_attach(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        user_notify.setup(success_msg=Mock(),
+                          fail_msg=Mock(),
+                          info_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
         print("\nTear down in memory sqlite db")
         Base.metadata.drop_all(db.engine)
         db.session.close()
+
+    @classmethod
+    def setUp(self):
+        """ Reset mocks """
+        user_notify.success.reset_mock()
+        user_notify.info.reset_mock()
+        user_notify.fail.reset_mock()
 
     @classmethod
     def tearDown(self):
@@ -81,11 +92,6 @@ class Test_ofa_agent_attach(TestCase):
         Test if agent is attached
         """
         node, agent1, agent2 = self.setup_infrastructure()
-
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
         agent1.attach = Mock()
 
         runner = CliRunner()
@@ -103,10 +109,6 @@ class Test_ofa_agent_attach(TestCase):
         Test if user_notification called correctly
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
         agent1.attach = Mock()
 
         runner = CliRunner()
@@ -126,5 +128,21 @@ class Test_ofa_agent_attach(TestCase):
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_attach, ['none-existing-agent'])
         self.assertEqual(result.exit_code, 1)
-        self.assertEqual(result.output,
-                         'No Agent none-existing-agent defined in OpenFactory\n')
+        user_notify.fail.assert_called_once_with('No Agent none-existing-agent defined in OpenFactory')
+
+    def test_attach_handle_OFAException(self, *args):
+        """
+        Test error message in case of OFAException during attach
+        """
+        node, agent1, agent2 = self.setup_infrastructure()
+        agent1.attach = Mock(side_effect=OFAException('Attach error'))
+
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_attach, [agent1.uuid])
+
+        # check OFAException is handled
+        self.assertEqual(result.exit_code, 1)
+        user_notify.fail.assert_called_once_with(f'Could not attach agent {agent1.uuid}: Attach error')
+
+        # clean up
+        self.cleanup()
