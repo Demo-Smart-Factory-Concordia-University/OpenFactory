@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from click.testing import CliRunner
 from sqlalchemy import select
 
@@ -11,6 +11,8 @@ from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer
+from openfactory.models.user_notifications import user_notify
+from openfactory.exceptions import OFAException
 
 
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
@@ -28,12 +30,22 @@ class Test_ofa_agent_detach(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        user_notify.setup(success_msg=Mock(),
+                          fail_msg=Mock(),
+                          info_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
         print("\nTear down in memory sqlite db")
         Base.metadata.drop_all(db.engine)
         db.session.close()
+
+    @classmethod
+    def setUp(self):
+        """ Reset mocks """
+        user_notify.success.reset_mock()
+        user_notify.info.reset_mock()
+        user_notify.fail.reset_mock()
 
     @classmethod
     def tearDown(self):
@@ -132,5 +144,21 @@ class Test_ofa_agent_detach(TestCase):
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_detach, ['none-existing-agent'])
         self.assertEqual(result.exit_code, 1)
-        self.assertEqual(result.output,
-                         'No Agent none-existing-agent defined in OpenFactory\n')
+        user_notify.fail.assert_called_once_with('No Agent none-existing-agent defined in OpenFactory')
+
+    def test_detach_handle_OFAException(self, *args):
+        """
+        Test error message in case of OFAException during detach
+        """
+        node, agent1, agent2 = self.setup_infrastructure()
+        agent1.detach = Mock(side_effect=OFAException('Attach error'))
+
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
+
+        # check OFAException is handled
+        self.assertEqual(result.exit_code, 1)
+        user_notify.fail.assert_called_once_with(f'Could not detach agent {agent1.uuid}: Attach error')
+
+        # clean up
+        self.cleanup()
