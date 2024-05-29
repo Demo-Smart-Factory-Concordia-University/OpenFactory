@@ -248,7 +248,7 @@ class Test_remove_devices_from_config_file(TestCase):
         # check it is handled correctly
         remove_devices_from_config_file(db.session, config_agent)
         calls = user_notify.fail.call_args_list
-        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Cannot remove container test-zaix-001-agent. Node is down'), calls)
+        self.assertIn(call('Cannot remove TEST-ZAIX-001 - Cannot stop container - node down'), calls)
 
         # clean up
         mock_DockerClient.side_effect = None

@@ -136,8 +136,6 @@ class Agent(Base):
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
-        if not self.status == 'running':
-            return
         self.agent_container.stop()
         if self.kafka_producer:
             self.kafka_producer.send_agent_availability('UNAVAILABLE')
