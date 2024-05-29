@@ -10,6 +10,8 @@ from openfactory.ofa.db import db
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
+from openfactory.models.user_notifications import user_notify
+from openfactory.exceptions import OFAException
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
@@ -27,6 +29,9 @@ class Test_ofa_agent_start(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        user_notify.setup(success_msg=Mock(),
+                          fail_msg=Mock(),
+                          info_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
@@ -38,6 +43,13 @@ class Test_ofa_agent_start(TestCase):
     def tearDown(self):
         """ Rollback all transactions """
         db.session.rollback()
+
+    @classmethod
+    def setUp(self):
+        """ Reset mocks """
+        user_notify.success.reset_mock()
+        user_notify.info.reset_mock()
+        user_notify.fail.reset_mock()
 
     def setup_infrastructure(self, *args):
         """
@@ -126,5 +138,27 @@ class Test_ofa_agent_start(TestCase):
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_start, ['none-existing-agent'])
         self.assertEqual(result.exit_code, 1)
-        self.assertEqual(result.output,
-                         'No Agent none-existing-agent defined in OpenFactory\n')
+        user_notify.fail.assert_called_once_with('No Agent none-existing-agent defined in OpenFactory')
+
+    def test_start_handle_OFAException(self, *args):
+        """
+        Test error message in case of OFAException during start of an agent
+        """
+        # mock OFAException during agent.start
+        agent = Mock()
+        agent.uuid = 'TEST-AGENT'
+        agent.start = Mock(side_effect=OFAException('Start error'))
+
+        # return mocked agent in db.session.execute(query).one_or_none()
+        backup = db.session
+        db.session = Mock()
+        db.session.execute.return_value.one_or_none.return_value = [agent]
+
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_start, [agent.uuid])
+        self.assertEqual(result.exit_code, 1)
+        user_notify.fail.assert_called_once_with(f'Could not start agent {agent.uuid}: Start error')
+
+        # clean up
+        db.session = backup
+        self.cleanup()

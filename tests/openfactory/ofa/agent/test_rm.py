@@ -169,7 +169,6 @@ class Test_ofa_agent_rm(TestCase):
         Test error message in case of OFAException during removal of an agent
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        agent1.rm = Mock(side_effect=OFAException('Attach error'))
 
         # mock OFAException during a db.session.commit
         backup = db.session
