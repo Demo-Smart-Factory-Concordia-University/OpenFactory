@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from click.testing import CliRunner
 from sqlalchemy import select
 
@@ -11,6 +11,8 @@ from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 from openfactory.models.containers import DockerContainer
+from openfactory.models.user_notifications import user_notify
+from openfactory.exceptions import OFAException
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
@@ -28,6 +30,9 @@ class Test_ofa_agent_rm(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        user_notify.setup(success_msg=Mock(),
+                          fail_msg=Mock(),
+                          info_msg=Mock())
 
     @classmethod
     def tearDownClass(cls):
@@ -39,6 +44,13 @@ class Test_ofa_agent_rm(TestCase):
     def tearDown(self):
         """ Rollback all transactions """
         db.session.rollback()
+
+    @classmethod
+    def setUp(self):
+        """ Reset mocks """
+        user_notify.success.reset_mock()
+        user_notify.info.reset_mock()
+        user_notify.fail.reset_mock()
 
     def setup_infrastructure(self, *args):
         """
@@ -150,5 +162,28 @@ class Test_ofa_agent_rm(TestCase):
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_rm, ['none-existing-agent'])
         self.assertEqual(result.exit_code, 1)
-        self.assertEqual(result.output,
-                         'No Agent none-existing-agent defined in OpenFactory\n')
+        user_notify.fail.assert_called_once_with('No Agent none-existing-agent defined in OpenFactory')
+
+    def test_rm_handle_OFAException(self, *args):
+        """
+        Test error message in case of OFAException during removal of an agent
+        """
+        node, agent1, agent2 = self.setup_infrastructure()
+        agent1.rm = Mock(side_effect=OFAException('Attach error'))
+
+        # mock OFAException during a db.session.commit
+        backup = db.session
+        db.session = Mock()
+        db.session.execute.return_value.one_or_none.return_value = [agent1]
+        db.session.commit.side_effect = OFAException('Delete error')
+
+        runner = CliRunner()
+        result = runner.invoke(ofa.agent.click_rm, [agent1.uuid])
+
+        # check OFAException is handled
+        self.assertEqual(result.exit_code, 1)
+        user_notify.fail.assert_called_once_with(f'Could not remove agent {agent1.uuid}: Delete error')
+
+        # clean up
+        db.session = backup
+        self.cleanup()
