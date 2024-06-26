@@ -1,0 +1,30 @@
+# AKHQ - WebApp to monitor Kafka and ksqlDB
+#
+# Documentation: https://akhq.io/
+
+services:
+
+  akhq:
+    image: tchiotludo/akhq
+    hostname: mmp=web-ui
+    container_name: mmp-web-ui  
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "broker:29092"
+              ksqldb:
+                - name: "ksqldb"
+                  url: "http://ksqldb-server:8088"
+    ports:
+      - 4100:8080
+    networks:
+      - factory-net
+
+networks:
+
+  factory-net:
+    name: factory-net
+    external: true
