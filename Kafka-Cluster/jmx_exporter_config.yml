@@ -1,0 +1,10 @@
+lowercaseOutputName: true
+rules:
+  - pattern: "kafka.server<type=BrokerTopicMetrics, name=MessagesInPerSec>(.*)"
+    name: kafka_server_messages_in_per_sec
+  - pattern: "kafka.server<type=BrokerTopicMetrics, name=BytesInPerSec>(.*)"
+    name: kafka_server_bytes_in_per_sec
+  - pattern: "kafka.server<type=BrokerTopicMetrics, name=BytesOutPerSec>(.*)"
+    name: kafka_server_bytes_out_per_sec
+  # Add more rules as needed for other Kafka metrics
+  - pattern: ".*"
