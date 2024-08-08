@@ -34,12 +34,12 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
-      EXTRA_ARGS: '-javaagent:/mnt/jmx_prometheus_javaagent.jar=9101:/etc/kafka/jmx_exporter_config.yml'
+      EXTRA_ARGS: '-javaagent:/mnt/jmx_prometheus_javaagent.jar=9101:/etc/kafka/kafka_broker_config.yml'
       # Replace CLUSTER_ID with a unique base64 UUID using "bin/kafka-storage.sh random-uuid" 
       # See https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-storage-sh
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2QkhjfdKKFDdSML'
     volumes:
-      - ./jmx_exporter_config.yml:/etc/kafka/jmx_exporter_config.yml
+      - ./jmx-exporter/kafka_broker_config.yml:/etc/kafka/kafka_broker_config.yml
       - jmx-agent:/mnt
       - kafka-data:/var/lib/kafka/data
       - kafka-metadata:/var/lib/kafka/metadata
@@ -64,7 +64,7 @@ services:
       - "9102:9102"
     environment:
       # https://docs.confluent.io/platform/current/installation/docker/config-reference.html#ksqldb-server-configuration
-      KSQL_OPTS: '-javaagent:/mnt/jmx_prometheus_javaagent.jar=9102:/etc/kafka/jmx_exporter_config.yml'
+      KSQL_OPTS: '-javaagent:/mnt/jmx_prometheus_javaagent.jar=9102:/etc/kafka/ksqldb_config.yml'
       KSQL_CONFIG_DIR: "/etc/ksql"
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"
       KSQL_HOST_NAME: ksqldb-server
@@ -76,7 +76,7 @@ services:
       KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
       KSQL_KSQL_SERVICE_ID: ofa_
     volumes:
-      - ./jmx_exporter_config.yml:/etc/kafka/jmx_exporter_config.yml
+      - ./jmx-exporter/ksqldb_config.yml:/etc/kafka/ksqldb_config.yml
       - jmx-agent:/mnt
     healthcheck:
       test: nc -z localhost 8088 || exit -1
