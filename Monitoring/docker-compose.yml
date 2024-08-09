@@ -1,0 +1,30 @@
+services:
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - factory-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      GF_PATHS_CONFIG: /etc/grafana/config.ini
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/config.ini:/etc/grafana/config.ini
+    ports:
+      - "9300:3000"
+    networks:
+      - factory-net
+
+networks:
+  factory-net:
+    name: factory-net
+    external: true

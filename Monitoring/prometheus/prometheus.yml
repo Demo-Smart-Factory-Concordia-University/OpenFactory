@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'ksqldb'
+    static_configs:
+      - targets: ['ksqldb-server:9102']
+  - job_name: 'kafka-broker'
+    static_configs:
+      - targets: ['broker:9101']
