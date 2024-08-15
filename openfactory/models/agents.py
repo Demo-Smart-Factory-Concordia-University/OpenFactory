@@ -4,6 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy import Table
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Session
@@ -69,9 +70,10 @@ class Agent(Base):
     __tablename__ = "mtc_agents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    uuid: Mapped[str] = mapped_column(String(30), unique=True)
+    uuid: Mapped[str] = mapped_column(String(30), unique=True, doc="Device UUID")
     external = mapped_column(Boolean, default=False)
-    agent_port = mapped_column(Integer())
+    device_xml = mapped_column(Text, doc="URI to device xml model")
+    agent_port = mapped_column(Integer(), doc="Public port of agent")
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
     agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table,

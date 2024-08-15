@@ -40,6 +40,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
             external=False,
+            device_xml=device['agent']['device_xml'],
             agent_port=device['agent']['port'],
             node_id=node[0].id
         )
