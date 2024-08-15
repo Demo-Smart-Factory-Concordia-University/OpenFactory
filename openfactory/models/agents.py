@@ -74,8 +74,8 @@ class Agent(Base):
     external: Mapped[bool] = mapped_column(Boolean, default=False)
     device_xml: Mapped[str] = mapped_column(Text, doc="URI to device xml model")
     agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
-    cpus_reservation: Mapped[int] = mapped_column(Integer(), doc="Minimal number of cpus required by deployed service")
-    cpus_limit: Mapped[int] = mapped_column(Integer(), doc="Maximal number of cpus used by deployed service")
+    cpus_reservation: Mapped[int] = mapped_column(Integer(), default=0.5, doc="Minimal number of cpus required by deployed service")
+    cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
 
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
