@@ -71,9 +71,9 @@ class Agent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     uuid: Mapped[str] = mapped_column(String(30), unique=True, doc="Device UUID")
-    external = mapped_column(Boolean, default=False)
-    device_xml = mapped_column(Text, doc="URI to device xml model")
-    agent_port = mapped_column(Integer(), doc="Public port of agent")
+    external: Mapped[bool] = mapped_column(Boolean, default=False)
+    device_xml: Mapped[str] = mapped_column(Text, doc="URI to device xml model")
+    agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
     agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table,
