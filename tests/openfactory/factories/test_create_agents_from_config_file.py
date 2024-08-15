@@ -113,12 +113,18 @@ class Test_create_agents_from_config_file(TestCase):
         agent1 = agent[0]
         self.assertEqual(agent1.agent_port, 3001)
         self.assertEqual(agent1.node, manager)
+        self.assertEqual(agent1.device_xml, 'mock_device.xml')
+        self.assertEqual(agent1.cpus_reservation, 1.5)
+        self.assertEqual(agent1.cpus_limit, 2.5)
 
         query = select(Agent).where(Agent.uuid == "TEST-ZAIX-002-AGENT")
         agent = db.session.execute(query).first()
         agent2 = agent[0]
         self.assertEqual(agent2.agent_port, 3003)
         self.assertEqual(agent2.node, node)
+        self.assertEqual(agent2.device_xml, 'mock_device.xml')
+        self.assertEqual(agent2.cpus_reservation, 0.5)
+        self.assertEqual(agent2.cpus_limit, 1.0)
 
         # check containers were created correctly
         args = mock_create_container.call_args_list

@@ -11,6 +11,12 @@ devices:
       adapter:
         ip: adapter1.test.org
         port: 7878
+      deploy:
+        resources:
+          limits:
+            cpus: 2.5
+          reservations:
+            cpus: 1.5
     runtime:
       agent:
         cpus: 1.5

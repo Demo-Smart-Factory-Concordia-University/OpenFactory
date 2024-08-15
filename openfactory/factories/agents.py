@@ -12,6 +12,16 @@ from openfactory.models.containers import EnvVar
 from openfactory.models.nodes import Node
 
 
+def get_nested(data, keys, default=None):
+    """ Get safely a nested value from a dictionary """
+    for key in keys:
+        if isinstance(data, dict):
+            data = data.get(key, default)
+        else:
+            return default
+    return data
+
+
 def create_agents_from_config_file(db_session, yaml_config_file, run=False, attach=False):
     """
     Create MTConnect agent(s) based on a yaml configuration file
@@ -36,12 +46,18 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         if node is None:
             raise OFAException(f"Node {device['node']} is not configured in OpenFactory")
 
+        # get ressources if any were defined
+        cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
+        cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], '1')
+
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
             external=False,
             device_xml=device['agent']['device_xml'],
             agent_port=device['agent']['port'],
+            cpus_reservation=cpus_reservation,
+            cpus_limit=cpus_limit,
             node_id=node[0].id
         )
         db_session.add_all([agent])
