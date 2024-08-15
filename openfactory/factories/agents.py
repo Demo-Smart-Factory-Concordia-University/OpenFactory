@@ -50,11 +50,18 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
         cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], '1')
 
+        # compute device device xml uri
+        device_xml_uri = device['agent']['device_xml']
+        protocol, _ = split_protocol(device_xml_uri)
+        if not protocol:
+            if not os.path.isabs(device_xml_uri):
+                device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
+
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
             external=False,
-            device_xml=device['agent']['device_xml'],
+            device_xml=device_xml_uri,
             agent_port=device['agent']['port'],
             cpus_reservation=cpus_reservation,
             cpus_limit=cpus_limit,

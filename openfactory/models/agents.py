@@ -19,6 +19,7 @@ from mtc2kafka.connectors import MTCSourceConnector
 
 import openfactory.config as config
 from openfactory.exceptions import OFAException
+from openfactory.utils import open_ofa
 from .user_notifications import user_notify
 from .base import Base
 from .containers import DockerContainer, EnvVar, Port
@@ -124,6 +125,16 @@ class Agent(Base):
             return "yes"
         else:
             return "no"
+
+    def load_device_xml(self):
+        """ Loads device xml model from source based on xml model uri """
+        xml_model = ""
+        try:
+            with open_ofa(self.device_xml) as f_remote:
+                xml_model += f_remote.read()
+        except OFAException as err:
+            user_notify.fail(f"Could not load XML device model for {self.uuid}.\n{err}")
+        return xml_model
 
     def start(self):
         """ Start agent """

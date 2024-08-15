@@ -108,12 +108,14 @@ class Test_create_agents_from_config_file(TestCase):
         create_agents_from_config_file(db.session, config_file)
 
         # check agents were created correctly
+        xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'mocks/mock_device.xml')
         query = select(Agent).where(Agent.uuid == "TEST-ZAIX-001-AGENT")
         agent = db.session.execute(query).first()
         agent1 = agent[0]
         self.assertEqual(agent1.agent_port, 3001)
         self.assertEqual(agent1.node, manager)
-        self.assertEqual(agent1.device_xml, 'mock_device.xml')
+        self.assertEqual(agent1.device_xml, xml_file)
         self.assertEqual(agent1.cpus_reservation, 1.5)
         self.assertEqual(agent1.cpus_limit, 2.5)
 
@@ -122,7 +124,7 @@ class Test_create_agents_from_config_file(TestCase):
         agent2 = agent[0]
         self.assertEqual(agent2.agent_port, 3003)
         self.assertEqual(agent2.node, node)
-        self.assertEqual(agent2.device_xml, 'mock_device.xml')
+        self.assertEqual(agent2.device_xml, xml_file)
         self.assertEqual(agent2.cpus_reservation, 0.5)
         self.assertEqual(agent2.cpus_limit, 1.0)
 

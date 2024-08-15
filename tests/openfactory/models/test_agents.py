@@ -63,9 +63,11 @@ class TestAgent(TestCase):
         """
         Setup an agent
         """
+        xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'mocks/mock_device.xml')
         agent = Agent(uuid='TEST-AGENT',
                       agent_port=5000,
-                      device_xml='some.xml')
+                      device_xml=xml_file)
         node = Node(
             node_name='manager',
             node_ip='123.456.7.891',
@@ -227,6 +229,21 @@ class TestAgent(TestCase):
         agent = self.setup_agent()
 
         self.assertEqual(agent.producer_uuid, 'TEST-PRODUCER')
+
+        # clean-up
+        self.cleanup()
+
+    def test_load_device_xml(self, *args):
+        """
+        Test loading of device model based on URI
+        """
+        agent = self.setup_agent()
+        xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'mocks/mock_device.xml')
+        with open(xml_file, 'r') as file:
+            expected = file.read()
+
+        self.assertEqual(agent.load_device_xml(), expected)
 
         # clean-up
         self.cleanup()

@@ -55,19 +55,21 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'port': 8080,
                             'device_xml': 'xml1',
                             'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None},
-                            'deploy': {'replicas': 1, 'resources': None}},
-                            'runtime': None},
-                        'device2': {
-                            'uuid': 'uuid2',
-                            'node': 'node2',
-                            'agent': {
-                                'port': 8081,
-                                'device_xml': 'xml2',
-                                'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None},
-                                'deploy': {'replicas': 1, 'resources': None}},
-                                'runtime': {'agent': {'cpus': 2.0}, 'producer': {'cpus': 1.5}, 'adapter': {'cpus': 1.0}}
-                                }
-                            }
+                            'deploy': {'replicas': 1, 'resources': None}
+                            },
+                        'runtime': None},
+                    'device2': {
+                        'uuid': 'uuid2',
+                        'node': 'node2',
+                        'agent': {
+                            'port': 8081,
+                            'device_xml': 'xml2',
+                            'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None},
+                            'deploy': {'replicas': 1, 'resources': None}
+                            },
+                        'runtime': {'agent': {'cpus': 2.0}, 'producer': {'cpus': 1.5}, 'adapter': {'cpus': 1.0}}
+                        }
+                    }
                 self.assertEqual(devices_dict, expected)
                 mock_user_notify.fail.assert_not_called()
 
