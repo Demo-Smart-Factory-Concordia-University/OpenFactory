@@ -189,7 +189,8 @@ class TestInfraStack(TestCase):
         manager, node1, node2 = self.setup_nodes()
         agent = Agent(uuid='TEST-AGENT',
                       node=node1,
-                      agent_port=5000)
+                      agent_port=5000,
+                      device_xml='some.xml')
         self.session.add_all([agent])
         self.session.commit()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),

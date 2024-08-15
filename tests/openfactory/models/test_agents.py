@@ -64,7 +64,8 @@ class TestAgent(TestCase):
         Setup an agent
         """
         agent = Agent(uuid='TEST-AGENT',
-                      agent_port=5000)
+                      agent_port=5000,
+                      device_xml='some.xml')
         node = Node(
             node_name='manager',
             node_ip='123.456.7.891',

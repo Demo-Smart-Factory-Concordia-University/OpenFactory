@@ -267,7 +267,8 @@ class TestNodes(TestCase):
         manager, node = self.setup_nodes()
         agent = Agent(uuid='TEST-AGENT',
                       node=node,
-                      agent_port=5000)
+                      agent_port=5000,
+                      device_xml='some.xml')
         self.session.add_all([agent])
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_device.xml')

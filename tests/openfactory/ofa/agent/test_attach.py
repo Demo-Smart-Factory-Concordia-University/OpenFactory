@@ -61,10 +61,12 @@ class Test_ofa_agent_attach(TestCase):
         )
         agent1 = Agent(uuid='TEST1-AGENT',
                        agent_port=6000,
-                       node=node)
+                       node=node,
+                       device_xml='some1.xml')
         agent2 = Agent(uuid='TEST2-AGENT',
                        agent_port=6000,
-                       node=node)
+                       node=node,
+                       device_xml='some2.xml')
         db.session.add_all([node, agent1, agent2])
         db.session.commit()
         return node, agent1, agent2
