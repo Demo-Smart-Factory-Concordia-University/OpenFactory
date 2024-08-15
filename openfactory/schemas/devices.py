@@ -1,6 +1,6 @@
 import yaml
-from typing import Dict, List
-from pydantic import BaseModel, ValidationError
+from typing import Dict, List, Optional
+from pydantic import BaseModel, Field, ValidationError
 from openfactory.models.user_notifications import user_notify
 
 
@@ -29,10 +29,26 @@ class Adapter(BaseModel):
         return values
 
 
+class ResourcesDefinition(BaseModel):
+    cpus: float = None
+    memory: str = None
+
+
+class Resources(BaseModel):
+    reservations: ResourcesDefinition = None
+    limits: ResourcesDefinition = None
+
+
+class Deploy(BaseModel):
+    replicas: Optional[int] = Field(default=1)
+    resources: Resources = None
+
+
 class Agent(BaseModel):
     port: int
     device_xml: str
     adapter: Adapter
+    deploy: Optional[Deploy] = None
 
 
 class Device(BaseModel):
@@ -40,6 +56,15 @@ class Device(BaseModel):
     node: str
     agent: Agent
     runtime: Runtime = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.agent.deploy is None:
+            # If deploy is not provided, create a default Deploy with replicas=1
+            self.agent.deploy = Deploy(replicas=1)
+        elif self.agent.deploy.replicas is None:
+            # If deploy is provided but replicas is missing, set replicas to 1
+            self.agent.deploy.replicas = 1
 
 
 class DevicesConfig(BaseModel):

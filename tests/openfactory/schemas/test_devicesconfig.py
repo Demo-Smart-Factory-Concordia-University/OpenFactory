@@ -102,3 +102,67 @@ class TestDevicesConfig(unittest.TestCase):
 
         devices_config = DevicesConfig(devices=devices_data)
         self.assertRaises(ValueError, devices_config.validate_devices)
+
+    def test_agent_resources(self):
+        """
+        Test agent resources
+        """
+        devices_data = {
+            "device1": {
+                "uuid": "uuid1",
+                "node": "node1",
+                "agent": {
+                    "port": 8081,
+                    "device_xml": "xml1",
+                    "adapter": {"ip": "1.2.3.4", "port": 9091},
+                    "deploy": {"resources": {
+                        "reservations": {"cpus": 3},
+                        "limits": {"cpus": 5}
+                    }},
+                }
+            },
+            "device2": {
+                "uuid": "uuid1",
+                "node": "node1",
+                "agent": {
+                    "port": 8082,
+                    "device_xml": "xml2",
+                    "adapter": {"ip": "1.2.3.5", "port": 9091},
+                }
+            }
+        }
+        devices_config = DevicesConfig(devices=devices_data)
+        self.assertEqual(devices_config.devices['device1'].agent.deploy.resources.reservations.cpus, 3)
+        self.assertEqual(devices_config.devices['device1'].agent.deploy.resources.limits.cpus, 5)
+        self.assertEqual(devices_config.devices['device2'].agent.deploy.resources, None)
+
+    def test_replicas(self):
+        """
+        Test that replicas
+        """
+        devices_data = {
+            "device1": {
+                "uuid": "uuid1",
+                "node": "node1",
+                "agent": {
+                    "port": 8081,
+                    "device_xml": "xml1",
+                    "adapter": {"ip": "1.2.3.4", "port": 9091},
+                    "deploy": {"replicas": 3},
+                }
+            },
+            "device2": {
+                "uuid": "uuid1",
+                "node": "node1",
+                "agent": {
+                    "port": 8082,
+                    "device_xml": "xml2",
+                    "adapter": {"ip": "1.2.3.5", "port": 9091},
+                }
+            }
+        }
+
+        devices_config = DevicesConfig(devices=devices_data)
+        self.assertEqual(devices_config.devices['device1'].agent.deploy.replicas, 3)
+        # Test that replicas defaults to 1 in case it is not defined
+        self.assertEqual(devices_config.devices['device2'].agent.deploy.replicas, 1)
