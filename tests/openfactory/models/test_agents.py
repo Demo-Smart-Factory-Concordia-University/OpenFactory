@@ -67,7 +67,9 @@ class TestAgent(TestCase):
                                 'mocks/mock_device.xml')
         agent = Agent(uuid='TEST-AGENT',
                       agent_port=5000,
-                      device_xml=xml_file)
+                      device_xml=xml_file,
+                      adapter_ip='1.2.3.4',
+                      adapter_port=7878)
         node = Node(
             node_name='manager',
             node_ip='123.456.7.891',

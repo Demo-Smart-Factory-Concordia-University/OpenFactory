@@ -78,7 +78,9 @@ class TestAgentKafkaProducer(TestCase):
         agent = Agent(uuid='TEST-AGENT',
                       agent_port=6000,
                       node=node,
-                      device_xml='some.xml')
+                      device_xml='some.xml',
+                      adapter_ip='1.2.3.4',
+                      adapter_port=7878)
         db.session.add_all([node, agent])
         db.session.commit()
         device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),

@@ -64,11 +64,15 @@ class Test_ofa_agent_rm(TestCase):
         agent1 = Agent(uuid='TEST1-AGENT',
                        agent_port=6000,
                        node=node,
-                       device_xml='some1.xml')
+                       device_xml='some1.xml',
+                       adapter_ip='1.2.3.4',
+                       adapter_port=7878)
         agent2 = Agent(uuid='TEST2-AGENT',
                        agent_port=6000,
                        node=node,
-                       device_xml='some2.xml')
+                       device_xml='some2.xml',
+                       adapter_ip='1.2.3.4',
+                       adapter_port=7878)
         db.session.add_all([node, agent1, agent2])
         db.session.commit()
         return node, agent1, agent2

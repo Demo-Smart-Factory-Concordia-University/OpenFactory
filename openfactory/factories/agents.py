@@ -57,6 +57,12 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             if not os.path.isabs(device_xml_uri):
                 device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
 
+        # compute adapter IP
+        if device['agent']['adapter']['image']:
+            adapter_ip = device['uuid'].lower() + '-adapter'
+        else:
+            adapter_ip = device['agent']['adapter']['ip']
+
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
@@ -65,6 +71,8 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             agent_port=device['agent']['port'],
             cpus_reservation=cpus_reservation,
             cpus_limit=cpus_limit,
+            adapter_ip=adapter_ip,
+            adapter_port=device['agent']['adapter']['port'],
             node_id=node[0].id
         )
         db_session.add_all([agent])

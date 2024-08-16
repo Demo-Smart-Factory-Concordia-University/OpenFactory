@@ -77,6 +77,8 @@ class Agent(Base):
     agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
     cpus_reservation: Mapped[int] = mapped_column(Integer(), default=0.5, doc="Minimal number of cpus required by deployed service")
     cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
+    adapter_ip: Mapped[str] = mapped_column(String(80), doc="Adapter IP")
+    adapter_port: Mapped[int] = mapped_column(Integer(), doc="Adapter port")
 
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
