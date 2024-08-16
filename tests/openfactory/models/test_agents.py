@@ -250,6 +250,20 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
+    @patch("openfactory.models.agents.open_ofa")
+    def test_load_device_xml_use_open_ofa(self, mock_open_ofa, *args):
+        """
+        Test loading of device model based on URI uses open_ofa
+        """
+        agent = self.setup_agent()
+        xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'mocks/mock_device.xml')
+        agent.load_device_xml()
+        mock_open_ofa.assert_called_with(xml_file)
+
+        # clean-up
+        self.cleanup()
+
     def test_start(self, *args):
         """
         Test if Docker container is started
