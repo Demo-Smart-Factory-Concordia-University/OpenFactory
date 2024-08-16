@@ -1,6 +1,7 @@
 import click
 from openfactory.models.user_notifications import user_notify
 import openfactory.ofa as ofa
+from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.db import db
 import openfactory.config as config
 
@@ -54,6 +55,8 @@ user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{con
                   fail_msg=lambda msg: print(f"{config.OFA_FAIL}{msg}{config.OFA_END}"),
                   info_msg=print)
 
+# connect to Docker engine
+dal.connect()
 
 # connect to database
 db.conn_uri = config.SQL_ALCHEMY_CONN
