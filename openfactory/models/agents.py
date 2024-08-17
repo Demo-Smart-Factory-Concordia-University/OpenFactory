@@ -25,7 +25,7 @@ from openfactory.utils import open_ofa
 from openfactory.docker.swarm_manager_docker_client import swarm_manager_docker_client
 from .user_notifications import user_notify
 from .base import Base
-from .containers import DockerContainer, EnvVar, Port
+from .containers import DockerContainer
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .nodes import Node
@@ -251,44 +251,6 @@ class Agent(Base):
             raise OFAException(err)
         if self.kafka_producer:
             self.kafka_producer.send_producer_availability('UNAVAILABLE')
-
-    def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
-        """ Create Docker container for agent """
-        container = DockerContainer(
-            node_id=self.node_id,
-            node=self.node,
-            image=config.MTCONNECT_AGENT_IMAGE,
-            name=self.device_uuid.lower() + '-agent',
-            ports=[
-                Port(container_port='5000/tcp', host_port=self.agent_port)
-            ],
-            environment=[
-                EnvVar(variable='MTC_AGENT_UUID', value=self.uuid.upper()),
-                EnvVar(variable='ADAPTER_UUID', value=self.device_uuid.upper()),
-                EnvVar(variable='ADAPTER_IP', value=adapter_ip),
-                EnvVar(variable='ADAPTER_PORT', value=adapter_port),
-                EnvVar(variable='DOCKER_GATEWAY', value='172.18.0.1')
-            ],
-            command='mtcagent run agent.cfg',
-            cpus=cpus
-        )
-        session = Session.object_session(self)
-        session.add_all([container])
-        self.agent_container = container
-        try:
-            session.commit()
-        except OFAException as err:
-            session.rollback()
-            raise OFAException(err)
-        try:
-            container.add_file(mtc_device_file, '/home/agent/device.xml')
-        except FileNotFoundError:
-            raise OFAException(f"Could not find the MTConnect model file '{mtc_device_file}'")
-        try:
-            container.add_file(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg')
-        except FileNotFoundError:
-            raise OFAException(f"Could not find the MTConnect agent configuration file '{config.MTCONNECT_AGENT_CFG_FILE}'")
-        user_notify.success(f'Agent {self.uuid} created successfully')
 
     def create_adapter(self, adapter_image, cpus=0, environment=[]):
         """ Create Docker container for adapter """

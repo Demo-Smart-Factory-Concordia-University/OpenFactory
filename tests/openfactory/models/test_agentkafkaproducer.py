@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 from unittest.mock import patch
 from sqlalchemy import select
@@ -84,9 +83,6 @@ class TestAgentKafkaProducer(TestCase):
                       adapter_port=7878)
         db.session.add_all([node, agent])
         db.session.commit()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
 
         kafka_producer = AgentKafkaProducer(agent)
 
