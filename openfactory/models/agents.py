@@ -31,27 +31,11 @@ if TYPE_CHECKING:
     from .nodes import Node
 
 
-agent_container_table = Table(
-    "agent_container_association",
-    Base.metadata,
-    Column('agent_id', ForeignKey('mtc_agents.id')),
-    Column('container_id', ForeignKey('docker_container.id')),
-)
-
-
 agent_adapter_table = Table(
     "agent_adapter_association",
     Base.metadata,
     Column('agent_id', ForeignKey('mtc_agents.id')),
     Column('adapter_id', ForeignKey('docker_container.id')),
-)
-
-
-agent_producer_table = Table(
-    "agent_producer_association",
-    Base.metadata,
-    Column('agent_id', ForeignKey('mtc_agents.id')),
-    Column('producer_id', ForeignKey('docker_container.id')),
 )
 
 
@@ -85,15 +69,10 @@ class Agent(Base):
 
     node_id = mapped_column(ForeignKey("ofa_nodes.id"))
     node: Mapped["Node"] = relationship(back_populates="agents")
-    agent_container: Mapped[DockerContainer] = relationship(secondary=agent_container_table,
-                                                            cascade="all, delete-orphan",
-                                                            single_parent=True)
+
     adapter_container: Mapped[DockerContainer] = relationship(secondary=agent_adapter_table,
                                                               cascade="all, delete-orphan",
                                                               single_parent=True)
-    producer_container: Mapped[DockerContainer] = relationship(secondary=agent_producer_table,
-                                                               cascade="all, delete-orphan",
-                                                               single_parent=True)
 
     # Kafka producer used to send messages
     kafka_producer = None
