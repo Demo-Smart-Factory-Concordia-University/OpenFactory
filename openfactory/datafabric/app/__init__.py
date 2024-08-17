@@ -10,6 +10,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
 from openfactory.models.base import Base
+from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
 from openfactory.datafabric.app.admin.agentview import AgentView
 from openfactory.datafabric.app.admin.composeview import ComposeProjectView
@@ -30,6 +31,9 @@ def create_app(config_class=Config):
     # Redis and RQ
     app.redis = Redis.from_url(Config.REDIS_URL)
     app.task_queue = rq.Queue('datafabric-tasks', connection=app.redis)
+
+    # Docker access layer
+    dal.connect()
 
     db.init_app(app)
 
