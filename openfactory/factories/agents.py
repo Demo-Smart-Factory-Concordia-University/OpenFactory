@@ -101,7 +101,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
 
         if run:
             agent.start()
-            return
 
         if attach:
             try:
