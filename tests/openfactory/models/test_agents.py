@@ -131,26 +131,18 @@ class TestAgent(TestCase):
         Test tear down of an Agent
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
-        container_name = agent.agent_container.name
-        producer_name = agent.producer_container.name
+        agent.stop = Mock()
+        agent.detach = Mock()
 
         # tear down agent
         db.session.delete(agent)
         db.session.commit()
 
-        # check Docker container was removed
-        query = select(DockerContainer).where(DockerContainer.name == container_name)
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
+        # check Docker service was removed
+        agent.stop.assert_called_once()
 
-        # check producer was removed
-        query = select(DockerContainer).where(DockerContainer.name == producer_name)
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
+        # check producer service was removed
+        agent.detach.assert_called_once()
 
         # clean-up
         self.cleanup()
@@ -160,10 +152,6 @@ class TestAgent(TestCase):
         Test user notifications when tear down of an Agent
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
 
         # tear down agent
         user_notify.success.reset_mock()
@@ -173,21 +161,8 @@ class TestAgent(TestCase):
         # check notfications were emitted
         calls = user_notify.success.call_args_list
         self.assertIn(call('Agent TEST-AGENT removed successfully'), calls)
-        self.assertIn(call('Container test-agent removed successfully'), calls)
-        self.assertIn(call('Container test-producer removed successfully'), calls)
-
-        # agent without producer
-        self.cleanup()
-        agent = self.setup_agent()
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-
-        # tear down agent
-        user_notify.success.reset_mock()
-        db.session.delete(agent)
-        db.session.commit()
-
-        # check notfications were emitted
-        user_notify.success.called_once_with('Agent TEST-AGENT removed successfully')
+        self.assertIn(call('Agent TEST-AGENT stopped successfully'), calls)
+        self.assertIn(call('Kafka producer for agent TEST-AGENT stopped successfully'), calls)
 
         # clean-up
         self.cleanup()
@@ -566,36 +541,13 @@ class TestAgent(TestCase):
         Test hybrid_property 'attached'
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
 
         # check attached property
+        mock.docker_services.get.side_effect = docker.errors.NotFound('mock no producer service')
         self.assertEqual(agent.attached, 'no')
 
-        # attach producer
-        agent.create_producer()
-
-        # check attached property
+        mock.docker_services.get.side_effect = None
         self.assertEqual(agent.attached, 'yes')
-
-        # clean-up
-        self.cleanup()
-
-    def test_container_removed(self, *args):
-        """
-        Test if Docker container of agent is removed when agent removed
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        db.session.delete(agent)
-
-        # check agent container is removed
-        query = select(DockerContainer).where(DockerContainer.name == "test-agent")
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
 
         # clean-up
         self.cleanup()

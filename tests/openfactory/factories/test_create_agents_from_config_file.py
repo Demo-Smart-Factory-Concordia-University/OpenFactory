@@ -154,9 +154,9 @@ class Test_create_agents_from_config_file(TestCase):
 
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_agents.yml')
-        create_agents_from_config_file(db.session, config_file, run=True, attach=True)
+        create_agents_from_config_file(db.session, config_file, run=False, attach=True)
 
-        # check containers were started
+        # check producer services were started
         self.assertEqual(mock_attach.call_count, 2)
 
         # clean-up

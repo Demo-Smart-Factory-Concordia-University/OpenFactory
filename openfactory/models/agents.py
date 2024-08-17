@@ -132,9 +132,11 @@ class Agent(Base):
     @hybrid_property
     def attached(self):
         """ Kafka producer attached or not """
-        if self.producer_container:
+        client = swarm_manager_docker_client()
+        try:
+            client.services.get(self.device_uuid.lower() + '-agent')
             return "yes"
-        else:
+        except docker.errors.NotFound:
             return "no"
 
     def load_device_xml(self):
@@ -328,26 +330,6 @@ class Agent(Base):
         user_notify.success((f"ksqlDB tables {self.device_uuid.replace('-', '_')}, "
                              f"{self.uuid.upper().replace('-', '_')} and "
                              f"{self.producer_uuid.replace('-', '_')} created successfully"))
-
-    def create_producer(self, cpus=0):
-        """ Create Kafka producer for agent """
-        container = DockerContainer(
-            node_id=self.node.id,
-            node=self.node,
-            image=config.MTCONNECT_PRODUCER_IMAGE,
-            name=self.uuid.lower().replace("-agent", "-producer"),
-            environment=[
-                EnvVar(variable='KAFKA_BROKER', value=config.KAFKA_BROKER),
-                EnvVar(variable='KAFKA_PRODUCER_UUID', value=self.producer_uuid),
-                EnvVar(variable='MTC_AGENT', value=f"{self.agent_container.name}:5000"),
-            ],
-            cpus=cpus
-        )
-        session = Session.object_session(self)
-        session.add_all([container])
-        self.producer_container = container
-        session.commit()
-        user_notify.success(f'Kafka producer {self.producer_uuid} created successfully')
 
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"
