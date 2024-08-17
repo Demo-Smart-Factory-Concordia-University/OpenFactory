@@ -1,4 +1,5 @@
 import docker
+import docker.errors
 from sqlalchemy import event
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -73,7 +74,7 @@ class Agent(Base):
     __tablename__ = "mtc_agents"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    uuid: Mapped[str] = mapped_column(String(30), unique=True, doc="Device UUID")
+    uuid: Mapped[str] = mapped_column(String(30), unique=True, doc="Agent UUID")
     external: Mapped[bool] = mapped_column(Boolean, default=False)
     device_xml: Mapped[str] = mapped_column(Text, doc="URI to device xml model")
     agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
@@ -199,10 +200,17 @@ class Agent(Base):
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
-        self.agent_container.stop()
+        client = swarm_manager_docker_client()
+        try:
+            service = client.services.get(self.device_uuid.lower() + '-agent')
+            service.remove()
+            user_notify.success(f"Agent {self.uuid} stopped successfully")
+        except docker.errors.NotFound:
+            user_notify.info(f"Agent {self.uuid} was not running")
+        except docker.errors.APIError as err:
+            raise OFAException(err)
         if self.kafka_producer:
             self.kafka_producer.send_agent_availability('UNAVAILABLE')
-        user_notify.success(f"Agent {self.uuid} stopped successfully")
 
     def attach(self):
         """ Attach a Kafka producer to the MTConnect agent """
@@ -224,11 +232,17 @@ class Agent(Base):
 
     def detach(self):
         """ Detach agent by removing producer """
-        if self.producer_container:
-            self.producer_container = None
-            Session.object_session(self).commit()
-            if self.kafka_producer:
-                self.kafka_producer.send_producer_availability('UNAVAILABLE')
+        client = swarm_manager_docker_client()
+        try:
+            service = client.services.get(self.device_uuid.lower() + '-producer')
+            service.remove()
+            user_notify.success(f"Kafka producer for agent {self.uuid} stopped successfully")
+        except docker.errors.NotFound:
+            user_notify.info(f"Kafka producer for agent {self.uuid} was not running")
+        except docker.errors.APIError as err:
+            raise OFAException(err)
+        if self.kafka_producer:
+            self.kafka_producer.send_producer_availability('UNAVAILABLE')
 
     def create_container(self, adapter_ip, adapter_port, mtc_device_file, cpus=0):
         """ Create Docker container for agent """
@@ -343,14 +357,10 @@ def agent_load(target, context):
             target.kafka_producer = AgentKafkaProducer(target)
 
 
-@event.listens_for(Agent, 'after_delete')
-def agent_after_delete(mapper, connection, target):
+@event.listens_for(Agent, 'before_delete')
+def agent_before_delete(mapper, connection, target):
     """
-    Detach agent
+    Stop the various services
     """
-    if target.producer_container:
-        if target.kafka_producer:
-            target.kafka_producer.send_producer_availability('UNAVAILABLE')
-
-    if target.kafka_producer:
-        target.kafka_producer.send_agent_availability('UNAVAILABLE')
+    target.detach()
+    target.stop()

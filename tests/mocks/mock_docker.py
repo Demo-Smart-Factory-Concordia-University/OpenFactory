@@ -64,9 +64,15 @@ INFO_DIC = {
 }
 
 
+""" Python Docker SDK Service object """
+docker_service = Mock()
+docker_service.remove = Mock()
+
+
 """ Python Docker SDK Services object """
 docker_services = Mock()
-docker_services.create = Mock()
+docker_services.create = Mock(return_value=docker_service)
+docker_services.get = Mock(return_value=docker_service)
 
 
 """ Python Docker SDK Client object """

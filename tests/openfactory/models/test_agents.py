@@ -11,7 +11,7 @@ from openfactory.ofa.db import db
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
-from openfactory.models.agents import Agent
+from openfactory.models.agents import Agent, agent_before_delete
 from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
@@ -280,8 +280,10 @@ class TestAgent(TestCase):
         """
         agent = self.setup_agent()
         agent.deploy_agent = Mock()
+        agent.deploy_producer = Mock()
         agent.start()
         agent.deploy_agent.assert_called_once()
+        agent.deploy_producer.assert_called_once()
 
         # clean up
         self.cleanup()
@@ -292,6 +294,7 @@ class TestAgent(TestCase):
         """
         agent = self.setup_agent()
         agent.deploy_agent = Mock()
+        agent.deploy_producer = Mock()
         user_notify.success.reset_mock()
         agent.start()
 
@@ -301,36 +304,48 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_stop(self, *args):
         """
         Test if Docker container is stopped
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.agent_container.stop = Mock()
         agent.stop()
 
-        # check agent Docker container was started
-        agent.agent_container.stop.assert_called_once()
+        # check agent service was removed
+        mock.docker_services.get.assert_called_once_with('test-agent')
+        mock.docker_service.remove.assert_called_once()
 
         # clean up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_stop_user_notification(self, *args):
         """
         Test if user_notification called correctly in stop method
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
         user_notify.success.reset_mock()
         agent.stop()
 
         # check if user_notification called
         user_notify.success.assert_called_once_with('Agent TEST-AGENT stopped successfully')
+
+        # clean up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    def test_stop_send_unavailable(self, *args):
+        """
+        Test if UNAVAILABLE sent to Kafka
+        """
+        agent = self.setup_agent()
+        agent.kafka_producer = Mock()
+        agent.kafka_producer.send_agent_availability = Mock()
+        agent.stop()
+
+        # check if UNAVAILABLE sent to Kafka
+        agent.kafka_producer.send_agent_availability.assert_called_once_with('UNAVAILABLE')
 
         # clean up
         self.cleanup()
@@ -366,44 +381,48 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_detach(self, *args):
         """
-        Test if producer is removed
+        Test if producer service is removed
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
-        producer_name = agent.producer_container.name
         agent.detach()
 
-        # check producer was removed
-        self.assertEqual(agent.producer_container, None)
-        query = select(DockerContainer).where(DockerContainer.name == producer_name)
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
-
-        # check detach can be used even if no producer is present
-        agent.detach()
+        # check producer service was removed
+        mock.docker_services.get.assert_called_once_with('test-producer')
+        mock.docker_service.remove.assert_called_once()
 
         # clean up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_detach_user_notification(self, *args):
         """
         Test if user_notification called correctly in detach method
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
         user_notify.success.reset_mock()
         agent.detach()
 
         # check if user_notification called
-        user_notify.success.assert_called_once_with('Container test-producer removed successfully')
+        user_notify.success.assert_called_once_with('Kafka producer for agent TEST-AGENT stopped successfully')
+
+        # clean up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    def test_detach_send_unavailable(self, *args):
+        """
+        Test if UNAVAILABLE sent to Kafka
+        """
+        agent = self.setup_agent()
+        agent.kafka_producer = Mock()
+        agent.kafka_producer.send_producer_availability = Mock()
+        agent.detach()
+
+        # check if UNAVAILABLE sent to Kafka
+        agent.kafka_producer.send_producer_availability.assert_called_once_with('UNAVAILABLE')
 
         # clean up
         self.cleanup()
@@ -592,21 +611,18 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_producer_removed(self, *args):
+    def test_services_removed(self, *args):
         """
-        Test if Kafka producer of agent is removed when agent removed
+        Test if Kafka producer and agent services are removed when agent deleted
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
-        db.session.delete(agent)
+        agent.detach = Mock()
+        agent.stop = Mock()
+        agent_before_delete(None, None, agent)
 
-        # check Kafka producer is removed
-        query = select(DockerContainer).where(DockerContainer.name == "test-producer")
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
+        # check services were stopped
+        agent.detach.assert_called_once()
+        agent.stop.assert_called_once()
 
         # clean-up
         self.cleanup()
@@ -635,50 +651,12 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_unavailable_sent_on_detach(self, *args):
-        """
-        Test if Kafka message sent when agent detached
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_ksqldb_tables = Mock()
-        agent.attach()
-        agent.detach()
-
-        # check Kafka messages sent
-        agent.kafka_producer.send_producer_availability.called_once_with('UNAVAILABLE')
-
-        # clean-up
-        self.cleanup()
-
-    def test_unavailable_sent_on_stop(self, *args):
-        """
-        Test if Kafka message sent when agent stopped
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_ksqldb_tables = Mock()
-        agent.attach()
-        agent.stop()
-
-        # check Kafka messages sent
-        agent.kafka_producer.send_agent_availability.called_once_with('UNAVAILABLE')
-
-        # clean-up
-        self.cleanup()
-
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_unavailable_sent_on_delete(self, *args):
         """
         Test if Kafka messages sent when agent deleted
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
         agent.create_ksqldb_tables = Mock()
         agent.attach()
         db.session.delete(agent)

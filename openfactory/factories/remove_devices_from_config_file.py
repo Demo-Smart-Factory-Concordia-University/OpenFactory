@@ -24,8 +24,6 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
             user_notify.info(f'No Agent {agent_uuid} defined in OpenFactory')
             continue
         try:
-            agent[0].stop()
-            agent[0].detach()
             db_session.delete(agent[0])
             db_session.commit()
         except OFAException as err:
