@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 from click.testing import CliRunner

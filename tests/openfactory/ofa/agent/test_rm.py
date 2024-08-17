@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 from click.testing import CliRunner
@@ -10,7 +9,6 @@ from openfactory.ofa.db import db
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer
 from openfactory.models.user_notifications import user_notify
 from openfactory.exceptions import OFAException
 
