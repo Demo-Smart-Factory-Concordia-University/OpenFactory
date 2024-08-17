@@ -118,10 +118,16 @@ class Agent(Base):
         """ Status of agent """
         if self.external:
             return "TO BE DONE"
-        if self.agent_container:
-            return self.agent_container.status
-        else:
-            return "No container"
+
+        client = swarm_manager_docker_client()
+        try:
+            service = client.services.get(self.device_uuid.lower() + '-agent')
+            tasks = service.tasks()
+            return tasks[0]['Status']['State']
+        except docker.errors.NotFound:
+            return "stopped"
+        except docker.errors.APIError as err:
+            return f"docker error {err}"
 
     @hybrid_property
     def attached(self):
@@ -350,11 +356,10 @@ class Agent(Base):
 @event.listens_for(Agent, 'load')
 def agent_load(target, context):
     """
-    Create kafka_producer if an agent is running
+    Create kafka_producer if agent service is running
     """
-    if target.agent_container:
-        if target.agent_container.status == 'running':
-            target.kafka_producer = AgentKafkaProducer(target)
+    if target.status == 'running':
+        target.kafka_producer = AgentKafkaProducer(target)
 
 
 @event.listens_for(Agent, 'before_delete')

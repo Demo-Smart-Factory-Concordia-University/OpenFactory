@@ -1,6 +1,8 @@
 import os
+import docker
 from unittest import TestCase
 from unittest.mock import patch, call, Mock, mock_open
+import docker.errors
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +18,7 @@ from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
 
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 class TestAgent(TestCase):
@@ -304,7 +307,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_stop(self, *args):
         """
         Test if Docker container is stopped
@@ -319,7 +321,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_stop_user_notification(self, *args):
         """
         Test if user_notification called correctly in stop method
@@ -334,7 +335,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_stop_send_unavailable(self, *args):
         """
         Test if UNAVAILABLE sent to Kafka
@@ -381,7 +381,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_detach(self, *args):
         """
         Test if producer service is removed
@@ -396,7 +395,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_detach_user_notification(self, *args):
         """
         Test if user_notification called correctly in detach method
@@ -411,7 +409,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_detach_send_unavailable(self, *args):
         """
         Test if UNAVAILABLE sent to Kafka
@@ -427,7 +424,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_deploy_agent_correct_client(self, mock_swarm_manager_docker_client, *args):
         """
         Test if correct Docker client is used
@@ -442,8 +438,7 @@ class TestAgent(TestCase):
     @patch('openfactory.models.agents.open', new_callable=mock_open, read_data='mock_agent_cfg')
     @patch('openfactory.models.agents.docker.types.EndpointSpec')
     @patch("openfactory.models.agents.config")
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
-    def test_deploy_agent(self, mock_swarm_manager_docker_client, mock_config, mock_endpoint_spec, *args):
+    def test_deploy_agent(self, mock_config, mock_endpoint_spec, *args):
         """
         Test creation of Docker swarm service for agent
         """
@@ -482,8 +477,7 @@ class TestAgent(TestCase):
         self.cleanup()
 
     @patch("openfactory.models.agents.config")
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
-    def test_deploy_agent_no_agent_config_file(self, mock_swarm_manager_docker_client, mock_config, *args):
+    def test_deploy_agent_no_agent_config_file(self, mock_config, *args):
         """
         Test if error raised when agent config file is missing
         """
@@ -530,20 +524,15 @@ class TestAgent(TestCase):
         agent = self.setup_agent()
 
         # check container satus
-        self.assertEqual(agent.status, 'No container')
+        mock.docker_services.get.side_effect = docker.errors.NotFound('mock no service running')
+        self.assertEqual(agent.status, 'stopped')
 
-        # create container
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-
-        # check container satus
+        mock.docker_services.get.side_effect = None
         self.assertEqual(agent.status, 'running')
 
         # clean-up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     @patch("openfactory.models.agents.config")
     def test_deploy_producer(self, mock_config, *args):
         """
@@ -631,12 +620,7 @@ class TestAgent(TestCase):
         """
         Test if kafka_producer setup when agent loaded from database
         """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_ksqldb_tables = Mock()
-        agent.attach()
+        self.setup_agent()
 
         # reload same instance
         db.session.close()
@@ -651,7 +635,6 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_unavailable_sent_on_delete(self, *args):
         """
         Test if Kafka messages sent when agent deleted
