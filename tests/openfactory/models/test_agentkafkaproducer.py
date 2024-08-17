@@ -66,6 +66,7 @@ class TestAgentKafkaProducer(TestCase):
         """
         self.assertEqual(AgentKafkaProducer.bootstrap_servers, [config.KAFKA_BROKER])
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_init(self, *args):
         """
         Test init of AgentKafkaProducer

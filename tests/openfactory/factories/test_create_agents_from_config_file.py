@@ -14,6 +14,7 @@ from openfactory.models.agents import Agent
 from openfactory.factories import create_agents_from_config_file
 
 
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
@@ -137,7 +138,7 @@ class Test_create_agents_from_config_file(TestCase):
                                    'mocks/mock_agents.yml')
         create_agents_from_config_file(db.session, config_file, run=True)
 
-        # check containers were started
+        # check services were started
         self.assertEqual(mock_start.call_count, 2)
 
         # clean-up
@@ -147,7 +148,7 @@ class Test_create_agents_from_config_file(TestCase):
     @patch("openfactory.models.agents.Agent.attach")
     def test_create_agents_attach(self, mock_attach, *args):
         """
-        Test if agents producers are attached
+        Test if agents producers services are started
         """
         self.setup_nodes()
 

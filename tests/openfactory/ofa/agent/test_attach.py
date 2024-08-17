@@ -16,6 +16,7 @@ from openfactory.exceptions import OFAException
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 class Test_ofa_agent_attach(TestCase):
     """
     Unit tests for ofa.agent.click_attach function

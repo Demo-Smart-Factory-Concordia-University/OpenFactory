@@ -181,7 +181,7 @@ class Test_remove_devices_from_config_file(TestCase):
         self.cleanup()
 
     @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
-    def test_remove_devices_docker_api_error(self, mock_docker_apiclient, mock_DockerClient, *args):
+    def test_remove_devices_docker_api_error(self, *args):
         """
         Test Docker API error is handled during device removal
         """
@@ -194,7 +194,7 @@ class Test_remove_devices_from_config_file(TestCase):
         create_agents_from_config_file(db.session, config_agent)
 
         # mock a Docker API error
-        mock.docker_services.get.side_effect = docker.errors.APIError('Mocking Docker API error')
+        mock.docker_service.remove.side_effect = docker.errors.APIError('Mocking Docker API error')
 
         # check it is handled correctly
         remove_devices_from_config_file(db.session, config_agent)
@@ -202,5 +202,5 @@ class Test_remove_devices_from_config_file(TestCase):
         self.assertIn(call('Cannot remove TEST-ZAIX-001 - Mocking Docker API error'), calls)
 
         # clean up
-        mock.docker_services.get.side_effect = None
+        mock.docker_service.remove.side_effect = None
         self.cleanup()

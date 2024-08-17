@@ -181,6 +181,7 @@ class TestInfraStack(TestCase):
         # clean up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_clear(self, *args):
         """
         Test clear stack

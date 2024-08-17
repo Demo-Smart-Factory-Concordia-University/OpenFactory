@@ -15,6 +15,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.exceptions import OFAException
 
 
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
@@ -140,19 +141,14 @@ class Test_ofa_agent_rm(TestCase):
         Test if producer of agent is removed
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
+        agent1.detach = Mock()
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_rm, [agent1.uuid])
         self.assertEqual(result.exit_code, 0)
 
         # check producer was removed
-        query = select(DockerContainer).where(DockerContainer.name == "test1-producer")
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
+        agent1.detach.assert_called_once()
 
         # check if user_notification called
         self.assertEqual(result.output,

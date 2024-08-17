@@ -15,6 +15,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.exceptions import OFAException
 
 
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
@@ -100,20 +101,14 @@ class Test_ofa_agent_detach(TestCase):
         Test if producer is removed
         """
         node, agent1, agent2 = self.setup_infrastructure()
-
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
+        agent1.detach = Mock()
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
         self.assertEqual(result.exit_code, 0)
 
         # check producer was removed
-        query = select(DockerContainer).where(DockerContainer.name == "test1-producer")
-        cont = db.session.execute(query).first()
-        self.assertEqual(cont, None)
+        agent1.detach.assert_called_once()
 
         # check other agents still present
         query = select(Agent).where(Agent.uuid == "TEST2-AGENT")
@@ -128,10 +123,6 @@ class Test_ofa_agent_detach(TestCase):
         Test if user_notification called correctly
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
@@ -157,14 +148,15 @@ class Test_ofa_agent_detach(TestCase):
         Test error message in case of OFAException during detach
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        agent1.detach = Mock(side_effect=OFAException('Attach error'))
+        agent1.detach = Mock(side_effect=OFAException('Mock error'))
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_detach, [agent1.uuid])
 
         # check OFAException is handled
         self.assertEqual(result.exit_code, 1)
-        user_notify.fail.assert_called_once_with(f'Could not detach agent {agent1.uuid}: Attach error')
+        user_notify.fail.assert_called_once_with(f'Could not detach agent {agent1.uuid}: Mock error')
 
         # clean up
+        agent1.detach = Mock()
         self.cleanup()

@@ -260,6 +260,7 @@ class TestNodes(TestCase):
         # clean-up
         self.cleanup()
 
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_remove_node_with_container(self, *args):
         """
         Tests if a node with running containers can not be removed

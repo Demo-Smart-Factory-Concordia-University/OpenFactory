@@ -13,6 +13,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.exceptions import OFAException
 
 
+@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
