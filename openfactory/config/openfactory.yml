@@ -6,6 +6,9 @@ OPENFACTORY_USER: openfactory
 # OpenFactory Manager Node
 OPENFACTORY_MANAGER_NODE: ${MANAGER_NODE_IP}
 
+# OpenFactory Overlay network
+OPENFACTORY_NETWORK: factory-net
+
 # OpenFactory Database
 SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
 

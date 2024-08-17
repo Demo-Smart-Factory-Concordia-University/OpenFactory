@@ -1,3 +1,4 @@
+import docker
 from sqlalchemy import event
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -20,6 +21,7 @@ from mtc2kafka.connectors import MTCSourceConnector
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
+from openfactory.docker.swarm_manager_docker_client import swarm_manager_docker_client
 from .user_notifications import user_notify
 from .base import Base
 from .containers import DockerContainer, EnvVar, Port
@@ -58,7 +60,7 @@ class AgentKafkaProducer(MTCSourceConnector):
     bootstrap_servers = [config.KAFKA_BROKER]
 
     def __init__(self, agent):
-        self.mtc_agent = f"{agent.agent_container.name}:5000"
+        self.mtc_agent = f"{agent.device_uuid.lower()}-agent:5000"
         self.kafka_producer_uuid = agent.producer_uuid
         super().__init__()
 
@@ -134,19 +136,62 @@ class Agent(Base):
         try:
             with open_ofa(self.device_xml) as f_remote:
                 xml_model += f_remote.read()
-        except OFAException as err:
+        except (OFAException, FileNotFoundError) as err:
             user_notify.fail(f"Could not load XML device model for {self.uuid}.\n{err}")
         return xml_model
+
+    def deploy_agent(self):
+        """ Deploy agent on Docker swarm cluster """
+        client = swarm_manager_docker_client()
+        try:
+            with open(config.MTCONNECT_AGENT_CFG_FILE, 'r') as file:
+                agent_cfg = file.read()
+        except FileNotFoundError:
+            raise OFAException(f"Could not find the MTConnect model file '{config.MTCONNECT_AGENT_CFG_FILE}'")
+
+        command = "sh -c 'printf \"%b\" \"$XML_MODEL\" > device.xml; printf \"%b\" \"$AGENT_CFG_FILE\" > agent.cfg; mtcagent run agent.cfg'"
+        client.services.create(
+            image=config.MTCONNECT_AGENT_IMAGE,
+            command=command,
+            name=self.device_uuid.lower() + '-agent',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[f'MTC_AGENT_UUID={self.uuid.upper()}',
+                 f'ADAPTER_UUID={self.device_uuid.upper()}',
+                 f'ADAPTER_IP={self.adapter_ip}',
+                 f'ADAPTER_PORT={self.adapter_port}',
+                 f'XML_MODEL={self.load_device_xml()}',
+                 f'AGENT_CFG_FILE={agent_cfg}'],
+            endpoint_spec=docker.types.EndpointSpec(ports={self.agent_port: 5000}),
+            networks=[config.OPENFACTORY_NETWORK],
+            resources={
+                "Limits": {"NanoCPUs": int(1000000000*self.cpus_limit)},
+                "Reservations": {"NanoCPUs": int(1000000000*self.cpus_reservation)}
+                }
+        )
+
+    def deploy_producer(self):
+        """ Deploy Kafka producer on Docker swarm cluster """
+        client = swarm_manager_docker_client()
+        client.services.create(
+            image=config.MTCONNECT_PRODUCER_IMAGE,
+            name=self.device_uuid.lower() + '-producer',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
+                 f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
+                 f'MTC_AGENT={self.device_uuid.lower()}-agent:5000'],
+            networks=[config.OPENFACTORY_NETWORK]
+        )
 
     def start(self):
         """ Start agent """
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
-        if self.producer_container:
-            self.producer_container.start()
-            user_notify.success(f"Kafka producer {self.producer_uuid} started successfully")
-        self.agent_container.start()
+        try:
+            self.deploy_agent()
+            self.deploy_producer()
+        except OFAException as err:
+            user_notify.fail(f"Agent {self.uuid} could not be started\n{err}")
         user_notify.success(f"Agent {self.uuid} started successfully")
 
     def stop(self):
@@ -159,13 +204,10 @@ class Agent(Base):
             self.kafka_producer.send_agent_availability('UNAVAILABLE')
         user_notify.success(f"Agent {self.uuid} stopped successfully")
 
-    def attach(self, cpus=0):
-        """ Attach a Kafka producer to an MTConnect agent """
-        if self.agent_container is None:
-            raise OFAException(f"Agent {self.uuid} has no existing container")
-        session = Session.object_session(self)
+    def attach(self):
+        """ Attach a Kafka producer to the MTConnect agent """
 
-        # Create ksqlDB table for agent
+        # create ksqlDB table for agent
         try:
             self.create_ksqldb_tables()
         except HTTPError:
@@ -173,13 +215,10 @@ class Agent(Base):
 
         # create producer
         try:
-            self.create_producer(cpus)
+            self.deploy_producer()
         except (PendingRollbackError, SSHException) as err:
-            session.rollback()
             raise OFAException(f'Kafka producer for agent {self.device_uuid} could not be created. Error was: {err}')
 
-        # Start producer
-        self.producer_container.start()
         user_notify.success(f'Kafka producer {self.producer_uuid} started successfully')
         self.kafka_producer = AgentKafkaProducer(self)
 

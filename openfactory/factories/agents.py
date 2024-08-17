@@ -1,10 +1,8 @@
 import os
-import tempfile
 from fsspec.core import split_protocol
 from sqlalchemy import select
 
 from openfactory.exceptions import OFAException
-from openfactory.utils import open_ofa
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
@@ -101,46 +99,11 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         else:
             adapter_ip = device['agent']['adapter']['ip']
 
-        # compute device xml-model absolute path
-        device_xml_uri = device['agent']['device_xml']
-        protocol, _ = split_protocol(device_xml_uri)
-        if not protocol:
-            if not os.path.isabs(device_xml_uri):
-                device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-
-            # copy device xml-model to a local file device_xml
-            device_xml = os.path.join(tmpdir, 'device.xml')
-            try:
-                with open_ofa(device_xml_uri) as f_remote:
-                    with open(device_xml, 'w') as f_tmp:
-                        f_tmp.write(f_remote.read())
-            except OFAException as err:
-                db_session.delete(agent)
-                user_notify.fail(f"Could not create {device['uuid'].upper()}-AGENT.\n{err}")
-                db_session.commit()
-                return
-
-            # create agent
-            cpus = 0 if device.get('runtime') is None else device['runtime'].get('agent', {}).get('cpus', 0)
-            try:
-                agent.create_container(adapter_ip,
-                                       device['agent']['adapter']['port'],
-                                       device_xml,
-                                       cpus)
-            except OFAException as err:
-                db_session.delete(agent)
-                user_notify.fail(f"Could not create {device['uuid'].upper()}-AGENT\nError was: {err}")
-                db_session.commit()
-                return
-
         if run:
             agent.start()
 
         if attach:
-            cpus = 0 if device.get('runtime') is None else device['runtime'].get('producer', {}).get('cpus', 0)
             try:
-                agent.attach(cpus)
+                agent.attach()
             except OFAException as err:
                 user_notify.fail(f"Could not attach {device['uuid'].upper()}-AGENT\nError was: {err}")

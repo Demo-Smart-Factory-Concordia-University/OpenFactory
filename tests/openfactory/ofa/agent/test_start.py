@@ -1,4 +1,3 @@
-import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 from click.testing import CliRunner
@@ -99,40 +98,16 @@ class Test_ofa_agent_start(TestCase):
         Test if Docker container is started
         """
         node, agent1, agent2 = self.setup_infrastructure()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.agent_container.start = Mock()
+        agent1.deploy_agent = Mock()
+        agent1.deploy_producer = Mock()
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_start, [agent1.uuid])
         self.assertEqual(result.exit_code, 0)
 
-        # check agent Docker container was started
-        agent1.agent_container.start.assert_called_once()
-
-        # clean up
-        self.cleanup()
-
-    def test_start_with_producer(self, *args):
-        """
-        Test if Docker container is started
-        """
-        node, agent1, agent2 = self.setup_infrastructure()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mock/mock_device.xml')
-        agent1.create_container('123.456.7.500', 7878, device_file, 1)
-        agent1.create_producer()
-        agent1.agent_container.start = Mock()
-        agent1.producer_container.start = Mock()
-
-        runner = CliRunner()
-        result = runner.invoke(ofa.agent.click_start, [agent1.uuid])
-        self.assertEqual(result.exit_code, 0)
-
-        # check agent Docker container and producer was started
-        agent1.agent_container.start.assert_called_once()
-        agent1.producer_container.start.assert_called_once()
+        # check agent Docker service was deployed for agent and producer
+        agent1.deploy_agent.assert_called_once()
+        agent1.deploy_producer.assert_called_once()
 
         # clean up
         self.cleanup()

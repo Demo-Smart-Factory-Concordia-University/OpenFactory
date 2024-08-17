@@ -1,21 +1,18 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch, call, Mock
+from unittest.mock import patch, call, Mock, mock_open
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from httpx import HTTPError
-from docker.errors import DockerException
-from paramiko.ssh_exception import SSHException
 
-import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
-from openfactory.models.containers import DockerContainer, EnvVar, _docker_clients
+from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
 
@@ -52,6 +49,7 @@ class TestAgent(TestCase):
         mock.docker_client.reset_mock()
         mock.docker_container.reset_mock()
         mock.docker_images.reset_mock()
+        mock.docker_services.reset_mock()
         user_notify.success.reset_mock()
         user_notify.fail.reset_mock()
 
@@ -264,40 +262,26 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_start(self, *args):
+    def test_load_device_xml_does_not_exist(self, *args):
         """
-        Test if Docker container is started
+        Test if user_notify.fail called when device file does not exist
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.agent_container.start = Mock()
-        agent.start()
+        agent.device_xml = '/this/does/not/exist'
+        agent.load_device_xml()
+        user_notify.fail.assert_called_once_with("Could not load XML device model for TEST-AGENT.\n[Errno 2] No such file or directory: '/this/does/not/exist'")
 
-        # check agent Docker container was started
-        agent.agent_container.start.assert_called_once()
-
-        # clean up
+        # clean-up
         self.cleanup()
 
-    def test_start_with_producer(self, *args):
+    def test_start(self, *args):
         """
-        Test if Docker container is started
+        Test if Agent deploy called
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer()
-        agent.agent_container.start = Mock()
-        agent.producer_container.start = Mock()
-
+        agent.deploy_agent = Mock()
         agent.start()
-
-        # check agent Docker container and producer was started
-        agent.agent_container.start.assert_called_once()
-        agent.producer_container.start.assert_called_once()
+        agent.deploy_agent.assert_called_once()
 
         # clean up
         self.cleanup()
@@ -307,24 +291,12 @@ class TestAgent(TestCase):
         Test if user_notification called correctly in start method
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.deploy_agent = Mock()
         user_notify.success.reset_mock()
         agent.start()
 
         # check if user_notification called
         user_notify.success.assert_called_once_with('Agent TEST-AGENT started successfully')
-
-        # add producer
-        agent.create_producer()
-        user_notify.success.reset_mock()
-        agent.start()
-
-        # check if user_notification called
-        calls = user_notify.success.call_args_list
-        self.assertEqual(calls[0], call('Kafka producer TEST-PRODUCER started successfully'))
-        self.assertEqual(calls[1], call('Agent TEST-AGENT started successfully'))
 
         # clean up
         self.cleanup()
@@ -368,38 +340,15 @@ class TestAgent(TestCase):
         Test if producer is attached
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-
         agent.create_ksqldb_tables = Mock()
-        agent.attach(cpus=3)
+        agent.deploy_producer = Mock()
+        agent.attach()
 
         # check ksqldb_tables created
         agent.create_ksqldb_tables.assert_called_once()
 
-        # check producer was created
-        cont = agent.producer_container
-        self.assertEqual(cont.image, config.MTCONNECT_PRODUCER_IMAGE)
-        self.assertEqual(cont.name, 'test-producer')
-        self.assertEqual(cont.cpus, 3)
-        self.assertEqual(cont.node, agent.node)
-        self.assertEqual(cont.ports, [])
-
-        # check container was started
-        agent.producer_container.container.start.assert_called_once()
-
-        # clean up
-        self.cleanup()
-
-    def test_attach_no_container_error(self, *args):
-        """
-        Test if error is raised in attach when no Agent container
-        """
-        agent = self.setup_agent()
-
-        # check OFAException raised if no Agent container
-        self.assertRaises(OFAException, agent.attach)
+        # check producer was deployed
+        agent.deploy_producer.assert_called_once()
 
         # clean up
         self.cleanup()
@@ -410,27 +359,6 @@ class TestAgent(TestCase):
         Test if error is raised in attach if ksqlDB cannot be reached
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-
-        # check OFAException raised if ksqlDB can not be reached
-        self.assertRaises(OFAException, agent.attach)
-
-        # clean up
-        self.cleanup()
-
-    def test_attach_producer_error(self, *args):
-        """
-        Test if errors is raised in attach if producer container cannot be created
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-
-        agent.create_ksqldb_tables = Mock()
-        agent.create_producer = Mock(side_effect=SSHException('test'))
 
         # check OFAException raised if ksqlDB can not be reached
         self.assertRaises(OFAException, agent.attach)
@@ -480,103 +408,73 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.containers.DockerContainer.add_file")
-    def test_create_container(self, mock_add_file, *args):
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    def test_deploy_agent_correct_client(self, mock_swarm_manager_docker_client, *args):
         """
-        Test creation of Docker container for agent
+        Test if correct Docker client is used
         """
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
+        agent.deploy_agent()
+        mock_swarm_manager_docker_client.assert_called_once()
 
-        # check if created correctly container
-        cont = agent.agent_container
-        self.assertEqual(cont.image, config.MTCONNECT_AGENT_IMAGE)
-        self.assertEqual(cont.name, 'test-agent')
-        self.assertEqual(cont.command, 'mtcagent run agent.cfg')
-        self.assertEqual(cont.cpus, 1)
-        self.assertEqual(cont.node, agent.node)
-        self.assertEqual(cont.ports[0].container_port, '5000/tcp')
-        self.assertEqual(cont.ports[0].host_port, 5000)
-
-        # check container environment variables
-        self.assertEqual(list(filter(lambda var: var.variable == 'MTC_AGENT_UUID', cont.environment))[0].value,
-                         'TEST-AGENT')
-        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_UUID', cont.environment))[0].value,
-                         'TEST')
-        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_IP', cont.environment))[0].value,
-                         '123.456.7.500')
-        self.assertEqual(list(filter(lambda var: var.variable == 'ADAPTER_PORT', cont.environment))[0].value,
-                         '7878')
-
-        # check files are added to container
-        calls = mock_add_file.call_args_list
-        self.assertTrue(call(device_file, '/home/agent/device.xml') in calls)
-        self.assertTrue(call(config.MTCONNECT_AGENT_CFG_FILE, '/home/agent/agent.cfg') in calls)
-
-        # clean-up
+        # clean up
         self.cleanup()
 
-    def test_create_container_docker_error(self, *args):
+    @patch('openfactory.models.agents.open', new_callable=mock_open, read_data='mock_agent_cfg')
+    @patch('openfactory.models.agents.docker.types.EndpointSpec')
+    @patch("openfactory.models.agents.config")
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    def test_deploy_agent(self, mock_swarm_manager_docker_client, mock_config, mock_endpoint_spec, *args):
         """
-        Test creation of agent Docker container handles DockerError
+        Test creation of Docker swarm service for agent
         """
-        mock.docker_containers.create.side_effect = DockerException
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
 
-        # clean-up
-        mock.docker_containers.create.side_effect = None
+        mock_config.MTCONNECT_AGENT_IMAGE = 'mock_agent_image'
+        mock_config.MTCONNECT_AGENT_CFG_FILE = '/path/to/mock/agent.cfg'
+        mock_config.OPENFACTORY_NETWORK = 'mock_network'
+        mock_endpoint_spec.return_value = Mock()
+
+        agent = self.setup_agent()
+        agent.load_device_xml = Mock(return_value='mock_device_xml')
+        agent.deploy_agent()
+
+        mock.docker_services.create.assert_called_once_with(
+            image='mock_agent_image',
+            command="sh -c 'printf \"%b\" \"$XML_MODEL\" > device.xml; printf \"%b\" \"$AGENT_CFG_FILE\" > agent.cfg; mtcagent run agent.cfg'",
+            name='test-agent',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[
+                'MTC_AGENT_UUID=TEST-AGENT',
+                'ADAPTER_UUID=TEST',
+                'ADAPTER_IP=1.2.3.4',
+                'ADAPTER_PORT=7878',
+                'XML_MODEL=mock_device_xml',
+                'AGENT_CFG_FILE=mock_agent_cfg'
+            ],
+            endpoint_spec=mock_endpoint_spec.return_value,
+            networks=['mock_network'],
+            resources={
+                "Limits": {"NanoCPUs": int(1000000000 * 1.0)},
+                "Reservations": {"NanoCPUs": int(1000000000 * 0.5)}
+            }
+        )
+
+        # clean up
         self.cleanup()
 
-    def test_create_container_ssh_error(self, mock_docker_client, *args):
+    @patch("openfactory.models.agents.config")
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    def test_deploy_agent_no_agent_config_file(self, mock_swarm_manager_docker_client, mock_config, *args):
         """
-        Test creation of agent Docker container handles SSHException
+        Test if error raised when agent config file is missing
         """
+
+        mock_config.MTCONNECT_AGENT_CFG_FILE = '/this/does/not/exist/agent.cfg.'
+
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
+        self.assertRaises(OFAException, agent.deploy_agent)
 
-        mock_docker_client.side_effect = SSHException
-        _docker_clients.clear()
-        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
-
-        # clean-up
-        mock_docker_client.side_effect = None
-        self.cleanup()
-
-    def test_create_container_no_agent_config_file(self, *args):
-        """
-        Test creation of Docker container for agent when agent config file is missing
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        backup = config.MTCONNECT_AGENT_CFG_FILE
-        config.MTCONNECT_AGENT_CFG_FILE = '/this/does/not/exist/agent.cfg.'
-
-        # check error raised
-        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
-
-        # clean-up
-        config.MTCONNECT_AGENT_CFG_FILE = backup
-        self.cleanup()
-
-    def test_create_container_no_agent_device_file(self, *args):
-        """
-        Test creation of Docker container for agent when agent device file is missing
-        """
-        agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   '/this//does/not/exsit/device.xml')
-
-        # check error raised
-        self.assertRaises(OFAException, agent.create_container, '123.456.7.500', 7878, device_file, 1)
-
-        # clean-up
+        # clean up
         self.cleanup()
 
     def test_create_adapter(self, *args):
@@ -626,33 +524,33 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_create_producer(self, *args):
+    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+    @patch("openfactory.models.agents.config")
+    def test_deploy_producer(self, mock_config, *args):
         """
-        Test creation of Kafka producer for agent
+        Test creation of Docker swarm service for producer
         """
+
+        mock_config.MTCONNECT_PRODUCER_IMAGE = 'mock_producer_image'
+        mock_config.KAFKA_BROKER = 'mock_broker'
+        mock_config.OPENFACTORY_NETWORK = 'mock_network'
+
         agent = self.setup_agent()
-        device_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/mock_device.xml')
-        agent.create_container('123.456.7.500', 7878, device_file, 1)
-        agent.create_producer(2)
+        agent.deploy_producer()
 
-        # check if created correctly container
-        cont = agent.producer_container
-        self.assertEqual(cont.image, config.MTCONNECT_PRODUCER_IMAGE)
-        self.assertEqual(cont.name, 'test-producer')
-        self.assertEqual(cont.cpus, 2)
-        self.assertEqual(cont.node, agent.node)
-        self.assertEqual(cont.ports, [])
+        mock.docker_services.create.assert_called_once_with(
+            image='mock_producer_image',
+            name='test-producer',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[
+                'KAFKA_BROKER=mock_broker',
+                'KAFKA_PRODUCER_UUID=TEST-PRODUCER',
+                'MTC_AGENT=test-agent:5000',
+            ],
+            networks=['mock_network'],
+        )
 
-        # check container environment variables
-        self.assertEqual(list(filter(lambda var: var.variable == 'KAFKA_BROKER', cont.environment))[0].value,
-                         config.KAFKA_BROKER)
-        self.assertEqual(list(filter(lambda var: var.variable == 'KAFKA_PRODUCER_UUID', cont.environment))[0].value,
-                         'TEST-PRODUCER')
-        self.assertEqual(list(filter(lambda var: var.variable == 'MTC_AGENT', cont.environment))[0].value,
-                         'test-agent:5000')
-
-        # clean-up
+        # clean up
         self.cleanup()
 
     def test_attached(self, *args):

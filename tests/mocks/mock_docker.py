@@ -64,6 +64,11 @@ INFO_DIC = {
 }
 
 
+""" Python Docker SDK Services object """
+docker_services = Mock()
+docker_services.create = Mock()
+
+
 """ Python Docker SDK Client object """
 docker_client = Mock()
 docker_client.info = Mock(return_value=INFO_DIC)
@@ -72,6 +77,7 @@ docker_client.networks = docker_networks
 docker_client.containers = docker_containers
 docker_client.images = docker_images
 docker_client.swarm = docker_swarm
+docker_client.services = docker_services
 docker_client.ping = Mock()
 docker_client.close = Mock()
 
