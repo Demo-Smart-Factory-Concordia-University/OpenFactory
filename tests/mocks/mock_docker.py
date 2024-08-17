@@ -64,9 +64,16 @@ INFO_DIC = {
 }
 
 
+""" Python Docker SDK service task object """
+docker_service_task = {
+    'Status': {'State': 'running'}
+}
+
+
 """ Python Docker SDK Service object """
 docker_service = Mock()
 docker_service.remove = Mock()
+docker_service.tasks = Mock(return_value=[docker_service_task])
 
 
 """ Python Docker SDK Services object """
