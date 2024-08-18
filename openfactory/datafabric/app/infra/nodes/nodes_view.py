@@ -1,12 +1,10 @@
 """
-DataFabric Nodes list view
+DataFabric Swarm Nodes list view
 """
-from sqlalchemy import select
 from flask import render_template
 from flask.views import View
 from flask_login import login_required
-from openfactory.models.nodes import Node
-from openfactory.datafabric.app import db
+from openfactory.docker.docker_access_layer import dal
 
 
 class NodesList(View):
@@ -17,6 +15,16 @@ class NodesList(View):
     decorators = [login_required]
 
     def dispatch_request(self):
-        query = select(Node)
-        nodes = db.session.scalars(query)
-        return render_template("infra/nodes/nodes_list.html", nodes=nodes, title='Nodes')
+        nodes = dal.docker_client.nodes.list()
+        node_data = []
+        for node in nodes:
+            node_info = {
+                'ID': node.id,
+                'Hostname': node.attrs['Description']['Hostname'],
+                'State': node.attrs['Status']['State'],
+                'Availability': node.attrs['Spec']['Availability'],
+                'Node Type': 'Manager' if 'ManagerStatus' in node.attrs else 'Worker',
+                'IP Address': node.attrs['Status']['Addr']
+            }
+            node_data.append(node_info)
+        return render_template("infra/nodes/nodes_list.html", nodes=node_data, title='Nodes')

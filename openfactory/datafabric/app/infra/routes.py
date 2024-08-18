@@ -24,7 +24,7 @@ def home():
 
 infra_blueprint.add_url_rule("/nodes/", view_func=NodesList.as_view("nodes"))
 infra_blueprint.add_url_rule("/node/add", view_func=NodeAdd.as_view("node_add"))
-infra_blueprint.add_url_rule("/node/remove/<int:node_id>", view_func=NodeRemove.as_view("node_remove"))
+infra_blueprint.add_url_rule("/node/remove/<node_id>", view_func=NodeRemove.as_view("node_remove"))
 
 infra_blueprint.add_url_rule("/compose/", view_func=ComposeProjecList.as_view("compose_list"))
 infra_blueprint.add_url_rule("/compose/add", view_func=ComposeAdd.as_view("compose_add"))

@@ -4,8 +4,7 @@ from flask import redirect
 from flask import url_for
 from flask_login import login_required, current_user
 
-from openfactory.datafabric.app import db
-from openfactory.models.nodes import Node
+from openfactory.docker.docker_access_layer import dal
 
 
 class NodeRemove(View):
@@ -14,22 +13,15 @@ class NodeRemove(View):
 
     def dispatch_request(self, node_id):
 
-        node = db.session.get(Node, node_id)
+        client = dal.docker_client
+        node = client.nodes.get(node_id)
 
-        if node.node_name == 'manager':
+        if node.attrs.get('Spec', {}).get('Role') == 'manager':
             flash('Cannot remove manger node', "danger")
             return redirect(url_for('infra.nodes'))
 
-        if node.containers:
-            flash('Cannot remove a node with running containers', "danger")
-            return redirect(url_for('infra.nodes'))
-
-        if node.compose_projects:
-            flash('Cannot remove a node with running compose projects', "danger")
-            return redirect(url_for('infra.nodes'))
-
         current_user.submit_RQ_task('node_down',
-                                    'Removing node ' + node.node_name + '...',
-                                    node)
+                                    'Removing node ' + node.attrs['Description']['Hostname'] + '...',
+                                    node_id)
 
         return redirect(url_for('infra.home'))
