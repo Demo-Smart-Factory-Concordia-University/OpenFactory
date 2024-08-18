@@ -22,7 +22,7 @@ def node_up(node_name, node_ip):
     try:
         docker_url = f"ssh://{config.OPENFACTORY_USER}@{node_ip}"
         node_client = docker.DockerClient(base_url=docker_url)
-        node_client.swarm.join([dal.ip], join_token=dal.token)
+        node_client.swarm.join([dal.ip], join_token=dal.worker_token)
         docker_error = ''
     except (APIError) as err:
         docker_error = err

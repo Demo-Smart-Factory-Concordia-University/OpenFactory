@@ -16,7 +16,7 @@ class DockerAccesLayer:
         self.docker_url = f"ssh://{config.OPENFACTORY_USER}@{config.OPENFACTORY_MANAGER_NODE}"
         self.ip = config.OPENFACTORY_MANAGER_NODE
         self.docker_client = docker.DockerClient(base_url=self.docker_url)
-        self.token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
+        self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
 
 
 dal = DockerAccesLayer()
