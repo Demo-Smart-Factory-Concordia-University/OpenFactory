@@ -9,7 +9,7 @@ class DockerAccesLayer:
 
     docker_client = None
     docker_url = None
-    token = None
+    worker_token = None
 
     def connect(self):
         """ Connect to Docker engine via the OpenFactory Manger Node """
