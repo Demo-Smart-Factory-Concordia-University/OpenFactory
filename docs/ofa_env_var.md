@@ -4,3 +4,6 @@ To run properly, OpenFactory needs some environment variables to be defined. The
 The following variables need to be defined:
 - `MANAGER_NODE_IP`: IP address of the machine used to manage OpenFactory
 - `MTCONNECT_AGENT_CFG_FILE`: the location of the configuration file of the MTConnect Agents. Unless the structure of the project is changed or a cusotm configuration file is needed, this has to be set to `openfactory/ofa/agent/configs/agent.cfg`
+
+Important note:
+After updating the `.ofaenv`, make sure to restart all services of OpenFactory.
