@@ -1,7 +1,0 @@
-# Adds test_add_stack
-
-stack: test_add_stack
-
-nodes:
-
-   node10: 123.456.7.810

@@ -1,12 +1,12 @@
 # Mock for an OpenFactory infrastructure config file
 
-stack: test_base_stack
-
-network: test-net
-
-manager: 123.456.7.800
-
 nodes:
+   managers:
 
-   node1: 123.456.7.801
-   node2: 123.456.7.802
+      manager1: 123.456.7.101
+      manager2: 123.456.7.102
+
+   workers:
+
+      node1: 123.456.7.801
+      node2: 123.456.7.802

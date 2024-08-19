@@ -7,14 +7,11 @@ from sqlalchemy import select
 
 import tests.mocks as mock
 from openfactory.ofa.db import db
-from openfactory.factories import create_infrastack
 from openfactory.factories import create_agents_from_config_file
 from openfactory.factories import remove_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.agents import Agent
-from openfactory.models.infrastack import InfraStack
-from openfactory.models.nodes import Node
 from openfactory.exceptions import OFAException
 
 
@@ -62,20 +59,6 @@ class Test_remove_devices_from_config_file(TestCase):
         # remove agents
         for agent in db.session.scalars(select(Agent)):
             db.session.delete(agent)
-        # remove nodes
-        for node in db.session.scalars(select(Node)):
-            if node.node_name != 'manager':
-                db.session.delete(node)
-        db.session.commit()
-        # remove manager
-        query = select(Node).where(Node.node_name == "manager")
-        manager = db.session.execute(query).first()
-        if manager:
-            db.session.delete(manager[0])
-            db.session.commit()
-        # remove stacks
-        for stack in db.session.scalars(select(InfraStack)):
-            db.session.delete(stack)
         db.session.commit()
 
     @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
@@ -83,11 +66,6 @@ class Test_remove_devices_from_config_file(TestCase):
         """
         Test tear down of devices
         """
-        # setup base stack
-        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_base)
-
         # setup agents
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_agents.yml')
@@ -121,10 +99,6 @@ class Test_remove_devices_from_config_file(TestCase):
         """
         Test user notifications during device removal
         """
-        # setup base stack
-        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_base)
 
         # setup agent
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -157,10 +131,7 @@ class Test_remove_devices_from_config_file(TestCase):
         """
         Test OFAException is handled during device removal
         """
-        # setup stack and agent
-        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_base)
+        # setup agent
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_one_agent.yml')
 
@@ -185,10 +156,7 @@ class Test_remove_devices_from_config_file(TestCase):
         """
         Test Docker API error is handled during device removal
         """
-        # setup stack and agent
-        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_base)
+        # setup agent
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_one_agent.yml')
         create_agents_from_config_file(db.session, config_agent)

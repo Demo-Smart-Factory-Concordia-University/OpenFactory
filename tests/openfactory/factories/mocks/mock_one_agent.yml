@@ -4,7 +4,6 @@ devices:
 
   zaix-001:
     uuid: TEST-ZAIX-001
-    node: manager
     agent:
       port: 3001
       device_xml: mock_device.xml

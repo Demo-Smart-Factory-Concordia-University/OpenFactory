@@ -21,7 +21,7 @@ def add_stack(stack_config_file):
     user_notify.user = rq_task.user
 
     try:
-        create_infrastack(db.session, stack_config_file)
+        create_infrastack(stack_config_file)
     except (OFAConfigurationException, APIError, SSHException, PendingRollbackError) as err:
         db.session.rollback()
         user_notify.fail(f'Infrastructure stack could not be setup. Error was:<br>"{err}"')

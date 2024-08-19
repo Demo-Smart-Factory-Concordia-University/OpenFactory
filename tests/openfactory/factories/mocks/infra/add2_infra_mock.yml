@@ -1,9 +1,0 @@
-# Adds test_add_stack
-
-stack: test_add_stack
-
-manager: 123.456.7.800
-
-nodes:
-
-   node11: 123.456.7.811

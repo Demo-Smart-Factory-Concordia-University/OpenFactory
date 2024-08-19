@@ -1,5 +1,0 @@
-# Mock for an OpenFactory infrastructure config file without nodes
-
-network: test-net
-
-manager: 123.456.7.800

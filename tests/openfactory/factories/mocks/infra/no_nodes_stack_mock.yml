@@ -1,7 +1,0 @@
-# Mock for an OpenFactory stack config file without nodes
-
-stack: test_base_stack
-
-network: test-net
-
-manager: 123.456.7.800

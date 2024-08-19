@@ -1,10 +1,9 @@
-# Mock configuration of an agent with non-existen device file
+# Mock configuration of an agent with non-existent device file
 
 devices:
 
   zaix-001:
     uuid: TEST-ZAIX-001
-    node: manager
     agent:
       port: 3001
       device_xml: does_not_exist_device.xml

@@ -1,6 +1,5 @@
 import click
 from openfactory.models.user_notifications import user_notify
-from openfactory.ofa.db import db
 from openfactory.exceptions import OFAConfigurationException
 from openfactory.factories import create_infrastack
 
@@ -12,6 +11,6 @@ from openfactory.factories import create_infrastack
 def click_up(yaml_config_file):
     """ Setup OpenFactory infrastructure stack """
     try:
-        create_infrastack(db.session, yaml_config_file)
+        create_infrastack(yaml_config_file)
     except OFAConfigurationException as err:
         user_notify.fail(err)
