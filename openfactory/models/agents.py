@@ -177,7 +177,7 @@ class Agent(Base):
             return
         try:
             self.deploy_agent()
-            self.deploy_producer()
+            self.attach()
         except OFAException as err:
             user_notify.fail(f"Agent {self.uuid} could not be started\n{err}")
         user_notify.success(f"Agent {self.uuid} started successfully")
