@@ -72,12 +72,16 @@ class DockerContainer(Base):
     @hybrid_property
     def docker_url(self):
         """ docker_url from node on which container is deployed """
-        return self.node.docker_url
+
+        # TO BE DONE
+        return None
 
     @hybrid_property
     def network(self):
         """ network from node on which container is deployed """
-        return self.node.network
+
+        # TO BE DONE
+        return None
 
     @hybrid_property
     def container(self):
@@ -131,17 +135,6 @@ class DockerContainer(Base):
             self.container.stop()
         else:
             raise OFAException(f'Cannot stop container - {self._status_error}')
-
-
-@event.listens_for(DockerContainer, 'before_insert')
-def dockerContainer_before_insert(mapper, connection, target):
-    """
-    Adjust runtime constraints of container
-    """
-    if target.cpus is None:
-        target.cpus = target.node.cpus
-    if (target.cpus == 0) or (target.cpus > target.node.cpus):
-        target.cpus = target.node.cpus
 
 
 @event.listens_for(DockerContainer, 'after_insert')
