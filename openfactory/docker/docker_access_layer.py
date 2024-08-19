@@ -10,6 +10,7 @@ class DockerAccesLayer:
     docker_client = None
     docker_url = None
     worker_token = None
+    manager_token = None
 
     def connect(self):
         """ Connect to Docker engine via the OpenFactory Manger Node """
@@ -17,6 +18,7 @@ class DockerAccesLayer:
         self.ip = config.OPENFACTORY_MANAGER_NODE
         self.docker_client = docker.DockerClient(base_url=self.docker_url)
         self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
+        self.manager_token = self.docker_client.swarm.attrs['JoinTokens']['Manager']
 
 
 dal = DockerAccesLayer()
