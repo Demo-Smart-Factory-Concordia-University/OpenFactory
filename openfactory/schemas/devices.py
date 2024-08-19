@@ -53,7 +53,6 @@ class Agent(BaseModel):
 
 class Device(BaseModel):
     uuid: str
-    node: str
     agent: Agent
     runtime: Runtime = None
 

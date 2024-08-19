@@ -7,7 +7,6 @@ from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
 from openfactory.models.containers import EnvVar
-from openfactory.models.nodes import Node
 
 
 def get_nested(data, keys, default=None):
@@ -38,12 +37,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             user_notify.info(f"Agent {device['uuid'].upper()}-AGENT exists already and was not created")
             continue
 
-        # get node
-        query = select(Node).where(Node.node_name == device['node'])
-        node = db_session.execute(query).one_or_none()
-        if node is None:
-            raise OFAException(f"Node {device['node']} is not configured in OpenFactory")
-
         # get ressources if any were defined
         cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
         cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], '1')
@@ -71,7 +64,6 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             cpus_limit=cpus_limit,
             adapter_ip=adapter_ip,
             adapter_port=device['agent']['adapter']['port'],
-            node_id=node[0].id
         )
         db_session.add_all([agent])
         db_session.commit()
