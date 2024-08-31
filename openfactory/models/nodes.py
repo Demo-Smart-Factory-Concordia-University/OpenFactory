@@ -18,7 +18,6 @@ from .user_notifications import user_notify
 from .base import Base
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .agents import Agent
     from .containers import DockerContainer
     from .compose import ComposeProject
     from .infrastack import InfraStack
@@ -44,7 +43,6 @@ class Node(Base):
     stack_id: Mapped[Optional[int]] = mapped_column(ForeignKey("ofa_infra_stack.id"))
     stack: Mapped[Optional["InfraStack"]] = relationship(back_populates="nodes")
 
-    agents: Mapped[List["Agent"]] = relationship(back_populates="node")
     containers: Mapped[List["DockerContainer"]] = relationship(back_populates="node")
     compose_projects: Mapped[List["ComposeProject"]] = relationship(back_populates="node")
 

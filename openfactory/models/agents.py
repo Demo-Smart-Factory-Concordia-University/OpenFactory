@@ -19,16 +19,13 @@ from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
 from mtc2kafka.connectors import MTCSourceConnector
 
+from openfactory.docker.docker_access_layer import dal
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
-from openfactory.docker.swarm_manager_docker_client import swarm_manager_docker_client
 from .user_notifications import user_notify
 from .base import Base
 from .containers import DockerContainer
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from .nodes import Node
 
 
 agent_adapter_table = Table(
@@ -67,9 +64,6 @@ class Agent(Base):
     adapter_ip: Mapped[str] = mapped_column(String(80), doc="Adapter IP")
     adapter_port: Mapped[int] = mapped_column(Integer(), doc="Adapter port")
 
-    node_id = mapped_column(ForeignKey("ofa_nodes.id"))
-    node: Mapped["Node"] = relationship(back_populates="agents")
-
     adapter_container: Mapped[DockerContainer] = relationship(secondary=agent_adapter_table,
                                                               cascade="all, delete-orphan",
                                                               single_parent=True)
@@ -78,9 +72,55 @@ class Agent(Base):
     kafka_producer = None
 
     @hybrid_property
-    def agent_url(self):
-        """ URL of node where agent is running """
-        return self.node.node_ip
+    def top_task(self):
+        """
+        Get the task at the top of the hierarchy
+        """
+        client = dal.docker_client
+        try:
+            service = client.services.get(self.device_uuid.lower() + '-agent')
+        except docker.errors.NotFound:
+            return None
+
+        tasks = service.tasks()
+
+        # Sort tasks by Slot number and creation time (most recent first)
+        tasks.sort(key=lambda x: (x['Slot'], x['CreatedAt']), reverse=True)
+
+        latest_tasks = {}
+
+        for task in tasks:
+            task_slot = task['Slot']
+            node_id = task['NodeID']
+
+            # Use a combination of Slot and NodeID as the unique key
+            slot_node_key = (task_slot, node_id)
+
+            # Store only the latest task for each Slot/Node combination
+            if slot_node_key not in latest_tasks:
+                latest_tasks[slot_node_key] = task
+
+        # Find the task that is the most recent in its Slot/NodeID
+        if latest_tasks:
+            top_task = max(latest_tasks.values(), key=lambda x: x['CreatedAt'])
+            return top_task
+
+        return None
+
+    @hybrid_property
+    def node(self):
+        """ Swarm node where agent is deployed """
+        if self.external:
+            return "TO BE DONE"
+
+        client = dal.docker_client
+        try:
+            node = client.nodes.get(self.top_task['NodeID'])
+            return f"{node.attrs['Description']['Hostname']} ({node.attrs['Status']['Addr']})"
+        except docker.errors.NotFound:
+            return "none"
+        except docker.errors.APIError as err:
+            return f"docker error {err}"
 
     @hybrid_property
     def device_uuid(self):
@@ -98,20 +138,19 @@ class Agent(Base):
         if self.external:
             return "TO BE DONE"
 
-        client = swarm_manager_docker_client()
         try:
-            service = client.services.get(self.device_uuid.lower() + '-agent')
-            tasks = service.tasks()
-            return tasks[0]['Status']['State']
-        except docker.errors.NotFound:
-            return "stopped"
+            task = self.top_task
         except docker.errors.APIError as err:
             return f"docker error {err}"
+        if task:
+            return task['Status']['State']
+        else:
+            return "stopped"
 
     @hybrid_property
     def attached(self):
         """ Kafka producer attached or not """
-        client = swarm_manager_docker_client()
+        client = dal.docker_client
         try:
             client.services.get(self.device_uuid.lower() + '-agent')
             return "yes"
@@ -130,7 +169,7 @@ class Agent(Base):
 
     def deploy_agent(self):
         """ Deploy agent on Docker swarm cluster """
-        client = swarm_manager_docker_client()
+        client = dal.docker_client
         try:
             with open(config.MTCONNECT_AGENT_CFG_FILE, 'r') as file:
                 agent_cfg = file.read()
@@ -159,7 +198,7 @@ class Agent(Base):
 
     def deploy_producer(self):
         """ Deploy Kafka producer on Docker swarm cluster """
-        client = swarm_manager_docker_client()
+        client = dal.docker_client
         client.services.create(
             image=config.MTCONNECT_PRODUCER_IMAGE,
             name=self.device_uuid.lower() + '-producer',
@@ -187,7 +226,7 @@ class Agent(Base):
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
-        client = swarm_manager_docker_client()
+        client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-agent')
             service.remove()
@@ -219,7 +258,7 @@ class Agent(Base):
 
     def detach(self):
         """ Detach agent by removing producer """
-        client = swarm_manager_docker_client()
+        client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-producer')
             service.remove()
@@ -234,8 +273,8 @@ class Agent(Base):
     def create_adapter(self, adapter_image, cpus=0, environment=[]):
         """ Create Docker container for adapter """
         container = DockerContainer(
-            node_id=self.node_id,
-            node=self.node,
+            # node_id=self.node_id,
+            # node=self.node,
             image=adapter_image,
             name=self.device_uuid.lower() + '-adapter',
             cpus=cpus,

@@ -10,6 +10,7 @@ from httpx import HTTPError
 
 from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
+from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
@@ -18,7 +19,6 @@ from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
 
-@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 class TestAgent(TestCase):
@@ -36,6 +36,7 @@ class TestAgent(TestCase):
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
                           info_msg=Mock())
+        dal.docker_client = mock.docker_client
 
     @classmethod
     def tearDownClass(cls):
@@ -71,13 +72,7 @@ class TestAgent(TestCase):
                       device_xml=xml_file,
                       adapter_ip='1.2.3.4',
                       adapter_port=7878)
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
-        agent.node = node
-        db.session.add_all([node, agent])
+        db.session.add_all([agent])
         db.session.commit()
         return agent
 
@@ -111,6 +106,7 @@ class TestAgent(TestCase):
         """
         self.assertEqual(Agent.__tablename__, 'mtc_agents')
 
+    @patch("openfactory.models.agents.Agent.status", return_value='running')
     def test_agent_setup(self, *args):
         """
         Test setup of an Agent
@@ -177,17 +173,6 @@ class TestAgent(TestCase):
                        agent_port=6000)
         db.session.add_all([agent1, agent2])
         self.assertRaises(IntegrityError, db.session.commit)
-
-    def test_agent_url(self, *args):
-        """
-        Test hybride property 'agent_url' of an Agent
-        """
-        agent = self.setup_agent()
-
-        self.assertEqual(agent.agent_url, '123.456.7.891')
-
-        # clean-up
-        self.cleanup()
 
     def test_device_uuid(self, *args):
         """
@@ -258,10 +243,10 @@ class TestAgent(TestCase):
         """
         agent = self.setup_agent()
         agent.deploy_agent = Mock()
-        agent.deploy_producer = Mock()
+        agent.attach = Mock()
         agent.start()
         agent.deploy_agent.assert_called_once()
-        agent.deploy_producer.assert_called_once()
+        agent.attach.assert_called_once()
 
         # clean up
         self.cleanup()
@@ -399,13 +384,13 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    def test_deploy_agent_correct_client(self, mock_swarm_manager_docker_client, *args):
+    def test_deploy_agent_correct_client(self, *args):
         """
         Test if correct Docker client is used
         """
         agent = self.setup_agent()
         agent.deploy_agent()
-        mock_swarm_manager_docker_client.assert_called_once()
+        dal.docker_client.services.create.assert_called_once()
 
         # clean up
         self.cleanup()
@@ -479,7 +464,7 @@ class TestAgent(TestCase):
         self.assertEqual(cont.image, '/someone/some_img')
         self.assertEqual(cont.name, 'test-adapter')
         self.assertEqual(cont.cpus, 1.5)
-        self.assertEqual(cont.node, agent.node)
+        # self.assertEqual(cont.node, agent.node)
         self.assertEqual(cont.environment, env)
 
         # check adapter is removed as agent is removed
@@ -492,20 +477,29 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
+    @patch.object(Agent, 'top_task', new_callable=Mock(return_value={'Status': {'State': 'some state'}}))
     def test_status(self, *args):
         """
         Test hybrid_property 'status'
         """
         agent = self.setup_agent()
-
-        # check container satus
-        mock.docker_services.get.side_effect = docker.errors.NotFound('mock no service running')
-        self.assertEqual(agent.status, 'stopped')
-
-        mock.docker_services.get.side_effect = None
-        self.assertEqual(agent.status, 'running')
+        self.assertEqual(agent.status, 'some state')
 
         # clean-up
+        self.cleanup()
+
+    def test_status_service_does_not_exist(self, *args):
+        """
+        Test hybrid_property 'status' when service does not exist
+        """
+        agent = self.setup_agent()
+
+        # check container satus when service does not exist
+        dal.docker_client.services.get.side_effect = docker.errors.NotFound('mock no service running')
+        self.assertEqual(agent.status, 'stopped')
+
+        # clean-up
+        dal.docker_client.services.get.side_effect = None
         self.cleanup()
 
     @patch("openfactory.models.agents.config")
@@ -568,6 +562,7 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
+    @patch.object(Agent, 'status', new_callable=Mock(return_value='running'))
     def test_kafka_producer_setup_on_load(self, *args):
         """
         Test if kafka_producer setup when agent loaded from database

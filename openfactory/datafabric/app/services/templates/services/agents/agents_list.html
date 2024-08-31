@@ -8,7 +8,6 @@
       <thead class="table-light">
         <tr style="background-color: #b0d3d5; padding: 5px">
            <th scope="col">UUID</th>
-           <th scope="col">Agent url</th>
            <th scope="col">Agent Port</th>
            <th scope="col">Node</th> 
            <th scope="col">Agent Status</th>
@@ -21,7 +20,6 @@
         {% for agent in agents %}
         <tr>
           <th><a href="#">{{ agent.uuid }}</th>
-          <td>{{ agent.agent_url }}</td>
           <td>{{ agent.agent_port }}</td>
           <td>{{ agent.node }}</td>
           <td>{{ agent.status }}</td>
