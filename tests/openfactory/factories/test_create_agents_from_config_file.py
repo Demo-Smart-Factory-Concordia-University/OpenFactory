@@ -7,13 +7,14 @@ from sqlalchemy.orm import Session
 import tests.mocks as mock
 from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
+from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.agents import Agent
 from openfactory.factories import create_agents_from_config_file
 
 
-@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
+@patch.object(Agent, 'status', new_callable=Mock(return_value='running'))
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
@@ -32,6 +33,7 @@ class Test_create_agents_from_config_file(TestCase):
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
                           info_msg=Mock())
+        dal.docker_client = mock.docker_client
 
     @classmethod
     def tearDownClass(cls):
@@ -73,7 +75,6 @@ class Test_create_agents_from_config_file(TestCase):
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/mock_agents.yml')
         create_agents_from_config_file(db.session, config_file)
-        return
 
         # check agents were created correctly
         xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
