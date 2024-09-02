@@ -5,8 +5,16 @@ from unittest.mock import patch, Mock, call
 import tests.mocks as mock
 from openfactory.docker.docker_access_layer import dal
 from openfactory.factories import create_infrastack
-from openfactory.factories.create_infra import create_managers, create_workers
+from openfactory.factories.create_infra import add_label, create_managers, create_workers
 from openfactory.models.user_notifications import user_notify
+
+
+# Mock a node
+mock_node = Mock()
+mock_node.attrs = {
+    'Status': {'Addr': '192.168.1.1'},
+    'Spec': {'Labels': {}}
+}
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
@@ -28,6 +36,27 @@ class Test_create_infrastack(TestCase):
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
                           info_msg=Mock())
+
+    @classmethod
+    def setUp(self):
+        """ Reset mocks """
+        mock_node.update.reset_mock()
+
+    def test_add_label(self, *args):
+        """ Test add_label """
+        dal.docker_client.nodes.list = Mock(return_value=[mock_node])
+        add_label('192.168.1.1', 'mock_label')
+
+        expected_spec = {'Labels': {'name': 'mock_label'}}
+        mock_node.update.assert_called_once_with(expected_spec)
+
+    def test_add_label_node_not_exist(self, *args):
+        """ Test add_label when node does not exist """
+        dal.docker_client.nodes.list = Mock(return_value=[mock_node])
+        add_label('192.168.1.11', 'mock_label')
+
+        for node in dal.docker_client.nodes.list.return_value:
+            node.update.assert_not_called()
 
     @patch('openfactory.factories.create_infra.config')
     def test_create_managers(self, mock_config, mock_dockerclient):
