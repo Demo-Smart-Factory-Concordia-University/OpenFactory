@@ -18,7 +18,6 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
             "devices": {
                 "device1": {
                     "uuid": "uuid1",
-                    "node": "node1",
                     "agent": {
                         "port": 8080,
                         "device_xml": "xml1",
@@ -27,7 +26,6 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                 },
                 "device2": {
                     "uuid": "uuid2",
-                    "node": "node2",
                     "agent": {
                         "port": 8081,
                         "device_xml": "xml2",
@@ -50,7 +48,6 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                 expected = {
                     'device1': {
                         'uuid': 'uuid1',
-                        'node': 'node1',
                         'agent': {
                             'port': 8080,
                             'device_xml': 'xml1',
@@ -60,7 +57,6 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         'runtime': None},
                     'device2': {
                         'uuid': 'uuid2',
-                        'node': 'node2',
                         'agent': {
                             'port': 8081,
                             'device_xml': 'xml2',
