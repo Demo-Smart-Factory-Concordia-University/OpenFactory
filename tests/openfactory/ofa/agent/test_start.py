@@ -6,14 +6,13 @@ from sqlalchemy import select
 import tests.mocks as mock
 import openfactory.ofa as ofa
 from openfactory.ofa.db import db
+from openfactory.docker.docker_access_layer import dal
 from openfactory.models.base import Base
-from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 from openfactory.models.user_notifications import user_notify
 from openfactory.exceptions import OFAException
 
 
-@patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
@@ -32,6 +31,7 @@ class Test_ofa_agent_start(TestCase):
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
                           info_msg=Mock())
+        dal.docker_client = mock.docker_client
 
     @classmethod
     def tearDownClass(cls):
@@ -55,52 +55,34 @@ class Test_ofa_agent_start(TestCase):
         """
         Setup base infrastructure
         """
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
         agent1 = Agent(uuid='TEST1-AGENT',
                        agent_port=6000,
-                       node=node,
                        device_xml='some1.xml',
                        adapter_ip='1.2.3.4',
                        adapter_port=7878)
         agent2 = Agent(uuid='TEST2-AGENT',
                        agent_port=6000,
-                       node=node,
                        device_xml='some2.xml',
                        adapter_ip='1.2.3.4',
                        adapter_port=7878)
-        db.session.add_all([node, agent1, agent2])
+        db.session.add_all([agent1, agent2])
         db.session.commit()
-        return node, agent1, agent2
+        return agent1, agent2
 
     def cleanup(self, *args):
         """
-        Clean up all agents and nodes
+        Clean up all agents
         """
-        # remove agents
         for agent in db.session.scalars(select(Agent)):
             db.session.delete(agent)
-        # remove nodes
-        for node in db.session.scalars(select(Node)):
-            if node.node_name != 'manager':
-                db.session.delete(node)
-        # remove manager
-        query = select(Node).where(Node.node_name == "manager")
-        manager = db.session.execute(query).first()
-        if manager:
-            db.session.delete(manager[0])
         db.session.commit()
 
     def test_start(self, *args):
         """
         Test if Docker container is started
         """
-        node, agent1, agent2 = self.setup_infrastructure()
+        agent1, _ = self.setup_infrastructure()
         agent1.deploy_agent = Mock()
-        agent1.deploy_producer = Mock()
 
         runner = CliRunner()
         result = runner.invoke(ofa.agent.click_start, [agent1.uuid])
@@ -108,7 +90,6 @@ class Test_ofa_agent_start(TestCase):
 
         # check agent Docker service was deployed for agent and producer
         agent1.deploy_agent.assert_called_once()
-        agent1.deploy_producer.assert_called_once()
 
         # clean up
         self.cleanup()
