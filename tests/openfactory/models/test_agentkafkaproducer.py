@@ -6,9 +6,9 @@ from mtc2kafka.connectors import MTCSourceConnector
 import tests.mocks as mock
 import openfactory.config as config
 from openfactory.ofa.db import db
+from openfactory.docker.docker_access_layer import dal
 from openfactory.models.agents import AgentKafkaProducer
 from openfactory.models.base import Base
-from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent
 
 
@@ -28,6 +28,7 @@ class TestAgentKafkaProducer(TestCase):
         db.conn_uri = 'sqlite:///:memory:'
         db.connect()
         Base.metadata.create_all(db.engine)
+        dal.docker_client = mock.docker_client
 
     @classmethod
     def tearDownClass(cls):
@@ -37,20 +38,10 @@ class TestAgentKafkaProducer(TestCase):
 
     def cleanup(self, *args):
         """
-        Clean up all agents and nodes
+        Clean up all agents
         """
-        # remove agents
         for agent in db.session.scalars(select(Agent)):
             db.session.delete(agent)
-        # remove nodes
-        for node in db.session.scalars(select(Node)):
-            if node.node_name != 'manager':
-                db.session.delete(node)
-        # remove manager
-        query = select(Node).where(Node.node_name == "manager")
-        manager = db.session.execute(query).first()
-        if manager:
-            db.session.delete(manager[0])
         db.session.commit()
 
     def test_class_parent(self, *args):
@@ -65,23 +56,16 @@ class TestAgentKafkaProducer(TestCase):
         """
         self.assertEqual(AgentKafkaProducer.bootstrap_servers, [config.KAFKA_BROKER])
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_init(self, *args):
         """
         Test init of AgentKafkaProducer
         """
-        node = Node(
-            node_name='manager',
-            node_ip='123.456.7.891',
-            network='test-net'
-        )
         agent = Agent(uuid='TEST-AGENT',
                       agent_port=6000,
-                      node=node,
                       device_xml='some.xml',
                       adapter_ip='1.2.3.4',
                       adapter_port=7878)
-        db.session.add_all([node, agent])
+        db.session.add_all([agent])
         db.session.commit()
 
         kafka_producer = AgentKafkaProducer(agent)
