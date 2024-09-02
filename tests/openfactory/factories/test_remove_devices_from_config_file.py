@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 import tests.mocks as mock
 from openfactory.ofa.db import db
+from openfactory.docker.docker_access_layer import dal
 from openfactory.factories import create_agents_from_config_file
 from openfactory.factories import remove_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
@@ -15,6 +16,7 @@ from openfactory.models.agents import Agent
 from openfactory.exceptions import OFAException
 
 
+@patch.object(Agent, 'status', new_callable=Mock(return_value='running'))
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
@@ -33,6 +35,7 @@ class Test_remove_devices_from_config_file(TestCase):
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
                           info_msg=Mock())
+        dal.docker_client = mock.docker_client
 
     @classmethod
     def tearDownClass(cls):
@@ -61,7 +64,6 @@ class Test_remove_devices_from_config_file(TestCase):
             db.session.delete(agent)
         db.session.commit()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_remove_devices(self, *args):
         """
         Test tear down of devices
@@ -94,7 +96,6 @@ class Test_remove_devices_from_config_file(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_remove_devices_notifications(self, *args):
         """
         Test user notifications during device removal
@@ -151,7 +152,6 @@ class Test_remove_devices_from_config_file(TestCase):
         # clean up
         self.cleanup()
 
-    @patch("openfactory.models.agents.swarm_manager_docker_client", return_value=mock.docker_client)
     def test_remove_devices_docker_api_error(self, *args):
         """
         Test Docker API error is handled during device removal
