@@ -1,0 +1,25 @@
+{% extends "infra/infraBase.html" %}
+
+{% block content %}
+  <h4>Node {{ node.Hostname }} ({{ node.IP }})</h4>
+
+  <table class="table table-striped">
+    <thead class="table-light">
+        <tr style="background-color: #b0d3d5; padding: 5px">
+           <th scope="col">Service</th>
+           <th scope="col">Current state</th>
+           <th scope="col">Public ports</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style="transform: rotate(0);">
+        {% for service in services %}
+        <tr>
+          <th>{{ service.Service }}</th>
+          <td>{{ service.Running_for }}</td>
+          <td>{{ service.Ports }}</td>
+        {% endfor %}
+      </tbody>
+  </table>
+{% endblock content %}
