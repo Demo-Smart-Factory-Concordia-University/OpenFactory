@@ -34,7 +34,7 @@ class TestNodesDown(TestCase):
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
         result = runner.invoke(ofa.nodes.click_down, [config_file])
-        mock_remove_infrastack.called_once_with(db.session, config_file)
+        mock_remove_infrastack.assert_called_once_with(config_file)
         self.assertEqual(result.exit_code, 0)
 
     def test_node_down_none_existent_file(self, *args):

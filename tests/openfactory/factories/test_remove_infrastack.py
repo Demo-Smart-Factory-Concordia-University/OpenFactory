@@ -1,19 +1,31 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
-from sqlalchemy import select
+from unittest.mock import patch, Mock
 
 import tests.mocks as mock
-from openfactory.ofa.db import db
-from openfactory.factories import create_infrastack
+from openfactory.docker.docker_access_layer import dal
 from openfactory.factories import remove_infrastack
-from openfactory.models.base import Base
-from openfactory.models.infrastack import InfraStack
-from openfactory.models.nodes import Node
 
 
-@patch("docker.DockerClient", return_value=mock.docker_client)
+# Mock a node
+mock_node = Mock()
+mock_node.id = 'mock_id'
+mock_node.attrs = {
+    'Status': {'Addr': '123.456.7.801'},
+    'Spec': {'Labels': {}}
+}
+mock_node.update = Mock()
+
+
+def mock_nodes_get(node_id):
+    if node_id == 'mock_id':
+        return mock_node
+    else:
+        return None
+
+
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
+@patch("docker.DockerClient", return_value=mock.docker_client)
 class Test_remove_infrastack(TestCase):
     """
     Unit tests for remove_infrastack
@@ -21,146 +33,31 @@ class Test_remove_infrastack(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """ setup in memory sqlite db """
-        print("Setting up in memory sqlite db")
-        db.conn_uri = 'sqlite:///:memory:'
-        db.connect()
-        Base.metadata.create_all(db.engine)
+        dal.docker_client = mock.docker_client
+        dal.docker_client.nodes.list = Mock(return_value=[mock_node])
+        dal.docker_client.nodes.get = Mock(return_value=mock_node)
+        dal.docker_client.api.remove_node = Mock()
 
-    @classmethod
-    def tearDownClass(cls):
-        print("\nTear down in memory sqlite db")
-        Base.metadata.drop_all(db.engine)
-        db.session.close()
-
-    @classmethod
-    def tearDown(self):
-        """ rollback all transactions """
-        db.session.rollback()
-
-    def cleanup(self, *args):
-        """
-        Clean up all stacks and nodes
-        """
-        # remove nodes
-        for node in db.session.scalars(select(Node)):
-            if node.node_name != 'manager':
-                db.session.delete(node)
-        db.session.commit()
-        # remove manager
-        query = select(Node).where(Node.node_name == "manager")
-        manager = db.session.execute(query).first()
-        if manager:
-            db.session.delete(manager[0])
-            db.session.commit()
-        # remove stacks
-        for stack in db.session.scalars(select(InfraStack)):
-            db.session.delete(stack)
-        db.session.commit()
-
-    def test_down_single_stack(self, *args):
+    @patch("openfactory.factories.remove_infra.config")
+    def test_remove_infrastack(self, mock_config, mock_docker_client, *args):
         """
         Test tear down of a single stack
         """
-        # setup base stack
-        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_file)
+        mock_config.OPENFACTORY_USER = 'mock_user'
 
         # remove stack
-        remove_infrastack(db.session, config_file)
-
-        # check stack and nodes were removed
-        self.assertEqual(len(db.session.query(InfraStack).all()), 0)
-        self.assertEqual(len(db.session.query(Node).all()), 0)
-
-        # clean up
-        self.cleanup()
-
-    def test_down_additional_stack(self, *args):
-        """
-        Test tear down of a stack among several stacks
-        """
-        # setup base stack
-        config_base = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_base)
+        remove_infrastack(config_file)
 
-        # setup additional stack
-        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/add1_infra_mock.yml')
-        create_infrastack(db.session, config_file)
+        # check if node gets drained
+        mock_node.update.assert_called_once()
+        call_args, _ = mock_node.update.call_args
+        self.assertEqual(call_args[0]['Availability'], 'drain')
 
-        # remove additional stack
-        remove_infrastack(db.session, config_file)
+        # remove node on manager node
+        dal.docker_client.api.remove_node.assert_called_once_with('mock_id', force=True)
 
-        # check stack and nodes were removed
-        query = select(InfraStack).where(InfraStack.stack_name == "test_add_stack")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-        query = select(Node).where(Node.node_name == "node10")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-
-        # check remaining stacks and nodes were not removed
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-        query = select(Node).where(Node.node_name == "manager")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-        query = select(Node).where(Node.node_name == "node1")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-        query = select(Node).where(Node.node_name == "node2")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-
-        # setup additional stack
-        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/add1_infra_mock.yml')
-        create_infrastack(db.session, config_file)
-
-        # check base stack cannot be removed
-        remove_infrastack(db.session, config_base)
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-        query = select(Node).where(Node.node_name == "manager")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-
-        # check nodes from base stack were removed
-        query = select(Node).where(Node.node_name == "node1")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-        query = select(Node).where(Node.node_name == "node2")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-
-        # clean up
-        self.cleanup()
-
-    def test_down_manager(self, *args):
-        """
-        Test stack tear down does not remove manager if other nodes still exist
-        """
-        # setup stacks
-        config_file1 = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    'mocks/infra/base_infra_mock.yml')
-        create_infrastack(db.session, config_file1)
-
-        # setup additional stack
-        config_file2 = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    'mocks/infra/add2_infra_mock.yml')
-        create_infrastack(db.session, config_file2)
-
-        # remove stack
-        remove_infrastack(db.session, config_file1)
-
-        # check nodes were removed
-        query = select(Node).where(Node.node_name == "node1")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-        query = select(Node).where(Node.node_name == "node2")
-        self.assertEqual(db.session.execute(query).one_or_none(), None)
-
-        # check manager was not removed
-        query = select(Node).where(Node.node_name == "manager")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-
-        # check stack was not removed
-        query = select(InfraStack).where(InfraStack.stack_name == "test_base_stack")
-        self.assertEqual(len(db.session.execute(query).one()), 1)
-
-        # clean up
-        self.cleanup()
+        # leave swarm cluster on node to be removed
+        mock_docker_client.assert_called_once_with(base_url='ssh://mock_user@123.456.7.801')
+        mock.docker_client.swarm.leave.assert_called_once_with()

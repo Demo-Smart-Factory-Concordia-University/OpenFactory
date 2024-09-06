@@ -1,5 +1,4 @@
 import click
-from openfactory.ofa.db import db
 from openfactory.factories import remove_infrastack
 
 
@@ -9,4 +8,4 @@ from openfactory.factories import remove_infrastack
                 nargs=1)
 def click_down(yaml_config_file):
     """ Tear down OpenFactory stack """
-    remove_infrastack(db.session, yaml_config_file)
+    remove_infrastack(yaml_config_file)
