@@ -1,4 +1,5 @@
 import os
+import docker
 from fsspec.core import split_protocol
 from sqlalchemy import select
 
@@ -6,7 +7,6 @@ from openfactory.exceptions import OFAException
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
-from openfactory.models.containers import EnvVar
 
 
 def get_nested(data, keys, default=None):
@@ -70,26 +70,21 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
 
         # configure adapter
         if device['agent']['adapter']['image']:
-            cpus = 0 if device.get('runtime') is None else device['runtime'].get('adapter', {}).get('cpus', 0)
+            # get ressources if any were defined
+            cpus_reservation = get_nested(device, ['agent', 'adapter', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
+            cpus_limit = get_nested(device, ['agent', 'adapter', 'deploy', 'resources', 'limits', 'cpus'], '1')
             env = []
             if 'environment' in device['agent']['adapter']:
                 for item in device['agent']['adapter']['environment']:
                     var, val = item.split('=')
-                    env.append(EnvVar(variable=var.strip(), value=val.strip()))
+                    env.append(f"{var.strip()}={val.strip()}")
             try:
                 agent.create_adapter(device['agent']['adapter']['image'],
-                                     cpus=cpus, environment=env)
-            except OFAException as err:
-                db_session.rollback()
-                db_session.delete(agent)
+                                     cpus_limit=float(cpus_limit), cpus_reservation=float(cpus_reservation),
+                                     environment=env)
+            except docker.errors.APIError as err:
                 user_notify.fail(f"Could not create {device['uuid'].lower()}-adapter\nError was: {err}")
-                db_session.commit()
                 return
-            agent.adapter_container.start()
-            user_notify.success(f"Adapter {agent.adapter_container.name} started successfully")
-            adapter_ip = agent.device_uuid.lower() + '-adapter'
-        else:
-            adapter_ip = device['agent']['adapter']['ip']
 
         if run:
             agent.start()

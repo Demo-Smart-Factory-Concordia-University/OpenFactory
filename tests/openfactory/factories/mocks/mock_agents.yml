@@ -16,11 +16,6 @@ devices:
             cpus: 2.5
           reservations:
             cpus: 1.5
-    runtime:
-      agent:
-        cpus: 1.5
-      producer:
-        cpus: 1
         
   zaix-003:
     uuid: TEST-ZAIX-002

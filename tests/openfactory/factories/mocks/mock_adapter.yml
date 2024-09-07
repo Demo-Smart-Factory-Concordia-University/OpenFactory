@@ -11,26 +11,12 @@ devices:
       adapter:
         image: ofa/ofa_adapter
         port: 7878
+        deploy:
+          resources:
+            limits:
+              cpus: 2.5
+            reservations:
+              cpus: 1.5
         environment:
           - VAR1=value1
           - VAR2=value2
-    runtime:
-      agent:
-        cpus: 1.5
-      producer:
-        cpus: 1
-      adapter:
-        cpus: 2.5
-
-  zaix-002:
-    uuid: TEST-ZAIX-002
-    node: manager
-    agent:
-      port: 3002
-      device_xml: mock_device.xml
-      adapter:
-        image: ofa/ofa_adapter
-        port: 7878
-        environment:
-          - VAR11=value11
-          - VAR12=value12  

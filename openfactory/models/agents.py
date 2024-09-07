@@ -9,7 +9,6 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Table
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Session
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -270,21 +269,34 @@ class Agent(Base):
         if self.kafka_producer:
             self.kafka_producer.send_producer_availability('UNAVAILABLE')
 
-    def create_adapter(self, adapter_image, cpus=0, environment=[]):
+    def create_adapter(self, adapter_image, cpus_limit=1, cpus_reservation=0.5, environment=[]):
         """ Create Docker container for adapter """
-        container = DockerContainer(
-            # node_id=self.node_id,
-            # node=self.node,
+        client = dal.docker_client
+        client.services.create(
             image=adapter_image,
             name=self.device_uuid.lower() + '-adapter',
-            cpus=cpus,
-            environment=environment
+            mode={"Replicated": {"Replicas": 1}},
+            env=environment,
+            networks=[config.OPENFACTORY_NETWORK],
+            resources={
+                "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
+                "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
+                }
         )
-        session = Session.object_session(self)
-        session.add_all([container])
-        self.adapter_container = container
-        session.commit()
-        user_notify.success(f'Adapter {container.name} created successfully')
+        user_notify.success(f"Adapter {self.device_uuid.lower() + '-adapter'} created successfully")
+
+    def remove_adapter(self):
+        """ Removes adapter if it is a Docker swarm service """
+        client = dal.docker_client
+        try:
+            service = client.services.get(self.device_uuid.lower() + '-adapter')
+            service.remove()
+            user_notify.success(f"Adapter for agent {self.uuid} removed successfully")
+        except docker.errors.NotFound:
+            # no adapter running as a Docker swarm service
+            pass
+        except docker.errors.APIError as err:
+            raise OFAException(err)
 
     def create_ksqldb_tables(self):
         """ Create ksqlDB tables related to the agent """
@@ -329,5 +341,6 @@ def agent_before_delete(mapper, connection, target):
     """
     Stop the various services
     """
+    target.remove_adapter()
     target.detach()
     target.stop()

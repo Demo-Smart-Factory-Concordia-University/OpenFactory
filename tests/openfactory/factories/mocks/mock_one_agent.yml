@@ -10,8 +10,3 @@ devices:
       adapter:
         ip: adapter1.test.org
         port: 7878
-    runtime:
-      agent:
-        cpus: 1.5
-      producer:
-        cpus: 1

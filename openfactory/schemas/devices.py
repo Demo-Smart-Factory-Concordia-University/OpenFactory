@@ -14,21 +14,6 @@ class Runtime(BaseModel):
     adapter: RuntimeConfig = None
 
 
-class Adapter(BaseModel):
-    ip: str = None
-    image: str = None
-    port: int
-    environment: List[str] = None
-
-    @classmethod
-    def validate(cls, values):
-        ip = values.get('ip')
-        image = values.get('image')
-        if (ip is None and image is None) or (ip and image):
-            raise ValueError("Either 'ip' or 'image' must be specified in the adapter.")
-        return values
-
-
 class ResourcesDefinition(BaseModel):
     cpus: float = None
     memory: str = None
@@ -42,6 +27,22 @@ class Resources(BaseModel):
 class Deploy(BaseModel):
     replicas: Optional[int] = Field(default=1)
     resources: Resources = None
+
+
+class Adapter(BaseModel):
+    ip: str = None
+    image: str = None
+    port: int
+    environment: List[str] = None
+    deploy: Optional[Deploy] = None
+
+    @classmethod
+    def validate(cls, values):
+        ip = values.get('ip')
+        image = values.get('image')
+        if (ip is None and image is None) or (ip and image):
+            raise ValueError("Either 'ip' or 'image' must be specified in the adapter.")
+        return values
 
 
 class Agent(BaseModel):

@@ -15,7 +15,6 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent, agent_before_delete
-from openfactory.models.containers import DockerContainer, EnvVar
 import tests.mocks as mock
 
 
@@ -450,29 +449,55 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    def test_create_adapter(self, *args):
+    @patch("openfactory.models.agents.config")
+    def test_create_adapter(self, mock_config, *args):
         """
         Test creation of Docker container for an adapter
         """
+        mock_config.OPENFACTORY_NETWORK = 'mock_network'
         agent = self.setup_agent()
-        env = [EnvVar(variable='MyVar', value='MyValue'),
-               EnvVar(variable='MyOtherVar', value='MyOtherValue')]
-        agent.create_adapter('/someone/some_img', 1.5, env)
+        env = ['MyVar=MyValue', 'MyOtherVar=MyOtherValue']
+        agent.create_adapter('someone/some_img', cpus_limit=1.5, cpus_reservation=1.0, environment=env)
 
-        # check if created correctly container
-        cont = agent.adapter_container
-        self.assertEqual(cont.image, '/someone/some_img')
-        self.assertEqual(cont.name, 'test-adapter')
-        self.assertEqual(cont.cpus, 1.5)
-        # self.assertEqual(cont.node, agent.node)
-        self.assertEqual(cont.environment, env)
+        # check if created correctly service
+        mock.docker_services.create.assert_called_once_with(
+            image='someone/some_img',
+            name='test-adapter',
+            mode={"Replicated": {"Replicas": 1}},
+            env=env,
+            networks=['mock_network'],
+            resources={
+                "Limits": {"NanoCPUs": int(1000000000 * 1.5)},
+                "Reservations": {"NanoCPUs": int(1000000000 * 1.0)}
+            }
+        )
 
-        # check adapter is removed as agent is removed
+        # clean-up
+        self.cleanup()
+
+    def test_remove_adapter(self, *args):
+        """
+        Test remove_adapter
+        """
+        agent = self.setup_agent()
+        agent.remove_adapter()
+
+        mock.docker_services.get.assert_called_once_with('test-adapter')
+        mock.docker_service.remove.assert_called_once()
+
+        # clean-up
+        self.cleanup()
+
+    def test_remove_adapter_called(self, *args):
+        """
+        Test adapter service removed when agent removed
+        """
+        agent = self.setup_agent()
+        agent.remove_adapter = Mock()
         db.session.delete(agent)
         db.session.commit()
 
-        query = select(DockerContainer).where(DockerContainer.name == 'test-adapter')
-        self.assertIsNone(db.session.execute(query).one_or_none())
+        agent.remove_adapter.assert_called_once()
 
         # clean-up
         self.cleanup()

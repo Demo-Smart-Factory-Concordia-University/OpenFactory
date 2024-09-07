@@ -29,12 +29,17 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                     "agent": {
                         "port": 8081,
                         "device_xml": "xml2",
-                        "adapter": {"ip": "1.2.3.4", "port": 9091}
-                    },
-                    "runtime": {
-                        "agent": {"cpus": 2.0},
-                        "producer": {"cpus": 1.5},
-                        "adapter": {"cpus": 1.0}
+                        "adapter": {"ip": "1.2.3.4", "port": 9091},
+                        "deploy": {"replicas": 3, "resources": {"reservations": {"cpus": 2}, "limits": {"cpus": 4}}},
+                    }
+                },
+                "device3": {
+                    "uuid": "uuid3",
+                    "agent": {
+                        "port": 8082,
+                        "device_xml": "xml3",
+                        "adapter": {"ip": "1.2.3.4", "port": 9092,
+                                    "deploy": {"replicas": 3, "resources": {"reservations": {"cpus": 2}, "limits": {"cpus": 4}}}},
                     }
                 }
             }
@@ -51,7 +56,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         'agent': {
                             'port': 8080,
                             'device_xml': 'xml1',
-                            'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None},
+                            'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None, 'deploy': None},
                             'deploy': {'replicas': 1, 'resources': None}
                             },
                         'runtime': None},
@@ -60,12 +65,27 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         'agent': {
                             'port': 8081,
                             'device_xml': 'xml2',
-                            'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None},
+                            'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None, 'deploy': None},
+                            'deploy': {'replicas': 3, 'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}}},
+                            },
+                        'runtime': None,
+                        },
+                    'device3': {
+                        'uuid': 'uuid3',
+                        'agent': {
+                            'port': 8082,
+                            'device_xml': 'xml3',
+                            'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9092, 'environment': None,
+                                        'deploy': {'replicas': 3, 'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}}}},
                             'deploy': {'replicas': 1, 'resources': None}
                             },
-                        'runtime': {'agent': {'cpus': 2.0}, 'producer': {'cpus': 1.5}, 'adapter': {'cpus': 1.0}}
+                        'runtime': None,
                         }
                     }
+                print()
+                print(devices_dict)
+                print()
+                print(expected)
                 self.assertEqual(devices_dict, expected)
                 mock_user_notify.fail.assert_not_called()
 
