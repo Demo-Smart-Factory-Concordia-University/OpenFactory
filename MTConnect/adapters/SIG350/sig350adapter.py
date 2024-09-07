@@ -1,25 +1,23 @@
-import sys
-from adapter import MTCAdapterRelay, DeviceHandler
-from sig350 import SICKProximitySensor
+import os
+from mtcadapter.adapters import MTCAdapter
+from mtcadapter.mtcdevices.sick import SIG350
+from mtcadapter.mtcdevices.sick import SICK_IMC30_Sensor
 
 
-class ProxySensor(DeviceHandler):
-    """
-    SICK Proximity Sensor
-    """
-    sensor = SICKProximitySensor()
+class OFA_SIG350(SIG350):
+    ip_address = os.getenv('SIG350_IP')
+    sensors = {os.getenv('DEVICE_ALIAS'): SICK_IMC30_Sensor}
 
 
-class SIG350Adapter(MTCAdapterRelay):
-    """
-    SIG350 Adapter
-    """
+class SIG350_Adapter(MTCAdapter):
     adapter_port = 7878
-    deviceHandler_class = ProxySensor
+    device_class = OFA_SIG350
 
 
-sig350Adapter = SIG350Adapter()
-try:
-    sig350Adapter.serve_forever()
-except KeyboardInterrupt:
-    sys.exit(0)
+def main():
+    mmpadapter = SIG350_Adapter()
+    mmpadapter.run()
+
+
+if __name__ == "__main__":
+    main()
