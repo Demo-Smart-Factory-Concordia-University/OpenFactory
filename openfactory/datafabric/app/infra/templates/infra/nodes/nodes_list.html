@@ -20,7 +20,7 @@
       <tbody>
         <tr style="transform: rotate(0);">
         {% for node in nodes %}
-        <tr onclick=location.href="{{ url_for('infra.node_view', node_id=node['ID']) }}">
+        <tr>
           <th scope="row"><a href="{{ url_for('infra.node_view', node_id=node['ID']) }}" class="streched-link">{{ node['ID'][:12] }}</th>
           <td>{{ node['Hostname'] }}</td>
           <td>{{ node['IP Address'] }}</td>
