@@ -77,6 +77,18 @@ class Test_create_infrastack(TestCase):
         user_notify.success.assert_any_call('Node "manager2 (123.123.2.2)" setup')
         self.assertIn(call(['manager node ip'], join_token='manager token'), mock.docker_swarm.join.call_args_list)
 
+    @patch('openfactory.factories.create_infra.add_label')
+    def test_create_manager_label(self, mock_add_label, *args):
+        """
+        Test if managers are labeled
+        """
+        managers = {
+            "manager1": "123.123.1.1"
+            }
+        create_managers(managers)
+
+        mock_add_label.assert_called_with('123.123.1.1', 'manager1')
+
     @patch('openfactory.factories.create_infra.config')
     def test_create_workers(self, mock_config, mock_dockerclient):
         """
@@ -95,6 +107,18 @@ class Test_create_infrastack(TestCase):
         user_notify.success.assert_any_call('Node "worker1 (123.123.1.1)" setup')
         user_notify.success.assert_any_call('Node "worker2 (123.123.2.2)" setup')
         self.assertIn(call(['manager node ip'], join_token='worker token'), mock.docker_swarm.join.call_args_list)
+
+    @patch('openfactory.factories.create_infra.add_label')
+    def test_create_worker_label(self, mock_add_label, *args):
+        """
+        Test if workers are labeled
+        """
+        workers = {
+            "worker1": "123.123.1.1"
+            }
+        create_managers(workers)
+
+        mock_add_label.assert_called_with('123.123.1.1', 'worker1')
 
     @patch('openfactory.factories.create_infra.create_workers')
     @patch('openfactory.factories.create_infra.create_managers')
