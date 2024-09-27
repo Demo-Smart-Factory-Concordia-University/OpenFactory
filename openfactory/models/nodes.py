@@ -38,8 +38,6 @@ class Node(Base):
     docker_url: Mapped[str] = mapped_column(String(40),
                                             default='unix://var/run/docker.sock')
 
-    stack_id: Mapped[Optional[int]] = mapped_column(ForeignKey("ofa_infra_stack.id"))
-
     compose_projects: Mapped[List["ComposeProject"]] = relationship(back_populates="node")
 
     def __repr__(self):
