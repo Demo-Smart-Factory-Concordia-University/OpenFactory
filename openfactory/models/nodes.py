@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .containers import DockerContainer
     from .compose import ComposeProject
-    from .infrastack import InfraStack
 
 
 class Node(Base):
@@ -41,7 +40,6 @@ class Node(Base):
                                             default='unix://var/run/docker.sock')
 
     stack_id: Mapped[Optional[int]] = mapped_column(ForeignKey("ofa_infra_stack.id"))
-    stack: Mapped[Optional["InfraStack"]] = relationship(back_populates="nodes")
 
     containers: Mapped[List["DockerContainer"]] = relationship(back_populates="node")
     compose_projects: Mapped[List["ComposeProject"]] = relationship(back_populates="node")
