@@ -11,12 +11,12 @@ from openfactory.utils import load_yaml
 def add_label(node_ip, name):
     """ Adds the label `name` to the node with address `node_ip` """
     node = None
+    if node is None:
+        return
     for n in dal.docker_client.nodes.list():
         if node_ip in n.attrs['Status']['Addr']:
             node = n
             break
-    if node is None:
-        return
 
     # add label
     node_spec = node.attrs['Spec']
