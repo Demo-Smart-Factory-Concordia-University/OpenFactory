@@ -11,7 +11,6 @@ from sqlalchemy import Table
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
 from sqlalchemy.exc import PendingRollbackError
 from pyksql.ksql import KSQL
 from httpx import HTTPError
@@ -24,7 +23,6 @@ from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
 from .user_notifications import user_notify
 from .base import Base
-from .containers import DockerContainer
 
 
 agent_adapter_table = Table(
@@ -62,10 +60,6 @@ class Agent(Base):
     cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
     adapter_ip: Mapped[str] = mapped_column(String(80), doc="Adapter IP")
     adapter_port: Mapped[int] = mapped_column(Integer(), doc="Adapter port")
-
-    adapter_container: Mapped[DockerContainer] = relationship(secondary=agent_adapter_table,
-                                                              cascade="all, delete-orphan",
-                                                              single_parent=True)
 
     # Kafka producer used to send messages
     kafka_producer = None
