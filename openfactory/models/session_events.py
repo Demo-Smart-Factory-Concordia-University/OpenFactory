@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from .user_notifications import user_notify
 from .agents import Agent
-from .containers import DockerContainer
 from .nodes import Node
 
 
@@ -14,7 +13,5 @@ def receive_persistent_to_deleted(session, instance):
     """
     if isinstance(instance, Agent):
         user_notify.success(f"Agent {instance.uuid} removed successfully")
-    if isinstance(instance, DockerContainer):
-        user_notify.success(f"Container {instance.name} removed successfully")
     if isinstance(instance, Node):
         user_notify.success(f"Node '{instance.node_name}' removed successfully")

@@ -56,7 +56,6 @@ def create_app(config_class=Config):
     admin.init_app(app)
     admin.add_view(ModelView(ofamodels.Configuration, db.session))
     admin.add_view(AgentView(ofamodels.Agent, db.session))
-    admin.add_view(ModelView(ofamodels.DockerContainer, db.session))
     admin.add_view(ModelView(ofamodels.Node, db.session))
     admin.add_view(ComposeProjectView(ofamodels.ComposeProject, db.session))
     
