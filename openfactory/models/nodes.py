@@ -1,9 +1,7 @@
 import docker
 from typing import List
-from typing import Optional
 from sqlalchemy import event
 from sqlalchemy import select
-from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy import Integer
 from sqlalchemy import Float
