@@ -25,13 +25,6 @@ from .user_notifications import user_notify
 from .base import Base
 
 
-agent_adapter_table = Table(
-    "agent_adapter_association",
-    Base.metadata,
-    Column('agent_id', ForeignKey('mtc_agents.id'))
-)
-
-
 class AgentKafkaProducer(MTCSourceConnector):
     """ Kafka producer for Agent """
 
