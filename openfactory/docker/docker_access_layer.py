@@ -20,5 +20,14 @@ class DockerAccesLayer:
         self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
         self.manager_token = self.docker_client.swarm.attrs['JoinTokens']['Manager']
 
+    def get_node_name_labels(self):
+        """ Returns a list of all swarm node name labels """
+        name_labels = []
+        for node in self.docker_client.nodes.list():
+            labels = node.attrs.get('Spec', {}).get('Labels', {})
+            if 'name' in labels:
+                name_labels.append(labels['name'])
+        return name_labels
+
 
 dal = DockerAccesLayer()
