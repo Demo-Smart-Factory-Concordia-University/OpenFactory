@@ -15,8 +15,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, IPAddress, ValidationError
 from flask.views import MethodView
 
-from openfactory.datafabric.app import db
-from openfactory.models.nodes import Node
+from openfactory.docker.docker_access_layer import dal
 import openfactory.config as config
 
 
@@ -36,14 +35,14 @@ class NodeAddForm(FlaskForm):
 
     def validate_node_name(form, field):
         """ Validate that node name is unique """
-        if db.session.query(Node.id).filter_by(node_name=field.data).first() is not None:
+        if field.data in dal.get_node_name_labels():
             raise ValidationError("This name is already in use")
 
     def validate_node_ip(form, field):
         """ Validate node IP """
         if 'node_ip' in form.errors:
             return
-        if db.session.query(Node.id).filter_by(node_ip=field.data).first() is not None:
+        if field.data in dal.get_node_ip_addresses():
             raise ValidationError("This IP is already in use")
 
         try:
