@@ -1,6 +1,8 @@
 import docker
 import docker.errors
 import openfactory.config as config
+import paramiko.ssh_exception
+from socket import gaierror
 from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
 from openfactory.utils import load_yaml
@@ -34,8 +36,8 @@ def create_managers(managers):
             client.swarm.join([dal.ip], join_token=dal.manager_token)
             add_label(ip, name)
             user_notify.success(f'Node "{name} ({ip})" setup')
-        except (docker.errors.APIError) as err:
-            user_notify.fail(f'Node "{name}" could not be setup. Error was:<br>"{err}"')
+        except (gaierror, paramiko.ssh_exception.NoValidConnectionsError, docker.errors.APIError) as err:
+            user_notify.fail(f'Node "{name}" could not be setup - {err}')
 
 
 def create_workers(workers):
@@ -50,8 +52,8 @@ def create_workers(workers):
             client.swarm.join([dal.ip], join_token=dal.worker_token)
             add_label(ip, name)
             user_notify.success(f'Node "{name} ({ip})" setup')
-        except (docker.errors.APIError) as err:
-            user_notify.fail(f'Node "{name}" could not be setup. Error was:<br>"{err}"')
+        except (gaierror, paramiko.ssh_exception.NoValidConnectionsError, docker.errors.APIError) as err:
+            user_notify.fail(f'Node "{name}" could not be setup - {err}')
 
 
 def create_infrastack(stack_config_file):
