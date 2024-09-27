@@ -29,5 +29,15 @@ class DockerAccesLayer:
                 name_labels.append(labels['name'])
         return name_labels
 
+    def get_node_ip_addresses(self):
+        """ Returns a list of all swarm node IP addresses """
+        ip_addresses = []
+        for node in self.docker_client.nodes.list():
+            status = node.attrs.get('Status', {})
+            ip_address = status.get('Addr')
+            if ip_address:
+                ip_addresses.append(ip_address)
+        return ip_addresses
+
 
 dal = DockerAccesLayer()
