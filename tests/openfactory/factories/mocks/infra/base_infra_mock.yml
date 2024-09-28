@@ -3,10 +3,14 @@
 nodes:
    managers:
 
-      manager1: 123.456.7.101
-      manager2: 123.456.7.102
+      manager1: 
+        ip: 123.456.7.101
+      manager2: 
+        ip: 123.456.7.102
 
    workers:
 
-      node1: 123.456.7.801
-      node2: 123.456.7.802
+      node1: 
+        ip: 123.456.7.801
+      node2:
+        ip: 123.456.7.802

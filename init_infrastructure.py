@@ -39,7 +39,7 @@ import docker.types
 import openfactory.config as config
 
 
-def get_manager_name(data):
+def get_manager_labels(data):
     """ get the name of the openfactory manager node """
 
     # Get IP address of host
@@ -48,12 +48,15 @@ def get_manager_name(data):
         ip_address = s.getsockname()[0]
 
     # Loop through managers to find the matching IP address
-    for manager_name, manager_ip in data['nodes']['managers'].items():
-        if manager_ip == ip_address:
-            return manager_name
+    for manager, details in data['nodes']['managers'].items():
+        if details['ip'] == ip_address:
+            labels = {'name': manager}
+            if 'labels' in details:
+                labels.update(details['labels'])
+            return labels
 
     # Return 'ofa_manager' if the IP address is not found
-    return 'ofa_manager'
+    return {'name': 'ofa_manager'}
 
 
 def ipam_config(network):
@@ -75,7 +78,7 @@ def ipam_config(network):
     return ipam_config
 
 
-def init_infrastructure(networks, manager_name):
+def init_infrastructure(networks, manager_labels):
     """ Initialize  infrastructure """
 
     # setup OPENFACTORY_MANAGER_NODE as the first swarm manager
@@ -83,7 +86,7 @@ def init_infrastructure(networks, manager_name):
     node_id = client.swarm.init(advertise_addr=config.OPENFACTORY_MANAGER_NODE)
     node = client.nodes.get(node_id)
     node_spec = node.attrs['Spec']
-    node_spec['Labels'] = {'name': manager_name}
+    node_spec['Labels'] = manager_labels
     node.update(node_spec)
 
     # replace the ingress network if needed
@@ -114,4 +117,4 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as stream:
         cfg = yaml.safe_load(stream)
 
-    init_infrastructure(cfg['networks'], get_manager_name(cfg))
+    init_infrastructure(cfg['networks'], get_manager_labels(cfg))

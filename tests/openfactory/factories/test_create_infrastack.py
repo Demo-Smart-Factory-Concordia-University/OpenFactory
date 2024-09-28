@@ -45,15 +45,15 @@ class Test_create_infrastack(TestCase):
     def test_add_label(self, *args):
         """ Test add_label """
         dal.docker_client.nodes.list = Mock(return_value=[mock_node])
-        add_label('192.168.1.1', 'mock_label')
+        add_label('some_node_name', {'ip': '192.168.1.1'})
 
-        expected_spec = {'Labels': {'name': 'mock_label'}}
+        expected_spec = {'Labels': {'name': 'some_node_name'}}
         mock_node.update.assert_called_once_with(expected_spec)
 
     def test_add_label_node_not_exist(self, *args):
         """ Test add_label when node does not exist """
         dal.docker_client.nodes.list = Mock(return_value=[mock_node])
-        add_label('192.168.1.11', 'mock_label')
+        add_label('some_node_name', {'ip': '192.168.1.111'})
 
         for node in dal.docker_client.nodes.list.return_value:
             node.update.assert_not_called()
@@ -64,8 +64,8 @@ class Test_create_infrastack(TestCase):
         Test setup of managers
         """
         managers = {
-            "manager1": "123.123.1.1",
-            "manager2": "123.123.2.2"
+            "manager1": {"ip": "123.123.1.1"},
+            "manager2": {"ip": "123.123.2.2"}
             }
         mock_config.OPENFACTORY_USER = 'mock_user'
         mock_dockerclient.info = Mock(return_value={})
@@ -83,11 +83,11 @@ class Test_create_infrastack(TestCase):
         Test if managers are labeled
         """
         managers = {
-            "manager1": "123.123.1.1"
+            "manager1": {"ip": "123.123.1.1", "labels": {"type": "ofa"}}
             }
         create_managers(managers)
 
-        mock_add_label.assert_called_with('123.123.1.1', 'manager1')
+        mock_add_label.assert_called_with('manager1', {"ip": "123.123.1.1", "labels": {"type": "ofa"}})
 
     @patch('openfactory.factories.create_infra.config')
     def test_create_workers(self, mock_config, mock_dockerclient):
@@ -95,8 +95,8 @@ class Test_create_infrastack(TestCase):
         Test setup of workers
         """
         workers = {
-            "worker1": "123.123.1.1",
-            "worker2": "123.123.2.2"
+            "worker1": {"ip": "123.123.1.1"},
+            "worker2": {"ip": "123.123.2.2"}
             }
         mock_config.OPENFACTORY_USER = 'mock_user'
         mock_dockerclient.info = Mock(return_value={})
@@ -114,11 +114,11 @@ class Test_create_infrastack(TestCase):
         Test if workers are labeled
         """
         workers = {
-            "worker1": "123.123.1.1"
+            "worker1": {"ip": "123.123.1.1", "labels": {"type": "ofa"}}
             }
         create_managers(workers)
 
-        mock_add_label.assert_called_with('123.123.1.1', 'worker1')
+        mock_add_label.assert_called_with('worker1', {"ip": "123.123.1.1", "labels": {"type": "ofa"}})
 
     @patch('openfactory.factories.create_infra.create_workers')
     @patch('openfactory.factories.create_infra.create_managers')
@@ -131,7 +131,7 @@ class Test_create_infrastack(TestCase):
         create_infrastack(config_file)
 
         # check if manager is setup correctly
-        mock_create_managers.assert_called_once_with({'manager1': '123.456.7.101', 'manager2': '123.456.7.102'})
+        mock_create_managers.assert_called_once_with({'manager1': {'ip': '123.456.7.101'}, 'manager2': {'ip': '123.456.7.102'}})
 
         # check if workers are setup correctly
-        mock_create_workers.assert_called_once_with({'node1': '123.456.7.801', 'node2': '123.456.7.802'})
+        mock_create_workers.assert_called_once_with({'node1': {'ip': '123.456.7.801'}, 'node2': {'ip': '123.456.7.802'}})

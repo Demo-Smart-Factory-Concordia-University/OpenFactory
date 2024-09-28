@@ -7,8 +7,9 @@ from openfactory.docker.docker_access_layer import dal
 
 def remove_workers(workers, node_ip_map):
     """ Remove worker nodes """
-    for name, ip in workers.items():
+    for name, details in workers.items():
         try:
+            ip = details['ip']
             if ip not in node_ip_map:
                 continue
 
