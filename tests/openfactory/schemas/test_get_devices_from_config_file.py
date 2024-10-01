@@ -30,7 +30,9 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         "port": 8081,
                         "device_xml": "xml2",
                         "adapter": {"ip": "1.2.3.4", "port": 9091},
-                        "deploy": {"replicas": 3, "resources": {"reservations": {"cpus": 2}, "limits": {"cpus": 4}}},
+                        "deploy": {"replicas": 3,
+                                   "resources": {"reservations": {"cpus": 2}, "limits": {"cpus": 4}},
+                                   "placement": {"constraints": ["type=ofa", "zone=factory1"]}},
                     }
                 },
                 "device3": {
@@ -57,7 +59,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'port': 8080,
                             'device_xml': 'xml1',
                             'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None, 'deploy': None},
-                            'deploy': {'replicas': 1, 'resources': None}
+                            'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
                         'runtime': None},
                     'device2': {
@@ -66,7 +68,9 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'port': 8081,
                             'device_xml': 'xml2',
                             'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None, 'deploy': None},
-                            'deploy': {'replicas': 3, 'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}}},
+                            'deploy': {'replicas': 3,
+                                       'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}},
+                                       'placement': {'constraints': ["type=ofa", "zone=factory1"]}},
                             },
                         'runtime': None,
                         },
@@ -76,8 +80,10 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'port': 8082,
                             'device_xml': 'xml3',
                             'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9092, 'environment': None,
-                                        'deploy': {'replicas': 3, 'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}}}},
-                            'deploy': {'replicas': 1, 'resources': None}
+                                        'deploy': {'replicas': 3,
+                                                   'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}},
+                                                   'placement': None}},
+                            'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
                         'runtime': None,
                         }

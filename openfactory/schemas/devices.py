@@ -24,9 +24,14 @@ class Resources(BaseModel):
     limits: ResourcesDefinition = None
 
 
+class Placement(BaseModel):
+    constraints: List[str] = None
+
+
 class Deploy(BaseModel):
     replicas: Optional[int] = Field(default=1)
     resources: Resources = None
+    placement: Placement = None
 
 
 class Adapter(BaseModel):
