@@ -25,3 +25,8 @@ devices:
       adapter:
         ip: adapter2.test.org
         port: 7879
+      deploy:
+        placement:
+          constraints:
+              - node.labels.type=ofa
+              - node.labels.zone=factory1

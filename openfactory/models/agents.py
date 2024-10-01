@@ -5,6 +5,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy import JSON
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -49,6 +50,7 @@ class Agent(Base):
     cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
     adapter_ip: Mapped[str] = mapped_column(String(80), doc="Adapter IP")
     adapter_port: Mapped[int] = mapped_column(Integer(), doc="Adapter port")
+    constraints: Mapped[dict] = mapped_column(JSON, default=[], doc="Placement constraints")
 
     # Kafka producer used to send messages
     kafka_producer = None
@@ -175,7 +177,8 @@ class Agent(Base):
             resources={
                 "Limits": {"NanoCPUs": int(1000000000*self.cpus_limit)},
                 "Reservations": {"NanoCPUs": int(1000000000*self.cpus_reservation)}
-                }
+                },
+            constraints=self.constraints
         )
 
     def deploy_producer(self):
@@ -188,6 +191,7 @@ class Agent(Base):
             env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
                  f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
                  f'MTC_AGENT={self.device_uuid.lower()}-agent:5000'],
+            constraints=self.constraints,
             networks=[config.OPENFACTORY_NETWORK]
         )
 

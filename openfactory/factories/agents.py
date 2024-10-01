@@ -54,6 +54,15 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         else:
             adapter_ip = device['agent']['adapter']['ip']
 
+        # compute placement constraints
+        placement_constraints = get_nested(device, ['agent', 'deploy', 'placement', 'constraints'])
+        if placement_constraints:
+            constraints = [
+                constraint.replace('=', ' == ') for constraint in placement_constraints
+                ]
+        else:
+            constraints = None
+
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
@@ -64,6 +73,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             cpus_limit=cpus_limit,
             adapter_ip=adapter_ip,
             adapter_port=device['agent']['adapter']['port'],
+            constraints=constraints
         )
         db_session.add_all([agent])
         db_session.commit()

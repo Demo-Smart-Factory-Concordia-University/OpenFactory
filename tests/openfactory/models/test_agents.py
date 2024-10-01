@@ -70,7 +70,8 @@ class TestAgent(TestCase):
                       agent_port=5000,
                       device_xml=xml_file,
                       adapter_ip='1.2.3.4',
-                      adapter_port=7878)
+                      adapter_port=7878,
+                      constraints=['node.labels.type == ofa'])
         db.session.add_all([agent])
         db.session.commit()
         return agent
@@ -429,7 +430,8 @@ class TestAgent(TestCase):
             resources={
                 "Limits": {"NanoCPUs": int(1000000000 * 1.0)},
                 "Reservations": {"NanoCPUs": int(1000000000 * 0.5)}
-            }
+            },
+            constraints=['node.labels.type == ofa']
         )
 
         # clean up
@@ -550,6 +552,7 @@ class TestAgent(TestCase):
                 'MTC_AGENT=test-agent:5000',
             ],
             networks=['mock_network'],
+            constraints=['node.labels.type == ofa']
         )
 
         # clean up

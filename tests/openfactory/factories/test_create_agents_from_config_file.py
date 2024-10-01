@@ -95,6 +95,7 @@ class Test_create_agents_from_config_file(TestCase):
         self.assertEqual(agent2.device_xml, xml_file)
         self.assertEqual(agent2.cpus_reservation, 0.5)
         self.assertEqual(agent2.cpus_limit, 1.0)
+        self.assertEqual(agent2.constraints, ['node.labels.type == ofa', 'node.labels.zone == factory1'])
 
         # clean-up
         self.cleanup()
