@@ -78,7 +78,20 @@ def ipam_config(network):
     return ipam_config
 
 
-def init_infrastructure(networks, manager_labels):
+def create_volume(client, volume_name, driver_opts):
+    """ create a docker volume """
+    try:
+        client.volumes.create(
+            name=volume_name,
+            driver="local",
+            driver_opts=driver_opts
+        )
+        print(f"Volume '{volume_name}' created successfully")
+    except docker.errors.APIError as e:
+        print(f"Error creating volume: {e}")
+
+
+def init_infrastructure(networks, manager_labels, volumes):
     """ Initialize  infrastructure """
 
     # setup OPENFACTORY_MANAGER_NODE as the first swarm manager
@@ -88,6 +101,7 @@ def init_infrastructure(networks, manager_labels):
     node_spec = node.attrs['Spec']
     node_spec['Labels'] = manager_labels
     node.update(node_spec)
+    print("Initial node created successfully")
 
     # replace the ingress network if needed
     if 'docker-ingress-network' in networks:
@@ -99,6 +113,7 @@ def init_infrastructure(networks, manager_labels):
             ingress=True,
             ipam=ipam_config(networks['docker-ingress-network'])
         )
+        print("Docker ingress network created successfully")
 
     # create the openfactory-network
     client.networks.create(
@@ -107,6 +122,12 @@ def init_infrastructure(networks, manager_labels):
         attachable=True,
         ipam=ipam_config(networks['openfactory-network'])
     )
+    print(f"Network '{config.OPENFACTORY_NETWORK}' created successfully.")
+
+    # create docker volumes
+    for volume_name, volume_config in volumes.items():
+        driver_opts = volume_config.get('driver_opts', {})
+        create_volume(client, volume_name, driver_opts)
 
 
 if __name__ == '__main__':
@@ -117,4 +138,4 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as stream:
         cfg = yaml.safe_load(stream)
 
-    init_infrastructure(cfg['networks'], get_manager_labels(cfg))
+    init_infrastructure(cfg['networks'], get_manager_labels(cfg), cfg.get('volumes', {}))
