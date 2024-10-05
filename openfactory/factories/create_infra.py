@@ -57,7 +57,7 @@ def create_workers(workers):
             client.swarm.join([dal.ip], join_token=dal.worker_token)
             add_label(worker, details)
             user_notify.success(f'Node "{worker} ({ip})" setup')
-        except (gaierror, paramiko.ssh_exception.NoValidConnectionsError, docker.errors.APIError) as err:
+        except (gaierror, paramiko.ssh_exception.NoValidConnectionsError, docker.errors.APIError, docker.errors.DockerException) as err:
             user_notify.fail(f'Node "{worker}" could not be setup - {err}')
 
 
@@ -69,5 +69,8 @@ def create_infrastack(stack_config_file):
     # Load yaml description file
     infra = load_yaml(stack_config_file)
 
-    create_managers(infra['nodes']['managers'])
-    create_workers(infra['nodes']['workers'])
+    if 'nodes' in infra:
+        if 'managers' in infra['nodes']:
+            create_managers(infra['nodes']['managers'])
+        if 'workers' in infra['nodes']:
+            create_workers(infra['nodes']['workers'])
