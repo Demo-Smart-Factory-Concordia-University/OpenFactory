@@ -558,22 +558,6 @@ class TestAgent(TestCase):
         # clean up
         self.cleanup()
 
-    def test_attached(self, *args):
-        """
-        Test hybrid_property 'attached'
-        """
-        agent = self.setup_agent()
-
-        # check attached property
-        mock.docker_services.get.side_effect = docker.errors.NotFound('mock no producer service')
-        self.assertEqual(agent.attached, 'no')
-
-        mock.docker_services.get.side_effect = None
-        self.assertEqual(agent.attached, 'yes')
-
-        # clean-up
-        self.cleanup()
-
     def test_services_removed(self, *args):
         """
         Test if Kafka producer and agent services are removed when agent deleted

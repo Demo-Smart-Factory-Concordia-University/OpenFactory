@@ -131,16 +131,6 @@ class Agent(Base):
         else:
             return "stopped"
 
-    @hybrid_property
-    def attached(self):
-        """ Kafka producer attached or not """
-        client = dal.docker_client
-        try:
-            client.services.get(self.device_uuid.lower() + '-agent')
-            return "yes"
-        except docker.errors.NotFound:
-            return "no"
-
     def load_device_xml(self):
         """ Loads device xml model from source based on xml model uri """
         xml_model = ""
