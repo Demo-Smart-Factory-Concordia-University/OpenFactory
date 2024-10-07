@@ -127,9 +127,9 @@ class Agent(Base):
         except docker.errors.APIError as err:
             return f"docker error {err}"
         if task:
-            return task['Status']['State']
+            return str(task['Status']['State']).capitalize()
         else:
-            return "stopped"
+            return "Stopped"
 
     def load_device_xml(self):
         """ Loads device xml model from source based on xml model uri """

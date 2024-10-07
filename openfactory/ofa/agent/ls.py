@@ -9,6 +9,6 @@ from openfactory.ofa.db import db
 def ls():
     """ List MTConnect agents defined in OpenFactory """
     agents = select(Agent)
-    print('UUID                      URL             PORT     STATUS         ATTACHED')
+    print('UUID                      NODE                      PORT     STATUS')
     for agent in db.session.scalars(agents):
-        print(f'{agent.uuid:25} {agent.agent_url:15} {agent.agent_port:<8d} {agent.status:7}        {agent.attached}')
+        print(f'{agent.uuid:25} {agent.node:25} {agent.agent_port:<8d} {agent.status:7}')
