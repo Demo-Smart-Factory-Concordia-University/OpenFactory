@@ -13,7 +13,7 @@ OPENFACTORY_NETWORK: factory-net
 SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
 
 # Kafka-Cluster
-KAFKA_BROKER: broker:29092
+KAFKA_BROKER: ${KAFKA_BROKER}
 
 # ksqlDB server
 KSQLDB: http://ksqldb-server:8088
