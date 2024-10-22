@@ -96,7 +96,11 @@ def init_infrastructure(networks, manager_labels, volumes):
 
     # setup OPENFACTORY_MANAGER_NODE as the first swarm manager
     client = docker.from_env()
-    node_id = client.swarm.init(advertise_addr=config.OPENFACTORY_MANAGER_NODE)
+    try:
+        node_id = client.swarm.init(advertise_addr=config.OPENFACTORY_MANAGER_NODE)
+    except docker.errors.APIError as err:
+        print(f"Could not initalize the OpenFactory manager node on this machine\n{err}")
+        exit(1)
     node = client.nodes.get(node_id)
     node_spec = node.attrs['Spec']
     node_spec['Labels'] = manager_labels
