@@ -5,7 +5,7 @@ import paramiko.ssh_exception
 from socket import gaierror
 from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
-from openfactory.utils import load_yaml
+from openfactory.schemas.infra import get_infrastructure_from_config_file
 
 
 def add_label(node_name, node_details):
@@ -67,7 +67,7 @@ def create_infrastack(stack_config_file):
     """
 
     # Load yaml description file
-    infra = load_yaml(stack_config_file)
+    infra = get_infrastructure_from_config_file(stack_config_file)
 
     if 'nodes' in infra:
         if 'managers' in infra['nodes']:

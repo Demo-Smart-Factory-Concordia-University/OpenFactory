@@ -1,6 +1,6 @@
 import docker
 import openfactory.config as config
-from openfactory.utils import load_yaml
+from openfactory.schemas.infra import get_infrastructure_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.docker.docker_access_layer import dal
 
@@ -39,7 +39,7 @@ def remove_infrastack(stack_config_file):
     Tear down an infrastructure stack based on a config file
     """
     # Load yaml description file
-    stack = load_yaml(stack_config_file)
+    stack = get_infrastructure_from_config_file(stack_config_file)
 
     # map nodes by IP
     node_ip_map = {
