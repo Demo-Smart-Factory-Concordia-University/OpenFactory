@@ -33,10 +33,10 @@ networks:
 
 import socket
 import sys
-import yaml
 import docker
 import docker.types
 import openfactory.config as config
+from openfactory.schemas.infra import get_infrastructure_from_config_file
 
 
 def get_manager_labels(data):
@@ -130,7 +130,10 @@ def init_infrastructure(networks, manager_labels, volumes):
 
     # create docker volumes
     for volume_name, volume_config in volumes.items():
-        driver_opts = volume_config.get('driver_opts', {})
+        if volume_config:
+            driver_opts = volume_config.get('driver_opts', {})
+        else:
+            driver_opts = {}
         create_volume(client, volume_name, driver_opts)
 
 
@@ -139,7 +142,11 @@ if __name__ == '__main__':
         print("Usage: python init_infrastructure.py <infrastructure_config_file>")
         sys.exit(1)
 
-    with open(sys.argv[1], 'r') as stream:
-        cfg = yaml.safe_load(stream)
+    cfg = get_infrastructure_from_config_file(sys.argv[1])
+
+    if 'openfactory-network' not in cfg['networks']:
+        print("Could not initialise the OpenFactory infrastructure.")
+        print("The network 'openfactory-network' has to be defined.")
+        exit(1)
 
     init_infrastructure(cfg['networks'], get_manager_labels(cfg), cfg.get('volumes', {}))
