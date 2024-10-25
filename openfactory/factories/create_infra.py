@@ -20,7 +20,7 @@ def add_label(node_name, node_details):
 
     # add labels
     labels = {'name': node_name}
-    if 'labels' in node_details:
+    if node_details['labels']:
         labels.update(node_details['labels'])
     node_spec = node.attrs['Spec']
     node_spec['Labels'] = labels
