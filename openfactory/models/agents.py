@@ -45,6 +45,7 @@ class Agent(Base):
     uuid: Mapped[str] = mapped_column(String(30), unique=True, doc="Agent UUID")
     external: Mapped[bool] = mapped_column(Boolean, default=False)
     device_xml: Mapped[str] = mapped_column(Text, doc="URI to device xml model")
+    agent_ip: Mapped[str] = mapped_column(String(80), default="", doc="External agent IP")
     agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
     cpus_reservation: Mapped[int] = mapped_column(Integer(), default=0.5, doc="Minimal number of cpus required by deployed service")
     cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
@@ -95,7 +96,7 @@ class Agent(Base):
     def node(self):
         """ Swarm node where agent is deployed """
         if self.external:
-            return "TO BE DONE"
+            return "External agent"
 
         client = dal.docker_client
         try:
@@ -120,7 +121,7 @@ class Agent(Base):
     def status(self):
         """ Status of agent """
         if self.external:
-            return "TO BE DONE"
+            return "External"
 
         try:
             task = self.top_task

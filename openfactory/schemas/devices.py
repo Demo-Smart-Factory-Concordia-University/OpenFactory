@@ -51,10 +51,26 @@ class Adapter(BaseModel):
 
 
 class Agent(BaseModel):
+    ip: str = None
     port: int
-    device_xml: str
-    adapter: Adapter
+    device_xml: str = None
+    adapter: Optional[Adapter] = None
     deploy: Optional[Deploy] = None
+
+    @classmethod
+    def validate(cls, values):
+        ip = values.get('ip')
+        adapter = values.get('adapter')
+        if (ip is None):
+            if values.get('device_xml') is None:
+                raise ValueError("'device_xml' is missing")
+            if adapter is None:
+                raise ValueError("'adapter' definition is missing")
+        else:
+            if adapter:
+                raise ValueError("'adapter' can not be defined for an external agent")
+            if values.get('device_xml'):
+                raise ValueError("'device_xml' can not be defined for an external agent")
 
 
 class Device(BaseModel):
@@ -88,6 +104,12 @@ class DevicesConfig(BaseModel):
 
     def validate_devices(self):
         for device_name, device_data in self.devices_dict.items():
+            if device_data['agent']['ip']:
+                if device_data['agent']['device_xml']:
+                    raise ValueError("'device_xml' can not be defined for an external agent")
+                if device_data['agent']['adapter']:
+                    raise ValueError("'adapter' can not be defined for an external agent")
+                return
             adapter = device_data['agent']['adapter']
             ip = adapter.get('ip')
             image = adapter.get('image')

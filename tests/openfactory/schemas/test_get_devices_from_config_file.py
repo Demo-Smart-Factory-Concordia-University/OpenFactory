@@ -56,6 +56,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                     'device1': {
                         'uuid': 'uuid1',
                         'agent': {
+                            "ip": None,
                             'port': 8080,
                             'device_xml': 'xml1',
                             'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None, 'deploy': None},
@@ -65,6 +66,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                     'device2': {
                         'uuid': 'uuid2',
                         'agent': {
+                            "ip": None,
                             'port': 8081,
                             'device_xml': 'xml2',
                             'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9091, 'environment': None, 'deploy': None},
@@ -77,6 +79,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                     'device3': {
                         'uuid': 'uuid3',
                         'agent': {
+                            "ip": None,
                             'port': 8082,
                             'device_xml': 'xml3',
                             'adapter': {'ip': '1.2.3.4', 'image': None, 'port': 9092, 'environment': None,
