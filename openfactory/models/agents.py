@@ -9,7 +9,6 @@ from sqlalchemy import JSON
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-from sqlalchemy.exc import PendingRollbackError
 from pyksql.ksql import KSQL
 from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
@@ -175,13 +174,17 @@ class Agent(Base):
     def deploy_producer(self):
         """ Deploy Kafka producer on Docker swarm cluster """
         client = dal.docker_client
+        if self.external:
+            MTC_AGENT = f"{self.agent_ip}:{self.agent_port}"
+        else:
+            MTC_AGENT = f'{self.device_uuid.lower()}-agent:5000'
         client.services.create(
             image=config.MTCONNECT_PRODUCER_IMAGE,
             name=self.device_uuid.lower() + '-producer',
             mode={"Replicated": {"Replicas": 1}},
             env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
                  f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
-                 f'MTC_AGENT={self.device_uuid.lower()}-agent:5000'],
+                 f'MTC_AGENT={MTC_AGENT}'],
             constraints=self.constraints,
             networks=[config.OPENFACTORY_NETWORK]
         )
@@ -227,7 +230,7 @@ class Agent(Base):
         # create producer
         try:
             self.deploy_producer()
-        except (PendingRollbackError, SSHException) as err:
+        except SSHException as err:
             raise OFAException(f'Kafka producer for agent {self.device_uuid} could not be created. Error was: {err}')
 
         user_notify.success(f'Kafka producer {self.producer_uuid} started successfully')

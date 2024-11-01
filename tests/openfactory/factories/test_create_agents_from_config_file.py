@@ -100,6 +100,25 @@ class Test_create_agents_from_config_file(TestCase):
         # clean-up
         self.cleanup()
 
+    def test_create_external_agent(self, *args):
+        """
+        Test if an external agent is created correctly
+        """
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'mocks/mock_external_agent.yml')
+        create_agents_from_config_file(db.session, config_file)
+
+        # check agent was created correctly
+        query = select(Agent).where(Agent.uuid == "TEST-EXT-AGENT-AGENT")
+        agent = db.session.execute(query).first()
+        agent_ext = agent[0]
+        self.assertEqual(agent_ext.agent_port, 5555)
+        self.assertEqual(agent_ext.agent_ip, '10.0.0.21')
+        self.assertEqual(agent_ext.external, True)
+
+        # clean-up
+        self.cleanup()
+
     @patch("openfactory.models.agents.Agent.start")
     def test_create_agents_run(self, mock_start, *args):
         """

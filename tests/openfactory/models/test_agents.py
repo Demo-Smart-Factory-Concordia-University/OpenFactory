@@ -76,6 +76,22 @@ class TestAgent(TestCase):
         db.session.commit()
         return agent
 
+    def setup_external_agent(self, *args):
+        """
+        Setup an external agent
+        """
+        agent = Agent(uuid='EXT-AGENT',
+                      external=True,
+                      agent_ip='1.2.3.4',
+                      agent_port=5555,
+                      device_xml='',
+                      adapter_ip='',
+                      adapter_port=0,
+                      constraints=['node.labels.type == ofa'])
+        db.session.add_all([agent])
+        db.session.commit()
+        return agent
+
     def cleanup(self, *args):
         """
         Clean up all agents and nodes
@@ -550,6 +566,35 @@ class TestAgent(TestCase):
                 'KAFKA_BROKER=mock_broker',
                 'KAFKA_PRODUCER_UUID=TEST-PRODUCER',
                 'MTC_AGENT=test-agent:5000',
+            ],
+            networks=['mock_network'],
+            constraints=['node.labels.type == ofa']
+        )
+
+        # clean up
+        self.cleanup()
+
+    @patch("openfactory.models.agents.config")
+    def test_deploy_producer_external_agent(self, mock_config, *args):
+        """
+        Test creation of Docker swarm service for producer of an external agent
+        """
+
+        mock_config.MTCONNECT_PRODUCER_IMAGE = 'mock_producer_image'
+        mock_config.KAFKA_BROKER = 'mock_broker'
+        mock_config.OPENFACTORY_NETWORK = 'mock_network'
+
+        agent = self.setup_external_agent()
+        agent.deploy_producer()
+
+        mock.docker_services.create.assert_called_once_with(
+            image='mock_producer_image',
+            name='ext-producer',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[
+                'KAFKA_BROKER=mock_broker',
+                'KAFKA_PRODUCER_UUID=EXT-PRODUCER',
+                'MTC_AGENT=1.2.3.4:5555',
             ],
             networks=['mock_network'],
             constraints=['node.labels.type == ofa']

@@ -41,18 +41,30 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
         cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], '1')
 
-        # compute device device xml uri
-        device_xml_uri = device['agent']['device_xml']
-        protocol, _ = split_protocol(device_xml_uri)
-        if not protocol:
-            if not os.path.isabs(device_xml_uri):
-                device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
-
-        # compute adapter IP
-        if device['agent']['adapter']['image']:
-            adapter_ip = device['uuid'].lower() + '-adapter'
+        # check if it is an external agent
+        if device['agent']['ip']:
+            agent_ip = device['agent']['ip']
+            external = True
+            device_xml_uri = ""
+            adapter_ip = ""
+            adapter_port = ""
         else:
-            adapter_ip = device['agent']['adapter']['ip']
+            agent_ip = ""
+            external = False
+
+            # compute device device xml uri
+            device_xml_uri = device['agent']['device_xml']
+            protocol, _ = split_protocol(device_xml_uri)
+            if not protocol:
+                if not os.path.isabs(device_xml_uri):
+                    device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
+
+            # compute adapter IP
+            if device['agent']['adapter']['image']:
+                adapter_ip = device['uuid'].lower() + '-adapter'
+            else:
+                adapter_ip = device['agent']['adapter']['ip']
+            adapter_port = device['agent']['adapter']['port']
 
         # compute placement constraints
         placement_constraints = get_nested(device, ['agent', 'deploy', 'placement', 'constraints'])
@@ -66,17 +78,26 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         # configure agent
         agent = Agent(
             uuid=device['uuid'].upper() + '-AGENT',
-            external=False,
+            external=external,
             device_xml=device_xml_uri,
+            agent_ip=agent_ip,
             agent_port=device['agent']['port'],
             cpus_reservation=cpus_reservation,
             cpus_limit=cpus_limit,
             adapter_ip=adapter_ip,
-            adapter_port=device['agent']['adapter']['port'],
+            adapter_port=adapter_port,
             constraints=constraints
         )
         db_session.add_all([agent])
         db_session.commit()
+
+        if external:
+            if run:
+                try:
+                    agent.attach()
+                except OFAException as err:
+                    user_notify.fail(f"Could not attach {device['uuid'].upper()}-AGENT\nError was: {err}")
+            continue
 
         # configure adapter
         if device['agent']['adapter']['image']:
