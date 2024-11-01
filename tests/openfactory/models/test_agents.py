@@ -510,7 +510,7 @@ class TestAgent(TestCase):
         Test hybrid_property 'status'
         """
         agent = self.setup_agent()
-        self.assertEqual(agent.status, 'some state')
+        self.assertEqual(agent.status, 'Some state')
 
         # clean-up
         self.cleanup()
@@ -523,7 +523,7 @@ class TestAgent(TestCase):
 
         # check container satus when service does not exist
         dal.docker_client.services.get.side_effect = docker.errors.NotFound('mock no service running')
-        self.assertEqual(agent.status, 'stopped')
+        self.assertEqual(agent.status, 'Stopped')
 
         # clean-up
         dal.docker_client.services.get.side_effect = None
