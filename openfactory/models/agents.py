@@ -95,7 +95,7 @@ class Agent(Base):
     def node(self):
         """ Swarm node where agent is deployed """
         if self.external:
-            return "External agent"
+            return f"External agent ({self.agent_ip})"
 
         client = dal.docker_client
         try:
