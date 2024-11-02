@@ -42,12 +42,20 @@ class Test_create_infrastack(TestCase):
         """ Reset mocks """
         mock_node.update.reset_mock()
 
-    def test_add_label(self, *args):
-        """ Test add_label """
+    def test_add_label_no_label(self, *args):
+        """ Test add_label when no explicit label is added """
         dal.docker_client.nodes.list = Mock(return_value=[mock_node])
         add_label('some_node_name', {'ip': '192.168.1.1'})
 
         expected_spec = {'Labels': {'name': 'some_node_name'}}
+        mock_node.update.assert_called_once_with(expected_spec)
+
+    def test_add_label(self, *args):
+        """ Test add_label for some label """
+        dal.docker_client.nodes.list = Mock(return_value=[mock_node])
+        add_label('some_node_name', {'ip': '192.168.1.1', 'labels': {'type': 'ofa'}})
+
+        expected_spec = {'Labels': {'name': 'some_node_name', 'type': 'ofa'}}
         mock_node.update.assert_called_once_with(expected_spec)
 
     def test_add_label_node_not_exist(self, *args):
