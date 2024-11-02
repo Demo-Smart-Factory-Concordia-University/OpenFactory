@@ -58,3 +58,21 @@ The architecture supporting *OpenFactory* is organized into five distinct layers
 ## Distributed Architecture
 
 *OpenFactory* operates on a distributed architecture, ensuring that components can be spread across multiple nodes in a network. This distribution enhances performance by allowing parallel processing of data streams and improves reliability through redundancy. By decentralizing resource management and processing, *OpenFactory* can efficiently handle large volumes of data from multiple devices.
+
+## Alignment with RAMI 4.0
+
+OpenFactory follows the principles of the [RAMI 4.0 framework](https://www.sci40.com/english/thematic-fields/rami4-0/) through its structured architecture, integrating devices within a digital manufacturing environment. The following outlines how OpenFactory relates to the three axes of RAMI 4.0: Layers, Value Stream, and Lifecycle.
+
+### Layers
+OpenFactory adheres to the RAMI 4.0 framework by integrating its functionality across the following layers, ensuring comprehensive data management and processing within a manufacturing context:
+- **Asset Layer**: OpenFactory integrates various devices and sensors, forming the basis of the perception layer essential for data collection.
+- **Integration Layer**: The connection layer facilitates communication between diverse devices, ensuring seamless data exchange.
+- **Communication Layer**: Data streaming via Kafka adheres to standardized communication principles, enhancing interoperability.
+- **Information Layer**: Real-time processing with ksqlDB provides actionable insights, transforming collected data into useful information.
+- **Business Layer**: The application layer supports analytics and reporting, driving data-informed decision-making and operational efficiency.
+
+### Value Stream
+OpenFactory addresses the Value Stream axis of RAMI 4.0 by enabling the seamless flow of data from manufacturing devices into Kafka, allowing for real-time processing and analysis. This infrastructure transforms raw data into actionable insights that drive efficiency and informed decision-making. The microservices architecture supports various applications that utilize this data for analytics, reporting, and machine learning, ensuring that valuable information contributes to optimizing processes within the manufacturing environment. By leveraging Infrastructure as Code (IaC) and offering hybrid deployment options, OpenFactory enhances interoperability and efficiency, contributing to the goals of Industry 4.0.
+
+### Lifecycle
+OpenFactory provides the necessary foundation to contribute to effective lifecycle management by enabling coherent data collection and organization. This capability allows relevant information to be stored and accessed, facilitating insights that optimize asset performance throughout their lifecycle.
