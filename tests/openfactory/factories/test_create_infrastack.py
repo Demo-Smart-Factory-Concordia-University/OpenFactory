@@ -1,8 +1,8 @@
 import os
 from unittest import TestCase
 from unittest.mock import patch, Mock, call
-from ipaddress import IPv4Address
 import tests.mocks as mock
+
 from openfactory.docker.docker_access_layer import dal
 from openfactory.factories import create_infrastack
 from openfactory.factories.create_infra import add_label, create_managers, create_workers
@@ -139,9 +139,9 @@ class Test_create_infrastack(TestCase):
         create_infrastack(config_file)
 
         # check if manager is setup correctly
-        mock_create_managers.assert_called_once_with({'manager1': {'ip': IPv4Address('192.168.123.100'), 'labels': None},
-                                                      'manager2': {'ip': IPv4Address('192.168.123.101'), 'labels': None}})
+        mock_create_managers.assert_called_once_with({'manager1': {'ip': '192.168.123.100', 'labels': None},
+                                                      'manager2': {'ip': '192.168.123.101', 'labels': None}})
 
         # check if workers are setup correctly
-        mock_create_workers.assert_called_once_with({'node1': {'ip': IPv4Address('192.168.123.111'), 'labels': None},
-                                                     'node2': {'ip': IPv4Address('192.168.123.112'), 'labels': None}})
+        mock_create_workers.assert_called_once_with({'node1': {'ip': '192.168.123.111', 'labels': None},
+                                                     'node2': {'ip': '192.168.123.112', 'labels': None}})
