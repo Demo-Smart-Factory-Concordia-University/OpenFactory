@@ -1,16 +1,15 @@
 # Mock for an OpenFactory infrastructure config file
 
 nodes:
-   managers:
+  managers:
+    manager1: 
+      ip: 192.168.123.100
+    manager2: 
+      ip: 192.168.123.101
 
-      manager1: 
-        ip: 123.456.7.101
-      manager2: 
-        ip: 123.456.7.102
+  workers:
+    node1:
+      ip: 192.168.123.111
 
-   workers:
-
-      node1: 
-        ip: 123.456.7.801
-      node2:
-        ip: 123.456.7.802
+    node2:
+      ip: 192.168.123.112
