@@ -3,9 +3,6 @@
 [![Unit tests](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml)
 
 
-Here’s the revised README with more straightforward language and less commercial phrasing:
-**OpenFactory** is a distributed cluster designed for seamless integration of manufacturing devices, enabling data to be streamed efficiently to Kafka. It provides an adaptable infrastructure to interface both MTConnect-enabled and retrofitted devices, using adapters when necessary.
-
 ## Key Features
 
 - **Device Integration**: Supports both MTConnect-enabled devices directly and non-enabled devices via adapters, providing flexibility in connecting diverse equipment.
