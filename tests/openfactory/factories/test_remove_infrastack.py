@@ -11,7 +11,7 @@ from openfactory.factories import remove_infrastack
 mock_node = Mock()
 mock_node.id = 'mock_id'
 mock_node.attrs = {
-    'Status': {'Addr': '123.456.7.801'},
+    'Status': {'Addr': '192.168.123.111'},
     'Spec': {'Labels': {}}
 }
 mock_node.update = Mock()
@@ -47,7 +47,7 @@ class Test_remove_infrastack(TestCase):
 
         # remove stack
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                   'mocks/infra/base_infra_mock.yml')
+                                   'mocks/infra/single_mock.yml')
         remove_infrastack(config_file)
 
         # check if node gets drained
@@ -59,5 +59,5 @@ class Test_remove_infrastack(TestCase):
         dal.docker_client.api.remove_node.assert_called_once_with('mock_id', force=True)
 
         # leave swarm cluster on node to be removed
-        mock_docker_client.assert_called_once_with(base_url='ssh://mock_user@123.456.7.801')
+        mock_docker_client.assert_called_once_with(base_url='ssh://mock_user@192.168.123.111')
         mock.docker_client.swarm.leave.assert_called_once_with()
