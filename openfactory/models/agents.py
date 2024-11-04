@@ -3,6 +3,7 @@ import docker.errors
 from sqlalchemy import event
 from sqlalchemy import Boolean
 from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import JSON
@@ -46,11 +47,11 @@ class Agent(Base):
     device_xml: Mapped[str] = mapped_column(Text, doc="URI to device xml model")
     agent_ip: Mapped[str] = mapped_column(String(80), default="", doc="External agent IP")
     agent_port: Mapped[int] = mapped_column(Integer(), doc="Public port of agent")
-    cpus_reservation: Mapped[int] = mapped_column(Integer(), default=0.5, doc="Minimal number of cpus required by deployed service")
-    cpus_limit: Mapped[int] = mapped_column(Integer(), default=1.0, doc="Maximal number of cpus used by deployed service")
+    cpus_reservation: Mapped[float] = mapped_column(Float(), default=0.5, doc="Minimal number of cpus required by deployed service")
+    cpus_limit: Mapped[float] = mapped_column(Float(), default=1.0, doc="Maximal number of cpus used by deployed service")
     adapter_ip: Mapped[str] = mapped_column(String(80), doc="Adapter IP")
     adapter_port: Mapped[int] = mapped_column(Integer(), doc="Adapter port")
-    constraints: Mapped[dict] = mapped_column(JSON, default=[], doc="Placement constraints")
+    constraints: Mapped[dict] = mapped_column(JSON, default=dict, doc="Placement constraints")
 
     # Kafka producer used to send messages
     kafka_producer = None
