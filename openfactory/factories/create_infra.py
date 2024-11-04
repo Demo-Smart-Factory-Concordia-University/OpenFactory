@@ -70,7 +70,7 @@ def create_infrastack(stack_config_file):
     infra = get_infrastructure_from_config_file(stack_config_file)
 
     if 'nodes' in infra:
-        if 'managers' in infra['nodes']:
+        if infra['nodes']['managers']:
             create_managers(infra['nodes']['managers'])
-        if 'workers' in infra['nodes']:
+        if infra['nodes']['workers']:
             create_workers(infra['nodes']['workers'])
