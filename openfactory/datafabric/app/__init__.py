@@ -13,13 +13,12 @@ from openfactory.models.base import Base
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
 from openfactory.datafabric.app.admin.agentview import AgentView
-from openfactory.datafabric.app.admin.composeview import ComposeProjectView
 
 
 db = SQLAlchemy(model_class=Base)
 admin = Admin(name='DataFabric', template_mode='bootstrap3')
 
-def create_app(config_class=Config):
+def create_app():
     app = Flask(__name__,
                 instance_path=Config.INSTANCE_PATH)
     app.config.from_object(Config)
@@ -34,7 +33,16 @@ def create_app(config_class=Config):
     # Docker access layer
     dal.connect()
 
+    # Initialize extensions with the app context
     db.init_app(app)
+    admin.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+
+    # admin app
+    admin.add_view(ModelView(ofamodels.Configuration, db.session))
+    admin.add_view(AgentView(ofamodels.Agent, db.session))
 
     # main blueprint
     from openfactory.datafabric.app.main import create_bp as create_main_bp
@@ -51,14 +59,8 @@ def create_app(config_class=Config):
     # services blueprint
     from openfactory.datafabric.app.services import create_bp as create_services_bp
     create_services_bp(app)
-
-    # admin app
-    admin.init_app(app)
-    admin.add_view(ModelView(ofamodels.Configuration, db.session))
-    admin.add_view(AgentView(ofamodels.Agent, db.session))
     
     return app
 
 import openfactory.models as ofamodels
-import openfactory.datafabric.app.main.models
 import openfactory.datafabric.app.auth.models
