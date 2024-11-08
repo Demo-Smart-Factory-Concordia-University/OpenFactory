@@ -1,15 +1,32 @@
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.form import SecureForm
-from wtforms import PasswordField
+from flask_wtf import FlaskForm
+from wtforms import PasswordField, StringField
+from wtforms.validators import DataRequired, ValidationError
+from openfactory.datafabric.app import db
+from openfactory.datafabric.app.auth.models.users import User
 
 
-class UserAdmin(ModelView):
-    """ Admin View of users """
-    form_base_class = SecureForm
-    form_excluded_columns = ('password_hash')
-    form_extra_fields = {
-        'password': PasswordField('Password')
-    }
+# Validators
+def unique_username_validator(form, field):
+    if db.session.query(User).filter_by(username=field.data).first():
+        raise ValidationError("This username already exists. Please choose a different one.")
+
+
+class UserForm(FlaskForm):
+    """
+    Custom form class for User
+    """
+    username = StringField('Username', validators=[DataRequired(), unique_username_validator])
+    fullname = StringField('Full Name', validators=[DataRequired()])
+    password = PasswordField('Password')
+
+
+class UserModelView(ModelView):
+    """
+    Admin View of users
+    """
+
+    form = UserForm
 
     column_exclude_list = ['password_hash', ]
 
