@@ -7,16 +7,12 @@ from pathlib import Path
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
-
 from openfactory.models.base import Base
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
-from openfactory.datafabric.app.admin.agentview import AgentView
-
 
 db = SQLAlchemy(model_class=Base)
-admin = Admin(name='DataFabric', template_mode='bootstrap3')
+admin_app = Admin(name='DataFabric', template_mode='bootstrap3')
 
 def create_app():
     app = Flask(__name__,
@@ -35,14 +31,19 @@ def create_app():
 
     # Initialize extensions with the app context
     db.init_app(app)
-    admin.init_app(app)
+    admin_app.init_app(app)
 
     with app.app_context():
         db.create_all()
 
-    # admin app
-    admin.add_view(ModelView(ofamodels.Configuration, db.session))
-    admin.add_view(AgentView(ofamodels.Agent, db.session))
+    # admin app views
+    from openfactory.datafabric.app.admin.configurationview import ConfigurationModelView
+    from openfactory.models.configurations import Configuration
+    admin_app.add_view(ConfigurationModelView(Configuration, db.session))
+
+    from openfactory.models.agents import Agent
+    from openfactory.datafabric.app.admin.agentview import AgentView
+    admin_app.add_view(AgentView(Agent, db.session))
 
     # main blueprint
     from openfactory.datafabric.app.main import create_bp as create_main_bp
@@ -62,5 +63,4 @@ def create_app():
     
     return app
 
-import openfactory.models as ofamodels
 import openfactory.datafabric.app.auth.models

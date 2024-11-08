@@ -3,7 +3,7 @@ Authentification blueprint
 """
 from flask import Blueprint
 from flask_login import LoginManager
-from openfactory.datafabric.app import admin
+from openfactory.datafabric.app import admin_app
 from openfactory.datafabric.app import db
 from .models.users import User
 from .views.useradmin import UserModelView
@@ -23,7 +23,7 @@ auth_blueprint = Blueprint('auth', __name__,
 def create_bp(app):
     """ Blueprint factory """
     # register models to admin app
-    admin.add_view(UserModelView(User, db.session))
+    admin_app.add_view(UserModelView(User, db.session))
 
     # configure LoginManager
     login.login_view = 'auth.login'
