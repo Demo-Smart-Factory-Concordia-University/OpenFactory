@@ -5,7 +5,9 @@ class AgentView(ModelView):
     """
     Admin View for Agent Model
     """
-    form_columns = ['uuid', 'agent_port']
+    can_create = False
+    can_edit = False
+
     column_list = ['uuid', 'device_uuid', 'device_xml', 'agent_ip', 'agent_port',
                    'adapter_ip', 'adapter_port',
                    'cpus_reservation', 'cpus_limit',
