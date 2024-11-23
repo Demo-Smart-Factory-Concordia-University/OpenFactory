@@ -283,21 +283,27 @@ class Agent(Base):
     def create_ksqldb_tables(self):
         """ Create ksqlDB tables related to the agent """
         ksql = KSQL(config.KSQLDB)
+        # device table
         ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.device_uuid.replace('-', '_')} AS
                                       SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
+                                             LATEST_BY_OFFSET(value) AS value,
+                                             LATEST_BY_OFFSET(type) AS type
                                       FROM devices_stream
                                       WHERE device_uuid = '{self.device_uuid}'
                                       GROUP BY id;""")
+        # agent table
         ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.uuid.upper().replace('-', '_')} AS
                                       SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
+                                             LATEST_BY_OFFSET(value) AS value,
+                                             LATEST_BY_OFFSET(type) AS type
                                       FROM devices_stream
                                       WHERE device_uuid = '{self.uuid}'
                                       GROUP BY id;""")
+        # producer table
         ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.producer_uuid.replace('-', '_')} AS
                                       SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value
+                                             LATEST_BY_OFFSET(value) AS value,
+                                             LATEST_BY_OFFSET(type) AS type
                                       FROM devices_stream
                                       WHERE device_uuid = '{self.producer_uuid}'
                                       GROUP BY id;""")

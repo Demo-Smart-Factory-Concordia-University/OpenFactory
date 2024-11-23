@@ -5,7 +5,8 @@ CREATE STREAM devices_stream (
         device_uuid VARCHAR KEY,
         id VARCHAR,
         value VARCHAR,
-        tag VARCHAR
+        tag VARCHAR,
+        type VARCHAR
     ) WITH (
         KAFKA_TOPIC = 'mtc_devices',
         PARTITIONS = 1,
