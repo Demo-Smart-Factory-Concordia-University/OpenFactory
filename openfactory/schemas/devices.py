@@ -4,16 +4,6 @@ from pydantic import BaseModel, Field, ValidationError
 from openfactory.models.user_notifications import user_notify
 
 
-class RuntimeConfig(BaseModel):
-    cpus: float = None
-
-
-class Runtime(BaseModel):
-    agent: RuntimeConfig = None
-    producer: RuntimeConfig = None
-    adapter: RuntimeConfig = None
-
-
 class ResourcesDefinition(BaseModel):
     cpus: float = None
     memory: str = None
@@ -76,7 +66,6 @@ class Agent(BaseModel):
 class Device(BaseModel):
     uuid: str
     agent: Agent
-    runtime: Runtime = None
 
     def __init__(self, **data):
         super().__init__(**data)

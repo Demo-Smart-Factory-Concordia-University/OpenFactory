@@ -61,8 +61,8 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'device_xml': 'xml1',
                             'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None, 'deploy': None},
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
-                            },
-                        'runtime': None},
+                            }
+                        },
                     'device2': {
                         'uuid': 'uuid2',
                         'agent': {
@@ -73,8 +73,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'deploy': {'replicas': 3,
                                        'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}},
                                        'placement': {'constraints': ["type=ofa", "zone=factory1"]}},
-                            },
-                        'runtime': None,
+                            }
                         },
                     'device3': {
                         'uuid': 'uuid3',
@@ -87,8 +86,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                                                    'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}},
                                                    'placement': None}},
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
-                            },
-                        'runtime': None,
+                            }
                         }
                     }
                 self.assertEqual(devices_dict, expected)
