@@ -2,6 +2,7 @@ import yaml
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 from openfactory.models.user_notifications import user_notify
+from openfactory.config import load_yaml
 import openfactory.config as config
 
 
@@ -69,6 +70,7 @@ class InfluxDB(BaseModel):
     organisation: str = None
     token: str = None
     bucket: str = None
+    push_interval: int = 10
 
     def __init__(self, **kwargs):
         # Initialize the model with provided values
@@ -145,8 +147,7 @@ def get_devices_from_config_file(devices_yaml_config_file):
     Side effect: sends user notifications in case of validation errors
     """
     # load yaml description file
-    with open(devices_yaml_config_file, 'r') as stream:
-        cfg = yaml.safe_load(stream)
+    cfg = load_yaml(devices_yaml_config_file)
 
     # validate and create devices configuration
     try:

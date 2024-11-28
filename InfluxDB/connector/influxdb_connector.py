@@ -6,7 +6,6 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from pyksql.ksql import KSQL
 
 DEBUG = os.getenv('DEBUG', 0)
-print(DEBUG)
 
 # Device to connect to InfluxDB
 DEVICE_UUID = os.getenv('DEVICE_UUID')
@@ -59,11 +58,12 @@ Continuously fetch and process rows from the ksqlDB device table.
 """
 device_table = DEVICE_UUID.replace('-', '_')
 print("======================================================")
-print("influxDB connector for   ", DEVICE_UUID)
+print("InfluxDB connector for   ", DEVICE_UUID)
 print("Reading from ksqlDB table", device_table)
-print("influxDB url:         ", INFLUXDB_URL)
-print("influxDB organisation:", INFLUXDB_ORG)
-print("influxDB bucket:      ", INFLUXDB_BUCKET)
+print("InfluxDB url:         ", INFLUXDB_URL)
+print("InfluxDB organisation:", INFLUXDB_ORG)
+print("InfluxDB bucket:      ", INFLUXDB_BUCKET)
+print("Push interavl:        ", INFLUXDB_PUSH_INTERVAL)
 print("======================================================")
 
 ksql = KSQL(f'http://{ksqldb_server}:{ksqldb_port}')
