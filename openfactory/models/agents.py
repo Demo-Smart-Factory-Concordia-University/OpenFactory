@@ -314,6 +314,28 @@ class Agent(Base):
                              f"{self.uuid.upper().replace('-', '_')} and "
                              f"{self.producer_uuid.replace('-', '_')} created successfully"))
 
+    def create_influxdb_connector(self, influxdb_config, cpus_limit=1, cpus_reservation=0.5):
+        """ Create Docker container for influxDB connector """
+        client = dal.docker_client
+        client.services.create(
+            image=config.INFLUXDB_CONNECTOR_IMAGE,
+            name=self.device_uuid.lower() + '-influxdb-connector',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[f'DEVICE_UUID={self.device_uuid}',
+                 f'INFLUXDB_URL={influxdb_config["url"]}',
+                 f'INFLUXDB_TOKEN={influxdb_config["token"]}',
+                 f'INFLUXDB_ORG={influxdb_config["organisation"]}',
+                 f'INFLUXDB_BUCKET={influxdb_config["bucket"]}',
+                 f'INFLUXDB_PUSH_INTERVAL={influxdb_config["push_interval"]}',
+                 'DEBUG=1'],
+            networks=[config.OPENFACTORY_NETWORK],
+            resources={
+                "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
+                "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
+                }
+        )
+        user_notify.success(f"Device {self.device_uuid} connected successfully to InfluxDB")
+
     def __repr__(self) -> str:
         return f"Agent (id={self.id}, uuid={self.uuid})"
 

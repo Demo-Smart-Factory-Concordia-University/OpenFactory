@@ -48,6 +48,7 @@ agent.add_command(ofa.agent.click_detach)
 cli.add_command(device)
 device.add_command(ofa.device.click_up)
 device.add_command(ofa.device.click_down)
+device.add_command(ofa.device.click_connect_influxdb)
 
 # setup user notifications
 user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{config.OFA_END}"),
