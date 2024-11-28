@@ -15,7 +15,7 @@ INFLUXDB_URL = os.getenv('INFLUXDB_URL')
 INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN')
 INFLUXDB_ORG = os.getenv('INFLUXDB_ORG')
 INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET')
-INFLUXDB_PUSH_INTERVAL = os.getenv('INFLUXDB_PUSH_INTERVAL', 10)
+INFLUXDB_PUSH_INTERVAL = int(os.getenv('INFLUXDB_PUSH_INTERVAL', 10))
 
 # Connect to InfluxDB
 influx_client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
@@ -63,7 +63,7 @@ print("Reading from ksqlDB table", device_table)
 print("InfluxDB url:         ", INFLUXDB_URL)
 print("InfluxDB organisation:", INFLUXDB_ORG)
 print("InfluxDB bucket:      ", INFLUXDB_BUCKET)
-print("Push interavl:        ", INFLUXDB_PUSH_INTERVAL)
+print("Push interval:        ", INFLUXDB_PUSH_INTERVAL)
 print("======================================================")
 
 ksql = KSQL(f'http://{ksqldb_server}:{ksqldb_port}')
