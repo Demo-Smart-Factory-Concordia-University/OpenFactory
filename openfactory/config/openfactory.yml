@@ -22,6 +22,11 @@ KSQLDB: http://ksqldb-server:8088
 MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
 MTCONNECT_AGENT_CFG_FILE: ${MTCONNECT_AGENT_CFG_FILE}
 MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer
+INFLUXDB_CONNECTOR_IMAGE: rwuthric/inlfuxdb-connector
+
+# InfluxDB
+INFLUXDB_URL: ${INFLUXDB_URL}
+INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
 
 # Colors for ofa cli
 OFA_SUCCSESS: "\e[0;32m"

@@ -2,6 +2,7 @@ import yaml
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 from openfactory.models.user_notifications import user_notify
+import openfactory.config as config
 
 
 class ResourcesDefinition(BaseModel):
@@ -63,9 +64,33 @@ class Agent(BaseModel):
                 raise ValueError("'device_xml' can not be defined for an external agent")
 
 
+class InfluxDB(BaseModel):
+    url: str = None
+    organisation: str = None
+    token: str = None
+    bucket: str = None
+
+    def __init__(self, **kwargs):
+        # Initialize the model with provided values
+        super().__init__(**kwargs)
+
+        # Handle the 'url' fallback logic
+        if self.url is None:
+            if not hasattr(config, 'INFLUXDB_URL') or config.INFLUXDB_URL is None:
+                raise ValueError("Configuration error: 'url' is not provided, and 'INFLUXDB_URL' is not defined in openfactory.config")
+            self.url = config.INFLUXDB_URL
+
+        # Handle the 'token' fallback logic
+        if self.token is None:
+            if not hasattr(config, 'INFLUXDB_TOKEN') or config.INFLUXDB_TOKEN is None:
+                raise ValueError("Configuration error: 'token' is not provided, and 'INFLUXDB_TOKEN' is not defined in openfactory.config")
+            self.token = config.INFLUXDB_TOKEN
+
+
 class Device(BaseModel):
     uuid: str
     agent: Agent
+    influxdb: Optional[InfluxDB] = None
 
     def __init__(self, **data):
         super().__init__(**data)
