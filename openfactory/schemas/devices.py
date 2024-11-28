@@ -1,4 +1,3 @@
-import yaml
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 from openfactory.models.user_notifications import user_notify
