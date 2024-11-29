@@ -57,7 +57,7 @@ async def fetch_streaming_data(device_stream):
     query = f"""
         SELECT ROWTIME AS timestamp,
             ID,
-            REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS TAG,
+            REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '') AS TAG,
             VALUE
         FROM {device_stream}
         WHERE TYPE = 'Samples'
