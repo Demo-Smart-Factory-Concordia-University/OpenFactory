@@ -152,25 +152,28 @@ class Agent(Base):
             raise OFAException(f"Could not find the MTConnect model file '{config.MTCONNECT_AGENT_CFG_FILE}'")
 
         command = "sh -c 'printf \"%b\" \"$XML_MODEL\" > device.xml; printf \"%b\" \"$AGENT_CFG_FILE\" > agent.cfg; mtcagent run agent.cfg'"
-        client.services.create(
-            image=config.MTCONNECT_AGENT_IMAGE,
-            command=command,
-            name=self.device_uuid.lower() + '-agent',
-            mode={"Replicated": {"Replicas": 1}},
-            env=[f'MTC_AGENT_UUID={self.uuid.upper()}',
-                 f'ADAPTER_UUID={self.device_uuid.upper()}',
-                 f'ADAPTER_IP={self.adapter_ip}',
-                 f'ADAPTER_PORT={self.adapter_port}',
-                 f'XML_MODEL={self.load_device_xml()}',
-                 f'AGENT_CFG_FILE={agent_cfg}'],
-            endpoint_spec=docker.types.EndpointSpec(ports={self.agent_port: 5000}),
-            networks=[config.OPENFACTORY_NETWORK],
-            resources={
-                "Limits": {"NanoCPUs": int(1000000000*self.cpus_limit)},
-                "Reservations": {"NanoCPUs": int(1000000000*self.cpus_reservation)}
-                },
-            constraints=self.constraints
-        )
+        try:
+            client.services.create(
+                image=config.MTCONNECT_AGENT_IMAGE,
+                command=command,
+                name=self.device_uuid.lower() + '-agent',
+                mode={"Replicated": {"Replicas": 1}},
+                env=[f'MTC_AGENT_UUID={self.uuid.upper()}',
+                     f'ADAPTER_UUID={self.device_uuid.upper()}',
+                     f'ADAPTER_IP={self.adapter_ip}',
+                     f'ADAPTER_PORT={self.adapter_port}',
+                     f'XML_MODEL={self.load_device_xml()}',
+                     f'AGENT_CFG_FILE={agent_cfg}'],
+                endpoint_spec=docker.types.EndpointSpec(ports={self.agent_port: 5000}),
+                networks=[config.OPENFACTORY_NETWORK],
+                resources={
+                    "Limits": {"NanoCPUs": int(1000000000*self.cpus_limit)},
+                    "Reservations": {"NanoCPUs": int(1000000000*self.cpus_reservation)}
+                    },
+                constraints=self.constraints
+            )
+        except docker.errors.APIError as err:
+            raise OFAException(err)
 
     def deploy_producer(self):
         """ Deploy Kafka producer on Docker swarm cluster """
@@ -179,16 +182,19 @@ class Agent(Base):
             MTC_AGENT = f"{self.agent_ip}:{self.agent_port}"
         else:
             MTC_AGENT = f'{self.device_uuid.lower()}-agent:5000'
-        client.services.create(
-            image=config.MTCONNECT_PRODUCER_IMAGE,
-            name=self.device_uuid.lower() + '-producer',
-            mode={"Replicated": {"Replicas": 1}},
-            env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
-                 f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
-                 f'MTC_AGENT={MTC_AGENT}'],
-            constraints=self.constraints,
-            networks=[config.OPENFACTORY_NETWORK]
-        )
+        try:
+            client.services.create(
+                image=config.MTCONNECT_PRODUCER_IMAGE,
+                name=self.device_uuid.lower() + '-producer',
+                mode={"Replicated": {"Replicas": 1}},
+                env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
+                     f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
+                     f'MTC_AGENT={MTC_AGENT}'],
+                constraints=self.constraints,
+                networks=[config.OPENFACTORY_NETWORK]
+            )
+        except docker.errors.APIError as err:
+            raise OFAException(f"Producer {self.device_uuid.lower() + '-producer'} could not be created\n{err}")
 
     def start(self):
         """ Start agent """
@@ -254,17 +260,21 @@ class Agent(Base):
     def create_adapter(self, adapter_image, cpus_limit=1, cpus_reservation=0.5, environment=[]):
         """ Create Docker container for adapter """
         client = dal.docker_client
-        client.services.create(
-            image=adapter_image,
-            name=self.device_uuid.lower() + '-adapter',
-            mode={"Replicated": {"Replicas": 1}},
-            env=environment,
-            networks=[config.OPENFACTORY_NETWORK],
-            resources={
-                "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
-                "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
-                }
-        )
+        try:
+            client.services.create(
+                image=adapter_image,
+                name=self.device_uuid.lower() + '-adapter',
+                mode={"Replicated": {"Replicas": 1}},
+                env=environment,
+                networks=[config.OPENFACTORY_NETWORK],
+                resources={
+                    "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
+                    "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
+                    }
+            )
+        except docker.errors.APIError as err:
+            user_notify.fail(f"Adapter {self.device_uuid.lower() + '-adapter'} could not be created\n{err}")
+            return
         user_notify.success(f"Adapter {self.device_uuid.lower() + '-adapter'} created successfully")
 
     def remove_adapter(self):
@@ -323,22 +333,26 @@ class Agent(Base):
     def create_influxdb_connector(self, influxdb_config, cpus_limit=1, cpus_reservation=0.5):
         """ Create Docker container for influxDB connector """
         client = dal.docker_client
-        client.services.create(
-            image=config.INFLUXDB_CONNECTOR_IMAGE,
-            name=self.device_uuid.lower() + '-influxdb-connector',
-            mode={"Replicated": {"Replicas": 1}},
-            env=[f'DEVICE_UUID={self.device_uuid}',
-                 f'INFLUXDB_URL={influxdb_config["url"]}',
-                 f'INFLUXDB_TOKEN={influxdb_config["token"]}',
-                 f'INFLUXDB_ORG={influxdb_config["organisation"]}',
-                 f'INFLUXDB_BUCKET={influxdb_config["bucket"]}',
-                 'DEBUG=1'],
-            networks=[config.OPENFACTORY_NETWORK],
-            resources={
-                "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
-                "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
-                }
-        )
+        try:
+            client.services.create(
+                image=config.INFLUXDB_CONNECTOR_IMAGE,
+                name=self.device_uuid.lower() + '-influxdb-connector',
+                mode={"Replicated": {"Replicas": 1}},
+                env=[f'DEVICE_UUID={self.device_uuid}',
+                     f'INFLUXDB_URL={influxdb_config["url"]}',
+                     f'INFLUXDB_TOKEN={influxdb_config["token"]}',
+                     f'INFLUXDB_ORG={influxdb_config["organisation"]}',
+                     f'INFLUXDB_BUCKET={influxdb_config["bucket"]}',
+                     'DEBUG=1'],
+                networks=[config.OPENFACTORY_NETWORK],
+                resources={
+                    "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
+                    "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
+                    }
+            )
+        except docker.errors.APIError as err:
+            user_notify.fail(f"Device {self.device_uuid} could not be connected to InfluxDB\n{err}")
+            return
         user_notify.success(f"Device {self.device_uuid} connected successfully to InfluxDB")
 
     def __repr__(self) -> str:
