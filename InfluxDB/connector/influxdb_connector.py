@@ -1,5 +1,4 @@
 import os
-import time
 import asyncio
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -15,7 +14,6 @@ INFLUXDB_URL = os.getenv('INFLUXDB_URL')
 INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN')
 INFLUXDB_ORG = os.getenv('INFLUXDB_ORG')
 INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET')
-INFLUXDB_PUSH_INTERVAL = int(os.getenv('INFLUXDB_PUSH_INTERVAL', 10))
 
 # Connect to InfluxDB
 influx_client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
@@ -26,49 +24,66 @@ ksqldb_server = 'ksqldb-server'
 ksqldb_port = 8088
 
 
-def process_ksql_row(samples_df):
+def process_ksql_row(row):
     """
     Convert a ksqlDB row to InfluxDB format and write to the database.
     """
     try:
-        for _, row in samples_df.iterrows():
-            try:
-                val = float(row["VALUE"])
-                point = (
-                    Point(DEVICE_UUID)
-                    .tag("tag", row["TAG"])
-                    .field(row["ID"], val)
-                    .time(row["TIMESTAMP"], write_precision="ms")
-                )
-                # Write the point to InfluxDB
-                if DEBUG:
-                    print(point)
-                write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
-            except ValueError:
-                if DEBUG:
-                    print(f"Device is unavailable or does not send proper data. Got {row['ID']}={row['VALUE']}")
-                continue
+        try:
+            val = float(row[3])
+            point = (
+                Point(DEVICE_UUID)
+                .tag("tag", row[2])
+                .field(row[1], val)
+                .time(row[0], write_precision="ms")
+            )
+            # Write the point to InfluxDB
+            if DEBUG:
+                print(point)
+            write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=point)
+        except ValueError:
+            if DEBUG:
+                print(f"Device is unavailable or does not send proper data. Got {row['ID']}={row['VALUE']}")
 
     except Exception as e:
-        print(f"Failed to process ksqlDB row: {e}")
+        print(f"Failed to process ksqlDB message: {e}")
+
+
+async def fetch_streaming_data(device_stream):
+    """
+    Continuously fetch and process rows from the ksqlDB device stream
+    """
+    ksql = KSQL(f'http://{ksqldb_server}:{ksqldb_port}')
+    query = f"""
+        SELECT ROWTIME AS timestamp,
+            ID,
+            REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS TAG,
+            VALUE
+        FROM {device_stream}
+        WHERE TYPE = 'Samples'
+        EMIT CHANGES;
+        """
+
+    try:
+        await ksql.query(
+            query=query,
+            earliest=False,
+            on_new_row=process_ksql_row
+        )
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 """
-Continuously fetch and process rows from the ksqlDB device table.
+Main code
 """
-device_table = DEVICE_UUID.replace('-', '_')
+device_stream = DEVICE_UUID.replace('-', '_') + '_STREAM'
 print("======================================================")
-print("InfluxDB connector for   ", DEVICE_UUID)
-print("Reading from ksqlDB table", device_table)
+print("InfluxDB connector for    ", DEVICE_UUID)
+print("Reading from ksqlDB stream", device_stream)
 print("InfluxDB url:         ", INFLUXDB_URL)
 print("InfluxDB organisation:", INFLUXDB_ORG)
 print("InfluxDB bucket:      ", INFLUXDB_BUCKET)
-print("Push interval:        ", INFLUXDB_PUSH_INTERVAL)
 print("======================================================")
 
-ksql = KSQL(f'http://{ksqldb_server}:{ksqldb_port}')
-query = f"SELECT ROWTIME AS timestamp, ID, VALUE, TAG FROM {device_table} WHERE TYPE='Samples';"
-while True:
-    df = asyncio.run(ksql.query_to_dataframe(query))
-    process_ksql_row(df)
-    time.sleep(INFLUXDB_PUSH_INTERVAL)
+asyncio.run(fetch_streaming_data(device_stream))
