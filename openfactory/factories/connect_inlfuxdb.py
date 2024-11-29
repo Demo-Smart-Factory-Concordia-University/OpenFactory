@@ -16,7 +16,7 @@ def connect_devices_to_influxdb(db_session, yaml_config_file):
         if device['influxdb'] is None:
             continue
 
-        user_notify.info(f"{dev_name}:", device['influxdb'])
+        user_notify.info(f"{dev_name}:")
 
         query = select(Agent).where(Agent.uuid == device['uuid'].upper() + '-AGENT')
         agent = db_session.execute(query).one_or_none()

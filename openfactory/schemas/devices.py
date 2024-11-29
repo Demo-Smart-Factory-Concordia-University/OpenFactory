@@ -69,7 +69,6 @@ class InfluxDB(BaseModel):
     organisation: str = None
     token: str = None
     bucket: str = None
-    push_interval: int = 10
 
     def __init__(self, **kwargs):
         # Initialize the model with provided values

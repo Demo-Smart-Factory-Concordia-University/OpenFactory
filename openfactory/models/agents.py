@@ -332,7 +332,6 @@ class Agent(Base):
                  f'INFLUXDB_TOKEN={influxdb_config["token"]}',
                  f'INFLUXDB_ORG={influxdb_config["organisation"]}',
                  f'INFLUXDB_BUCKET={influxdb_config["bucket"]}',
-                 f'INFLUXDB_PUSH_INTERVAL={influxdb_config["push_interval"]}',
                  'DEBUG=1'],
             networks=[config.OPENFACTORY_NETWORK],
             resources={

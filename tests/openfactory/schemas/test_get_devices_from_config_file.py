@@ -24,7 +24,6 @@ class TestInfluxDB(unittest.TestCase):
 
         self.assertEqual(influx_db.url, "http://mock-url")
         self.assertEqual(influx_db.token, "mock-token")
-        self.assertEqual(influx_db.push_interval, 10)
         self.assertIsNone(influx_db.organisation)
         self.assertIsNone(influx_db.bucket)
 
@@ -156,7 +155,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                                                    'placement': None}},
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
-                        'influxdb': {'url': 'http://mock-url', 'organisation': None, 'token': 'mock-token', 'bucket': None, 'push_interval': 10},
+                        'influxdb': {'url': 'http://mock-url', 'organisation': None, 'token': 'mock-token', 'bucket': None},
                         }
                     }
 
