@@ -1,7 +1,49 @@
 import unittest
 import yaml
 from pydantic import ValidationError
-from openfactory.schemas.infra import InfrastructureSchema
+from pydantic.networks import IPv4Address
+from openfactory.schemas.infra import Node, InfrastructureSchema
+
+
+class TestNode(unittest.TestCase):
+    """
+    Unit tests for class Node
+    """
+
+    def test_valid_ip(self):
+        """
+        Test the model accepts a valid IPv4 address
+        """
+        valid_ip = "192.168.1.1"
+        node = Node(ip=valid_ip)
+        self.assertIsInstance(node.ip, IPv4Address)
+        self.assertEqual(str(node.ip), valid_ip)
+
+    def test_invalid_ip(self):
+        """
+        Test the model rejects an invalid IPv4 address
+        """
+        invalid_ip = "999.999.999.999"
+        with self.assertRaises(ValidationError) as context:
+            Node(ip=invalid_ip)
+        self.assertIn("Input is not a valid IPv4 address", str(context.exception))
+
+    def test_empty_ip(self):
+        """
+        Test the model rejects an empty IP
+        """
+        empty_ip = ""
+        with self.assertRaises(ValidationError) as context:
+            Node(ip=empty_ip)
+        self.assertIn("Input is not a valid IPv4 address", str(context.exception))
+
+    def test_none_ip(self):
+        """
+        Test the model rejects None as an IP
+        """
+        with self.assertRaises(ValidationError) as context:
+            Node(ip=None)
+        self.assertIn("Input is not a valid IPv4 address", str(context.exception))
 
 
 class TestInfrastructureSchema(unittest.TestCase):
@@ -82,7 +124,8 @@ class TestInfrastructureSchema(unittest.TestCase):
                                 ip: 123.100.7.102
                     """
         parsed_data = yaml.safe_load(yaml_data)
-        InfrastructureSchema(**parsed_data)
+        infra = InfrastructureSchema(**parsed_data)
+        print(infra)
 
     def test_invalid_ip_address(self):
         """

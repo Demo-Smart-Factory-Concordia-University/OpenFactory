@@ -12,7 +12,7 @@ def add_label(node_name, node_details):
     """ Adds the labels to the node """
     node = None
     for n in dal.docker_client.nodes.list():
-        if node_details['ip'] in n.attrs['Status']['Addr']:
+        if str(node_details['ip']) in n.attrs['Status']['Addr']:
             node = n
             break
     if node is None:
