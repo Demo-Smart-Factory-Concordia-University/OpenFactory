@@ -4,7 +4,6 @@ DataFabric Agent add view
 import os
 import socket
 import xml.etree.ElementTree as ET
-from sqlalchemy import select
 from flask import flash
 from flask import render_template
 from flask import redirect
@@ -20,12 +19,11 @@ from flask.views import MethodView
 from openfactory.datafabric.app import db
 from openfactory.models.configurations import get_configuration
 from openfactory.models.agents import Agent
-from openfactory.models.nodes import Node
+from openfactory.docker.docker_access_layer import dal
 
 
 def nodes():
-    query = select(Node)
-    return db.session.scalars(query)
+    return dal.docker_client.nodes.list()
 
 
 class AgentAddForm(FlaskForm):
