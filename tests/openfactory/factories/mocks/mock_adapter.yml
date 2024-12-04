@@ -9,7 +9,7 @@ devices:
       port: 3001
       device_xml: mock_device.xml
       adapter:
-        image: ofa/ofa_adapter
+        image: ofa/ofa_adapter1
         port: 7878
         deploy:
           resources:
@@ -20,3 +20,13 @@ devices:
         environment:
           - VAR1=value1
           - VAR2=value2
+
+  zaix-002:
+    uuid: TEST-ZAIX-002
+    node: manager
+    agent:
+      port: 3001
+      device_xml: mock_device.xml
+      adapter:
+        image: ofa/ofa_adapter2
+        port: 7878

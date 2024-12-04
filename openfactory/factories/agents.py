@@ -105,7 +105,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             cpus_reservation = get_nested(device, ['agent', 'adapter', 'deploy', 'resources', 'reservations', 'cpus'], '0.5')
             cpus_limit = get_nested(device, ['agent', 'adapter', 'deploy', 'resources', 'limits', 'cpus'], '1')
             env = []
-            if 'environment' in device['agent']['adapter']:
+            if device['agent']['adapter']['environment'] is not None:
                 for item in device['agent']['adapter']['environment']:
                     var, val = item.split('=')
                     env.append(f"{var.strip()}={val.strip()}")

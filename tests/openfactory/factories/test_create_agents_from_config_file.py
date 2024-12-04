@@ -178,9 +178,14 @@ class Test_create_agents_from_config_file(TestCase):
                                    'mocks/mock_adapter.yml')
         create_agents_from_config_file(db.session, config_file)
 
-        # check adapter configuration
-        mock_create_adapter.assert_called_once_with('ofa/ofa_adapter', cpus_limit=2.5, cpus_reservation=1.5,
-                                                    environment=['VAR1=value1', 'VAR2=value2'])
+        # check adapter configurations
+        args = mock_create_adapter.call_args_list
+        self.assertTrue(call('ofa/ofa_adapter1',
+                             cpus_limit=2.5, cpus_reservation=1.5,
+                             environment=['VAR1=value1', 'VAR2=value2']) in args)
+        self.assertTrue(call('ofa/ofa_adapter2',
+                             cpus_limit=1.0, cpus_reservation=0.5,
+                             environment=[]) in args)
 
         # clean-up
         self.cleanup()
