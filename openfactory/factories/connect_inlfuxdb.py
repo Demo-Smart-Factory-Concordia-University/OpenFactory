@@ -13,10 +13,11 @@ def connect_devices_to_influxdb(db_session, yaml_config_file):
         return
 
     for dev_name, device in devices.items():
-        if device['influxdb'] is None:
-            continue
-
         user_notify.info(f"{dev_name}:")
+
+        if device['influxdb'] is None:
+            user_notify.info("  No influxdb definition")
+            continue
 
         query = select(Agent).where(Agent.uuid == device['uuid'].upper() + '-AGENT')
         agent = db_session.execute(query).one_or_none()
