@@ -266,6 +266,7 @@ class Agent(Base):
                 name=self.device_uuid.lower() + '-adapter',
                 mode={"Replicated": {"Replicas": 1}},
                 env=environment,
+                constraints=self.constraints,
                 networks=[config.OPENFACTORY_NETWORK],
                 resources={
                     "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
