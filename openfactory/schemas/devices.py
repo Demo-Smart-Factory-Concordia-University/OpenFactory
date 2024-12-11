@@ -64,6 +64,12 @@ class Agent(BaseModel):
                 raise ValueError("'device_xml' can not be defined for an external agent")
 
 
+class Supervisor(BaseModel):
+    image: str
+    adapter: Adapter
+    deploy: Optional[Deploy] = None
+
+
 class InfluxDB(BaseModel):
     url: str = None
     organisation: str = None
@@ -90,6 +96,7 @@ class InfluxDB(BaseModel):
 class Device(BaseModel):
     uuid: str
     agent: Agent
+    supervisor: Optional[Supervisor] = None
     influxdb: Optional[InfluxDB] = None
 
     def __init__(self, **data):

@@ -128,6 +128,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'adapter': {'ip': None, 'image': 'ofa/adapter', 'port': 9090, 'environment': None, 'deploy': None},
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
+                        'supervisor': None,
                         'influxdb': None,
                         },
                     'device2': {
@@ -141,6 +142,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                                        'resources': {'reservations': {'cpus': 2.0, 'memory': None}, 'limits': {'cpus': 4.0, 'memory': None}},
                                        'placement': {'constraints': ["type=ofa", "zone=factory1"]}},
                             },
+                        'supervisor': None,
                         'influxdb': None,
                         },
                     'device3': {
@@ -155,6 +157,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                                                    'placement': None}},
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
+                        'supervisor': None,
                         'influxdb': {'url': 'http://mock-url', 'organisation': None, 'token': 'mock-token', 'bucket': None},
                         }
                     }
