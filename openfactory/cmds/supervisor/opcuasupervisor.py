@@ -119,19 +119,12 @@ class OPCUASupervisor(BaseSupervisor):
 
 
 def main():
-    class DemoOPCUASupervisor(OPCUASupervisor):
-        namespace_uri = 'http://poutineontheweb.com'
-        browseName = 'TemperatureSensor'
 
-        async def new_cmd(self, cmd, args):
-            print(await super().new_cmd(cmd, args))
-
-    # Create an instance of the OPCUA supervisor
-    supervisor = DemoOPCUASupervisor(
-        device_uuid="ZAIX-001",
-        ksql_url="http://localhost:8088",
-        adapter_ip="localhost",
-        adapter_port=4840
+    supervisor = OPCUASupervisor(
+        device_uuid=os.getenv('DEVICE_UUID'),
+        ksql_url=os.getenv('KSQL_URL'),
+        adapter_ip=os.getenv('ADAPTER_IP'),
+        adapter_port=os.getenv('ADAPTER_PORT')
     )
 
     supervisor.run()
