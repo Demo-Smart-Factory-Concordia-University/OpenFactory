@@ -13,7 +13,7 @@
 - **Infrastructure as Code (IaC)**: Fully configurable via YAML files, *OpenFactory* leverages IaC principles, making it easy to define, version, and deploy infrastructure consistently across environments.
 - **Flexible Deployment Options**: Deploy *OpenFactory* on-premises, in the cloud, or in a hybrid configuration to meet operational needs.
 
-## Layered Architecture Overview for Manufacturing Integration
+## Overview
 
 ![Data Flow OpenFactory](docs/img/DataFlow.png)
 The architecture supporting *OpenFactory* is organized into five distinct layers, with *OpenFactory* taking care of the first three:

@@ -3,6 +3,12 @@ Docker compose instructions to wire up a standalone [Kafka](https://kafka.apache
 
 The Docker container exports port `9092` to give access the Kafka standalone server from the host running the container.
 
+The variable `KAFKA_BROKER` in the OpenFactory configuration file [openfactory.yml](../openfactory/config/openfactory.yml) points to this cluster:
+```
+KAFKA_BROKER: ${KAFKA_BROKER}
+```
+where in this example the IP address of one of the brokers is in the environment variable `KAFKA_BROKER`.
+
 ## Build Docker Image
 To build the Docker image, it is required that the SSH key to authentify with GitHub is stored in `~/.ssh/id_ed25519` on your Docker host.
 
@@ -66,4 +72,3 @@ To quit `ksql` and the `ksqldb-cli` container:
 ```
 ksql> exit
 ```
-
