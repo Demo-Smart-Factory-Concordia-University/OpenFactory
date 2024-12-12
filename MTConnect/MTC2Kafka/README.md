@@ -32,3 +32,5 @@ which can be deployed by the OpenFactory deployment tool [ofa.py](../../ofa.py) 
 The following fields need to be defined in the `influxdb` section:
 - `ip`: ip address on which the MTConnect adapter is running
 - `port`: MTConnect adapter port
+
+A more detailed description can be found [here](../devices/README.md#adapter-section-adapter).
