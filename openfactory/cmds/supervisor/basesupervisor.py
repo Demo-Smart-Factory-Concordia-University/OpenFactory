@@ -78,11 +78,10 @@ class BaseSupervisor:
 
     async def fetch_streaming_cmds(self):
         """ Fetch streaming commands from the ksqlDB stream """
-
         try:
             await self.ksql.query(
                 query="SELECT CMD, ARGS FROM cmds_stream EMIT CHANGES;",
-                earliest=False,  # Start from the latest messages
+                earliest=False,
                 on_new_row=lambda row: asyncio.create_task(self.new_cmd(row[0], row[1]))
             )
         except asyncio.CancelledError:

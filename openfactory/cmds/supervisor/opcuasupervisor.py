@@ -45,7 +45,7 @@ class OPCUASupervisor(BaseSupervisor):
             await self.opcua_client.connect()
             self.idx = await self.opcua_client.get_namespace_index(self.namespace_uri)
             objects = self.opcua_client.get_objects_node()
-            self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])  # Ensure 'await' is used here
+            self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])
             print(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
             connectionStatus = "ESTABLISHED"
         except Exception as e:
