@@ -3,7 +3,7 @@
 [![Unit tests](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml)
 
 
-**OpenFactory** aims to streamline the integration of manufacturing devices into a cohesive data processing ecosystem, enabling efficient data streaming to Kafka for analysis and decision-making. It is a distributed cluster designed for seamless integration of manufacturing devices, providing an adaptable infrastructure to interface both MTConnect-enabled and retrofitted devices, using adapters when necessary.
+**OpenFactory** aims to streamline the integration of manufacturing devices into a cohesive data processing ecosystem, enabling efficient data streaming to Kafka for analysis and decision-making and sending back commands to devices to execute actionable items. It is a distributed cluster designed for seamless integration of manufacturing devices, providing an adaptable infrastructure to interface both MTConnect-enabled and retrofitted devices, using adapters when necessary.
 
 ## Key Features
 
@@ -15,9 +15,10 @@
 
 ## Layered Architecture Overview for Manufacturing Integration
 
+![Data Flow OpenFactory](docs/img/DataFlow.png)
 The architecture supporting *OpenFactory* is organized into five distinct layers, with *OpenFactory* taking care of the first three:
 
-1. **Perception Layer**: This foundational layer consists of devices such as sensors and manufacturing equipment that collect data from the physical environment.
+1. **Perception Layer**: This foundational layer consists of devices such as sensors and manufacturing equipment that collect data from and send commands to the physical environment.
 
 2. **Connection Layer**: This layer comprises data connectors that facilitate communication between devices and the system, ensuring seamless data transfer.
 
@@ -27,14 +28,14 @@ The architecture supporting *OpenFactory* is organized into five distinct layers
 
 5. **Business Layer**: In this top layer, the data is prepared for advanced tasks such as analytics, reporting, visualization, and data mining, enabling organizations to derive actionable insights from their data.
 
-![Data Flow OpenFactory](docs/img/DataFlow.png)
-
 ## Architecture
 
+![Data Flow OpenFactory](docs/img/OFAArchitecture.png)
 *OpenFactory* employs a microservices architecture orchestrated by Docker Swarm, where various microservices required for device integration are automatically created and deployed based on YAML configurations. Key components include:
 
-- **Adapters**: Facilitate data compatibility for non-MTConnect devices.
+- **Adapters**: Facilitate data and commands compatibility between devices.
 - **Agents**: Collect and transmit data from devices to Kafka, ensuring smooth integration and real-time data flow.
+- **Supervisors**: Send commands from Kafka to devices.
 - **Kafka**: While not part of *OpenFactory*, it serves as the data stream platform where processed data is sent.
 - **ksqlDB**: Provides real-time stream processing, enabling users to query and manipulate data dynamically for actionable insights.
 - **Docker Swarm**: Coordinates and manages microservices across the cluster for optimal performance.
