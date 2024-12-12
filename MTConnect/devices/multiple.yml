@@ -3,21 +3,19 @@
 devices:
 
   dht-001:
-    UUID: DHT-001
-    NODE: manager
+    uuid: DHT-001
     agent:
-      PORT: 3000
-      DEVICE_XML: sensors/DHT/dht.xml
+      port: 3000
+      device_xml: sensors/DHT/dht.xml
       adapter:
-        IP: 10.0.0.218
-        PORT: 7878
+        ip: 10.0.0.218
+        port: 7878
         
   zaix-001:
-    UUID: ZAIX-001
-    NODE: node1
+    uuid: ZAIX-001
     agent:
-      PORT: 3001
-      DEVICE_XML: cnc/ZAIX/zaix.xml
+      port: 3001
+      device_xml: cnc/ZAIX/zaix.xml
       adapter:
-        IP: 10.0.0.7
-        PORT: 7879
+        ip: 10.0.0.7
+        port: 7879

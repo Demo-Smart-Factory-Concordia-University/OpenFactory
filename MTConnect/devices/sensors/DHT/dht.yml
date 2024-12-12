@@ -3,15 +3,10 @@
 devices:
 
   dht-001:
-
-    UUID: DHT-001
-    NODE: localhost
-
+    uuid: DHT-001
     agent:
-      PORT: 3000
-      DEVICE_XML: dht.xml
+      port: 3000
+      device_xml: sensors/DHT/dht.xml
       adapter:
-        IP: 10.0.0.218
-        PORT: 7878
-
-network: factory-net
+        ip: 10.0.0.218
+        port: 7878
