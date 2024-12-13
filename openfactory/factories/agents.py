@@ -7,6 +7,7 @@ from openfactory.exceptions import OFAException
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.agents import Agent
+from openfactory.factories.create_supervisor import deploy_device_supervisor
 
 
 def get_nested(data, keys, default=None):
@@ -116,6 +117,9 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             except docker.errors.APIError as err:
                 user_notify.fail(f"Could not create {device['uuid'].lower()}-adapter\nError was: {err}")
                 return
+
+        if device['supervisor']:
+            deploy_device_supervisor(device)
 
         if run:
             agent.start()
