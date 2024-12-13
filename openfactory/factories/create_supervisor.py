@@ -37,6 +37,15 @@ def deploy_device_supervisor(device):
             var, val = item.split('=')
             env.append(f"{var.strip()}={val.strip()}")
 
+    # compute placement constraints
+    placement_constraints = get_nested(device, ['supervisor', 'deploy', 'placement', 'constraints'])
+    if placement_constraints:
+        constraints = [
+            constraint.replace('=', ' == ') for constraint in placement_constraints
+            ]
+    else:
+        constraints = None
+
     client = dal.docker_client
     try:
         client.services.create(
@@ -48,7 +57,8 @@ def deploy_device_supervisor(device):
             resources={
                 "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
                 "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
-                }
+                },
+            constraints=constraints
         )
     except docker.errors.APIError as err:
         user_notify.fail(f"Supervisor {device['uuid'].lower()}-supervisor could not be created\n{err}")
