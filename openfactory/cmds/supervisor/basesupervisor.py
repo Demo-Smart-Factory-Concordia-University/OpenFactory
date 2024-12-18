@@ -80,7 +80,7 @@ class BaseSupervisor:
         """ Fetch streaming commands from the ksqlDB stream """
         try:
             await self.ksql.query(
-                query="SELECT CMD, ARGS FROM cmds_stream EMIT CHANGES;",
+                query=f"SELECT CMD, ARGS FROM {self.device_uuid.replace('-', '_')}_cmds_stream EMIT CHANGES;",
                 earliest=False,
                 on_new_row=lambda row: asyncio.create_task(self.new_cmd(row[0], row[1]))
             )
