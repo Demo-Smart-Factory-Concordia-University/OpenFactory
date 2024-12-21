@@ -70,7 +70,7 @@ services:
     image: confluentinc/ksqldb-cli:0.29.0
     container_name: ksqldb-cli
     environment:
-      - KSQL_START_SCRIPTS=mtcdevices.sql
+      - KSQL_START_SCRIPTS=mtcdevices.sql:ofacmds.sql
     volumes:
       - "./scripts:/home/appuser/scripts"
     networks:

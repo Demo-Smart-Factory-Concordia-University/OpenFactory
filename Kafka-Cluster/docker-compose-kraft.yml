@@ -98,7 +98,7 @@ services:
       ksqldb-server:
          condition: service_healthy
     environment:
-      - KSQL_START_SCRIPTS=mtcdevices.sql
+      - KSQL_START_SCRIPTS=mtcdevices.sql:ofacmds.sql
     volumes:
       - "./scripts:/home/appuser/scripts"
     entrypoint: bash -c "source ./scripts/start_ksql.sh; tail -F anything"
