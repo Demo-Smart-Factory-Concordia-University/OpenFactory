@@ -27,7 +27,7 @@ class OPCUASupervisor(BaseSupervisor):
         super().__init__(device_uuid, ksql_url)
         self.adapter_ip = adapter_ip
         self.adapter_port = adapter_port
-        self.opcua_client = None
+        self.opcua_client = Client(f"opc.tcp://{self.adapter_ip}:{self.adapter_port}")
         self.idx = None
         self.opcua_adapter = None
         self._stop_reconnect = False
@@ -41,17 +41,20 @@ class OPCUASupervisor(BaseSupervisor):
         Attempt to connect to the adapter at the specified address
         """
         try:
-            self.opcua_client = Client(f"opc.tcp://{self.adapter_ip}:{self.adapter_port}")
             await self.opcua_client.connect()
             self.idx = await self.opcua_client.get_namespace_index(self.namespace_uri)
             objects = self.opcua_client.get_objects_node()
             self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])
             print(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
-            connectionStatus = "ESTABLISHED"
+            self.connectionStatus = "ESTABLISHED"
         except Exception as e:
             print(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
-            self.opcua_client = None
-            connectionStatus = "CLOSED"
+            try:
+                await self.opcua_client.disconnect()
+                print("Disconnected from OPC UA server.")
+            except Exception as e:
+                print(f"Error during OPC UA disconnection: {e}")
+            self.connectionStatus = "CLOSED"
 
         msg = [
             {
@@ -64,7 +67,7 @@ class OPCUASupervisor(BaseSupervisor):
             {
                 "device_uuid": self.supervisor_uuid,
                 "id": "adapter_connection_status",
-                "value": connectionStatus,
+                "value": self.connectionStatus,
                 "tag": 'ConnectionStatus',
                 "type": 'Events'
             }
@@ -73,13 +76,14 @@ class OPCUASupervisor(BaseSupervisor):
             self.ksql.insert_into_stream('DEVICES_STREAM', msg)
         except Exception as e:
             print(f"Failed to send adapter connection status message for supervisor: {e}")
+        return
 
     async def _monitor_adapter(self):
         """
         Continuously monitor the connection to the adapter and attempt reconnections if disconnected.
         """
         while not self._stop_reconnect:
-            if not self.opcua_client:
+            if self.connectionStatus == 'CLOSED':
                 print("Attempting to reconnect to adapter...")
                 await self._connect_to_adapter()
             await asyncio.sleep(self.RECONNECT_INTERVAL)
@@ -87,12 +91,11 @@ class OPCUASupervisor(BaseSupervisor):
     async def shutdown(self):
         """ Gracefully shut down the supervisor """
         self._stop_reconnect = True
-        if self.opcua_client:
-            try:
-                await self.opcua_client.disconnect()
-                print("Disconnected from OPC UA server.")
-            except Exception as e:
-                print(f"Error during OPC UA disconnection: {e}")
+        try:
+            await self.opcua_client.disconnect()
+            print("Disconnected from OPC UA server.")
+        except Exception as e:
+            print(f"Error during OPC UA disconnection: {e}")
 
         await super().shutdown()
         print("Shutdown completed")
@@ -111,7 +114,7 @@ class OPCUASupervisor(BaseSupervisor):
             print("No connection to adapter. Cannot send command.", e)
             # attempts to reconnect
             await self._connect_to_adapter()
-            if self.opcua_client is None:
+            if self.connectionStatus == 'CLOSED':
                 return
 
         return await self.opcua_adapter.call_method(f"{self.idx}:{cmd.strip()}",
@@ -122,9 +125,9 @@ def main():
 
     supervisor = OPCUASupervisor(
         device_uuid=os.getenv('DEVICE_UUID'),
-        ksql_url=os.getenv('KSQL_URL'),
-        adapter_ip=os.getenv('ADAPTER_IP'),
-        adapter_port=os.getenv('ADAPTER_PORT')
+        ksql_url=os.getenv('KSQL_URL', 'http://localhost:8088'),
+        adapter_ip=os.getenv('ADAPTER_IP', '127.0.0.1'),
+        adapter_port=os.getenv('ADAPTER_PORT', 4840)
     )
 
     supervisor.run()
