@@ -25,7 +25,7 @@ jobs:
           context: ./InfluxDB/connector
           file: ./InfluxDB/connector/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/influxdb_connector:latest
+          tags: ghcr.io/demo-smart-factory-concordia-university/influxdb_connector:latest
           build-args: |
               UNAME=${{ vars.FACTORY_USER }}
               UID=${{ vars.FACTORY_USER_UID }}
