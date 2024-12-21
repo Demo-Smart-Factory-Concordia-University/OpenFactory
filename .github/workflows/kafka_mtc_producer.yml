@@ -1,10 +1,10 @@
-name: Create Kafka-MTC-Producer Docker image on DockerHub
+name: Create Kafka-MTC-Producer Docker image on GitHub Container Registry
 
 on: [workflow_dispatch]
 
 jobs:
   push_to_registry:
-    name: Create and push Docker image for Kafka-MTC-Producer to Docker Hub
+    name: Build and Push Docker Image to GHCR
     runs-on: ubuntu-latest
     
     steps:
@@ -12,11 +12,12 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
           
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -24,7 +25,7 @@ jobs:
           context: ./MTConnect/MTC2Kafka
           file: ./MTConnect/MTC2Kafka/Dockerfile
           push: true
-          tags: rwuthric/kafka-mtc-producer
+          tags: ghcr.io/${{ github.repository_owner }}/kafka-mtc-producer:latest
           build-args: |
               UNAME=${{ vars.FACTORY_USER }}
               UID=${{ vars.FACTORY_USER_UID }}
