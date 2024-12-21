@@ -27,7 +27,7 @@ jobs:
           context: .
           file: ./docker/ubuntu/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/mtcagent:latest
+          tags: ghcr.io/demo-smart-factory-concordia-university/mtcagent:latest
           build-args: |
               UID=${{ vars.FACTORY_USER_UID }}
               GID=${{ vars.FACTORY_USER_GID }}
