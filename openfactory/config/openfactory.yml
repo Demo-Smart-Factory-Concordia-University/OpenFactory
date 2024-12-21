@@ -19,10 +19,10 @@ KAFKA_BROKER: ${KAFKA_BROKER}
 KSQLDB: http://ksqldb-server:8088
 
 # Docker Images
-MTCONNECT_AGENT_IMAGE: rwuthric/mtcagent
+MTCONNECT_AGENT_IMAGE: ghcr.io/demo-smart-factory-concordia-university/mtcagent
 MTCONNECT_AGENT_CFG_FILE: ${MTCONNECT_AGENT_CFG_FILE}
-MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer
-INFLUXDB_CONNECTOR_IMAGE: rwuthric/inlfuxdb-connector
+MTCONNECT_PRODUCER_IMAGE: ghcr.io/demo-smart-factory-concordia-university/kafka-mtc-producer
+INFLUXDB_CONNECTOR_IMAGE: ghcr.io/demo-smart-factory-concordia-university/influxdb_connector:latest
 
 # InfluxDB
 INFLUXDB_URL: ${INFLUXDB_URL}
