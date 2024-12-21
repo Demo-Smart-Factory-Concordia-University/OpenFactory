@@ -86,9 +86,11 @@ class BaseSupervisor:
             )
         except asyncio.CancelledError:
             # Handle cancellation due to shutdown signal
-            pass
+            print('Supervisor was shutdown')
+            return
         except Exception as e:
             print(f"An error occurred: {e}")
+        print(f"ERROR - ksqlDB query for stream {self.device_uuid.replace('-', '_')}_cmds_stream terminated.\nDoes this stream exist (supervisor up?)?")
 
     async def new_cmd(self, cmd, args):
         """
