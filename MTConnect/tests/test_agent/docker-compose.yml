@@ -14,4 +14,3 @@ services:
       - 5555:5000
     volumes:
       - ./config:/mtconnect/config
-    entrypoint: bash -c "tail -F anything"

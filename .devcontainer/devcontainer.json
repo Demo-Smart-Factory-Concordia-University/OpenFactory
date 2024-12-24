@@ -3,16 +3,11 @@
 {
 	"name": "Ubuntu",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-		"build": {
-		"dockerfile": "Dockerfile"
+		"image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 	},
 	"postCreateCommand": "./MTConnect/tests/test_agent/set_host_ip_env_var.sh",
-	"containerEnv": {
-		"DOCKER_HOST": "unix:///var/run/docker.sock"
-	},
-	"mounts": [
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-	],
     "customizations": {
       "vscode": {
         "settings": {},
