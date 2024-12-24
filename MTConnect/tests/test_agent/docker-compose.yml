@@ -1,0 +1,17 @@
+# Set up an MTConnect Agent with an Adapter
+
+services:
+
+  external_agent:
+    image: ghcr.io/demo-smart-factory-concordia-university/mtcagent
+    container_name: minimal_agent
+    environment:
+      MTC_AGENT_UUID: MINIMAL-AGENT
+      ADAPTER_IP: ${HOST_IP}
+      ADAPTER_PORT: 7800
+      ADAPTER_UUID: MIN-001
+    ports:
+      - 5555:5000
+    volumes:
+      - ./config:/mtconnect/config
+    entrypoint: bash -c "tail -F anything"

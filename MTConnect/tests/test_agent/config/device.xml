@@ -1,0 +1,14 @@
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="MINIMAL" id="minimal" name="Minimal-Device">
+
+      <!-- General information -->
+      <Description>
+         A minmal device to test an agent
+      </Description>
+      <DataItems>
+        <DataItem category="EVENT" id="avail" name="avail" type="AVAILABILITY"/>
+      </DataItems>
+    </Device>
+  </Devices>
+</MTConnectDevices>
