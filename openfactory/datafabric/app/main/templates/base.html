@@ -30,7 +30,7 @@
 
 
 
-    <body class="d-flex flex-column">
+    <body class="d-flex flex-column h-100">
 
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
         <script
@@ -58,7 +58,7 @@
         {% include 'flash.html' %}
         
         <!-- Space for App -->
-        <main class="h-100" style="flex: auto; overflow: auto">
+        <main class="flex-grow-1 d-flex" style="overflow: hidden;">
             {% block app_content %}
             {% endblock app_content %}
         </main>
