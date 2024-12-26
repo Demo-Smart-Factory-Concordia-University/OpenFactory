@@ -11,6 +11,7 @@ from .agents.agents_load import AgentStackLoad
 from .supervisors.supervisors_view import SupervisorsList
 from .producers.producers_view import ProducersList
 from .influxdb_connectors.influxdb_connectors_view import InfluxdbConnectorsList
+from .core.services_tasks_view import ServicesTasksListView
 
 
 @serv_blueprint.route('/')
@@ -28,3 +29,5 @@ serv_blueprint.add_url_rule("/agent/load_stack", view_func=AgentStackLoad.as_vie
 serv_blueprint.add_url_rule("/supervisors", view_func=SupervisorsList.as_view("supervisors"))
 serv_blueprint.add_url_rule("/producers", view_func=ProducersList.as_view("producers"))
 serv_blueprint.add_url_rule("/influxdb_connectors", view_func=InfluxdbConnectorsList.as_view("influxdb_connectors"))
+
+serv_blueprint.add_url_rule("/tasks/<service_name>", view_func=ServicesTasksListView.as_view("service_tasks"))

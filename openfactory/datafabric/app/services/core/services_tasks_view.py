@@ -29,21 +29,21 @@ class ServicesTasksListView(View):
     decorators = [login_required]
     template_name = "services/generic/services_task_list.html"
 
-    def filter_services(self, services):
+    def filter_services(self, services, service_name):
         """
-        Abstract method to filter specific services
-        Must be implemented in derived classes
+        Filter services
         """
-        raise NotImplementedError("Subclasses must implement filter_services")
+        return [service for service in services if service.name.endswith(service_name)]
 
-    def dispatch_request(self):
+    def dispatch_request(self, service_name):
         """
         Fetch and process services to generate the list view
         """
+        self.service_name = service_name
         services = dal.docker_client.services.list()
-        filtered_services = self.filter_services(services)
+        filtered_services = self.filter_services(services, service_name)
 
-        service_list = []
+        task_list = []
 
         for service in filtered_services:
             service_info = service.attrs
@@ -53,6 +53,7 @@ class ServicesTasksListView(View):
             tasks = dal.docker_client.api.tasks(filters={"service": service_name})
             if tasks:
                 for task in tasks:
+                    task_id = task["ID"]
                     node_id = task['NodeID']
                     state = task['Status']['State']
                     timestamp = task["Status"].get("Timestamp", None)
@@ -62,13 +63,18 @@ class ServicesTasksListView(View):
                     node_name = dal.docker_client.api.inspect_node(node_id).get('Description', {}).get('Hostname', "Unknown")
 
                     # Add to the result
-                    service_list.append({
+                    task_list.append({
+                        "task_id": task_id,
                         "name": service_name,
                         "status": f"{state} (since {uptime})",
-                        "node": node_name
+                        "node": node_name,
+                        "timestamp": timestamp
                     })
+
+        # Sort the list by timestamp, most recent first
+        task_list = sorted(task_list, key=lambda x: parse_datetime(x["timestamp"]) if x["timestamp"] else datetime.min, reverse=True)
 
         # Render the template with sorted services
         return render_template(self.template_name,
-                               services=sorted(service_list, key=lambda x: x["name"]),
+                               service_tasks=sorted(task_list, key=lambda x: x["name"]),
                                title=self.service_name)
