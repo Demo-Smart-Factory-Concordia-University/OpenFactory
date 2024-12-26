@@ -27,7 +27,7 @@ class ServicesTasksListView(View):
     """
 
     decorators = [login_required]
-    template_name = "services/generic/services_list.html"
+    template_name = "services/generic/services_task_list.html"
 
     def filter_services(self, services):
         """
