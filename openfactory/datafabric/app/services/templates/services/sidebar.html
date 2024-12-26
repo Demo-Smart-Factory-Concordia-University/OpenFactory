@@ -1,8 +1,17 @@
 <nav id="sidebar">
-  <ul class="list-unstyled components">   
-     <h5>Services</h5>
-     <li>
-         <a href="{{ url_for('services.agents') }}"><i class="fa fa-cogs"></i> Agents</a>
-     </li>
+  <ul class="list-unstyled components">
+    <h5>Services</h5>
+    <li>
+      <a href="{{ url_for('services.agents') }}"><i class="fa fa-cogs"></i> Agents</a>
+    </li>
+    <li>
+      <a href="{{ url_for('services.supervisors') }}"><i class="fa fa-cogs"></i> Supervisors</a>
+    </li>
+    <li>
+      <a href="{{ url_for('services.producers') }}"><i class="fa fa-link"></i> Kafka producers</a>
+    </li>
+    <li>
+      <a href="{{ url_for('services.influxdb_connectors') }}"><i class="fa fa-link"></i> InfluxDB connectors</a>
+    </li>
   </ul>
-</nav>        
+</nav>
