@@ -21,9 +21,9 @@ def calculate_uptime(timestamp):
     return f"{int(hours)}h {int(minutes % 60)}m ago"
 
 
-class ServicesListView(View):
+class ServicesTasksListView(View):
     """
-    Generic base class for listing services.
+    Generic base class for listing all tasks of a list of services
     """
 
     decorators = [login_required]

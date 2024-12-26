@@ -1,10 +1,10 @@
 """
 DataFabric Producers list view
 """
-from openfactory.datafabric.app.services.core.services_view import ServicesListView
+from openfactory.datafabric.app.services.core.services_tasks_view import ServicesTasksListView
 
 
-class ProducersList(ServicesListView):
+class ProducersList(ServicesTasksListView):
     """
     Producers list view
     """

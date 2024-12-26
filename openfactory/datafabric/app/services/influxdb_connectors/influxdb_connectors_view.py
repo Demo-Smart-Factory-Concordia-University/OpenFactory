@@ -1,10 +1,10 @@
 """
 DataFabric InlfuxDB connectors list view
 """
-from openfactory.datafabric.app.services.core.services_view import ServicesListView
+from openfactory.datafabric.app.services.core.services_tasks_view import ServicesTasksListView
 
 
-class InfluxdbConnectorsList(ServicesListView):
+class InfluxdbConnectorsList(ServicesTasksListView):
     """
     InlfuxDB connectors list view
     """

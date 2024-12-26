@@ -1,10 +1,10 @@
 """
 DataFabric Supervisors list view
 """
-from openfactory.datafabric.app.services.core.services_view import ServicesListView
+from openfactory.datafabric.app.services.core.services_tasks_view import ServicesTasksListView
 
 
-class SupervisorsList(ServicesListView):
+class SupervisorsList(ServicesTasksListView):
     """
     Supervisors list view
     """
