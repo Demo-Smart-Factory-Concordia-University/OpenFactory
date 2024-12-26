@@ -64,7 +64,7 @@ class ServicesTasksListView(View):
 
                     # Add to the result
                     task_list.append({
-                        "task_id": task_id,
+                        "id": task_id,
                         "name": service_name,
                         "status": f"{state} (since {uptime})",
                         "node": node_name,

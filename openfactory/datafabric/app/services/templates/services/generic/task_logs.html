@@ -1,0 +1,24 @@
+{% extends "services/servicesBase.html" %}
+
+{% block content %}
+
+<style>
+    .log-preformatted {
+        font-family: "Courier New", Courier, monospace;
+        background-color: #2e2e2e;
+        color: #e0e0e0;
+        padding: 10px;
+        border-radius: 5px;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        line-height: 1.4;
+    }
+</style>
+
+<h4>{{ title }} logs</h4>
+
+<div style="flex-grow: 1; overflow-y: auto; height: 100%;">
+    <pre class="log-preformatted">{{ logs|replace('\n', '<br>')|safe }}</pre>
+</div>
+
+{% endblock content %}
