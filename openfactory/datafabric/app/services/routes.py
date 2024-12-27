@@ -12,6 +12,7 @@ from .supervisors.supervisors_view import SupervisorsList
 from .producers.producers_view import ProducersList
 from .influxdb_connectors.influxdb_connectors_view import InfluxdbConnectorsList
 from .core.services_tasks_view import ServicesTasksListView
+from .core.service_task_logs import ServiceTaskLogs
 
 
 @serv_blueprint.route('/')
@@ -31,3 +32,4 @@ serv_blueprint.add_url_rule("/producers", view_func=ProducersList.as_view("produ
 serv_blueprint.add_url_rule("/influxdb_connectors", view_func=InfluxdbConnectorsList.as_view("influxdb_connectors"))
 
 serv_blueprint.add_url_rule("/tasks/<service_name>", view_func=ServicesTasksListView.as_view("service_tasks"))
+serv_blueprint.add_url_rule("/tasks/logs/<task_id>", view_func=ServiceTaskLogs.as_view("service_task_logs"))

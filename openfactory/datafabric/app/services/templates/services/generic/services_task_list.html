@@ -10,7 +10,6 @@
                 <th scope="col">Name</th>
                 <th scope="col">Node</th>
                 <th scope="col">Status</th>
-                <th></th>
             </tr>
         </thead>
 
@@ -21,7 +20,6 @@
                 <th><a href="{{ url_for('services.service_task_logs', task_id=task.id) }}">{{ task.name }}</th>
                 <td>{{ task.node }}</td>
                 <td>{{ task.status }}</td>
-                <td><button onclick=location.href="{{ url_for('services.service_task_remove', task_id=task.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
             </tr>
             {% endfor %}
         </tbody>
