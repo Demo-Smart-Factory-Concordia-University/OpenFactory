@@ -9,7 +9,7 @@ from openfactory.models.agents import Agent
 
 class AgentRemove(View):
     """
-    Remove and Agent and its related containers
+    Remove an Agent and its related containers
     """
 
     decorators = [login_required]
