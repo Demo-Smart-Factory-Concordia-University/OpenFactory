@@ -7,3 +7,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///openfact.db'
     FLASK_ADMIN_SWATCH = 'cerulean'
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
+    KSQL_HOST = os.environ.get('KSQL_HOST') or 'http://ksqldb-server:8088'

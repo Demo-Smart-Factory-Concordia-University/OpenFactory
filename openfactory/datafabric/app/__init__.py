@@ -7,12 +7,14 @@ from pathlib import Path
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
+from pyksql.ksql import KSQL
 from openfactory.models.base import Base
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
 
 db = SQLAlchemy(model_class=Base)
 admin_app = Admin(name='DataFabric', template_mode='bootstrap3')
+ksql = KSQL(Config.KSQL_HOST)
 
 def create_app():
     app = Flask(__name__,

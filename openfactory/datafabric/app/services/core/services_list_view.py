@@ -19,9 +19,9 @@ class ServicesListView(View):
         """
         raise NotImplementedError("Subclasses must implement filter_services")
 
-    def dispatch_request(self):
+    def fetch_service_list(self):
         """
-        Fetch and process services to generate the list view
+        Returns the sorted (by name) service list
         """
         services = dal.docker_client.services.list()
         filtered_services = self.filter_services(services)
@@ -41,8 +41,13 @@ class ServicesListView(View):
                 "name": service_name,
                 "status": status
             })
+        return sorted(service_list, key=lambda x: x["name"])
 
+    def dispatch_request(self):
+        """
+        Fetch and process services to generate the list view
+        """
         # Render the template with sorted services
         return render_template(self.template_name,
-                               services=sorted(service_list, key=lambda x: x["name"]),
+                               services=self.fetch_service_list(),
                                title=self.service_name)
