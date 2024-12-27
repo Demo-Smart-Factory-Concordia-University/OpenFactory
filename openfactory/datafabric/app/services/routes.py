@@ -5,6 +5,7 @@ from flask_login import login_required
 from flask import render_template
 from . import serv_blueprint
 from .devices.devices_view import DevicesList
+from .devices.device_services import DeviceServicesList
 from .devices.device_add import DeviceAdd
 from .devices.device_remove import DeviceRemove
 from .devices.devices_load import DeviceStackLoad
@@ -24,6 +25,7 @@ def home():
 
 
 serv_blueprint.add_url_rule("/devices", view_func=DevicesList.as_view("devices"))
+serv_blueprint.add_url_rule("/device/services/<device_uuid>", view_func=DeviceServicesList.as_view("device_services_list"))
 serv_blueprint.add_url_rule("/device/add", view_func=DeviceAdd.as_view("device_add"))
 serv_blueprint.add_url_rule("/device/remove/<int:agent_id>", view_func=DeviceRemove.as_view("device_remove"))
 serv_blueprint.add_url_rule("/device/load_stack", view_func=DeviceStackLoad.as_view("device_load_stack"))

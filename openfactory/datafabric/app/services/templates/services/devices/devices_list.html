@@ -19,7 +19,7 @@
         <tr style="transform: rotate(0);">
         {% for agent in agents %}
         <tr>
-          <th><a href="#">{{ agent.device_uuid }}</th>
+          <th><a href="{{ url_for('services.device_services_list', device_uuid=agent.device_uuid) }}">{{ agent.device_uuid }}</th>
           <td>{{ agent.agent_port }}</td>
           <td>{{ agent.node }}</td>
           <td>{{ agent.status }}</td>
