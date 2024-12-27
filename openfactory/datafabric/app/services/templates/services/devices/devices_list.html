@@ -1,7 +1,7 @@
 {% extends "services/servicesBase.html" %}
 
 {% block content %}
-  <h4>Agents</h4>
+  <h4>Devices</h4>
 
   <div class="table-responsive">
     <table class="table table-striped table-hover table-sm ">
@@ -19,22 +19,22 @@
         <tr style="transform: rotate(0);">
         {% for agent in agents %}
         <tr>
-          <th><a href="#">{{ agent.uuid }}</th>
+          <th><a href="#">{{ agent.device_uuid }}</th>
           <td>{{ agent.agent_port }}</td>
           <td>{{ agent.node }}</td>
           <td>{{ agent.status }}</td>
-          <td><button onclick=location.href="{{ url_for('services.agent_remove', agent_id=agent.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
+          <td><button onclick=location.href="{{ url_for('services.device_remove', agent_id=agent.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
         </tr>   
         {% endfor %}
       </tbody>
 
     </table>
 
-    <button onclick=location.href="{{ url_for('services.agent_add') }}" type="button" class="btn btn-success">
-       <i class="fa fa-plus"></i> Add MTConnect Agent
+    <button onclick=location.href="{{ url_for('services.device_add') }}" type="button" class="btn btn-success">
+       <i class="fa fa-plus"></i> Add OpenFactory Device
     </button>
-    <button onclick=location.href="{{ url_for('services.agent_load_stack') }}" type="button" class="btn btn-success">
-      <i class="fa fa-plus"></i> Load MTConnect Agents Stack
+    <button onclick=location.href="{{ url_for('services.device_load_stack') }}" type="button" class="btn btn-success">
+      <i class="fa fa-plus"></i> Load OpenFactory Devices Stack
    </button>
 
   </div>

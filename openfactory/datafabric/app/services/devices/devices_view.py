@@ -1,5 +1,5 @@
 """
-DataFabric Agents list view
+DataFabric Devices list view
 """
 from sqlalchemy import select
 from flask import render_template
@@ -9,9 +9,9 @@ from openfactory.models.agents import Agent
 from openfactory.datafabric.app import db
 
 
-class AgentList(View):
+class DevicesList(View):
     """
-    Agents list view
+    Devices list view
     """
 
     decorators = [login_required]
@@ -19,6 +19,6 @@ class AgentList(View):
     def dispatch_request(self):
         query = select(Agent)
         agents = db.session.scalars(query)
-        return render_template("services/agents/agents_list.html",
+        return render_template("services/devices/devices_list.html",
                                agents=agents,
-                               title='Agents')
+                               title='Devices')

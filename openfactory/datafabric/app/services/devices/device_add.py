@@ -1,5 +1,5 @@
 """
-DataFabric Agent add view
+DataFabric Device add view
 """
 import os
 import socket
@@ -12,7 +12,6 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired
 from wtforms import IntegerField, DecimalField, StringField, SubmitField
-from wtforms_sqlalchemy.fields import QuerySelectField
 from wtforms.validators import DataRequired, IPAddress, Regexp, NumberRange, Optional, ValidationError
 from flask.views import MethodView
 
@@ -26,17 +25,15 @@ def nodes():
     return dal.docker_client.nodes.list()
 
 
-class AgentAddForm(FlaskForm):
+class DeviceAddForm(FlaskForm):
     """
-    Agent add form
+    Device add form
     """
-    node = QuerySelectField(query_factory=nodes,
-                            description='Node on which agent will be deployed')
     port = IntegerField('Agent port',
-                        description='Port where agent will listen',
+                        description='Port where device agent will listen',
                         validators=[DataRequired()])
     device_uuid = StringField('Device UUID',
-                              description='UUID of device agent handels',
+                              description='UUID of the device',
                               validators=[DataRequired(),
                                           Regexp(r'^[a-zA-Z0-9-_]+$',
                                           message='Please use a single word with only alphanumeric characters and numbers')])
@@ -49,7 +46,7 @@ class AgentAddForm(FlaskForm):
                                          IPAddress(ipv4=True, ipv6=False,
                                                    message="Please Enter a valid IP Address")])
     adapter_port = IntegerField('Adapter port',
-                                description='Port where the adapter listens',
+                                description='Port where the device adapter listens',
                                 validators=[DataRequired()])
     agent_cpus = DecimalField('Allocated CPUs for Agent (leave empty or zero for maximum)',
                               description='CPUs allocated (can be fractions e.g. 0.5)',
@@ -67,12 +64,12 @@ class AgentAddForm(FlaskForm):
                                    description='Maximal memory allocated (in GB)',
                                    validators=[Optional()])
 
-    submit = SubmitField('Deploy Agent')
+    submit = SubmitField('Deploy Device')
 
     def validate_device_uuid(form, field):
         """ Validate that device UUID is unique """
         if db.session.query(Agent).filter_by(uuid=field.data.upper()+'-AGENT').first() is not None:
-            raise ValidationError(f"An agent for device UUID {field.data.upper()} exists already")
+            raise ValidationError(f"A device for device UUID {field.data.upper()} exists already")
 
     def validate_adapter_ip(form, field):
         """ Validate adapter IP """
@@ -109,9 +106,9 @@ class AgentAddForm(FlaskForm):
             raise ValidationError(f"Must be less than number of CPUs of deployment node ({node.cpus} cpus)")
 
 
-class AgentAdd(MethodView):
+class DeviceAdd(MethodView):
     """
-    Agent add view
+    Device add view
     """
 
     decorators = [login_required]
@@ -122,33 +119,32 @@ class AgentAdd(MethodView):
         if get_configuration('datastore_system') is None:
             flash("Cannot create MTConnect agents. Administrator needs first to configure the 'datastore_system' variable", "danger")
             return redirect(url_for('services.agents'))
-        form = AgentAddForm()
-        return render_template("services/agents/agent_add.html",
+        form = DeviceAddForm()
+        return render_template("services/devices/device_add.html",
                                form=form,
-                               title='Deploy New Agent')
+                               title='Deploy New Device')
 
     def post(self):
-        form = AgentAddForm()
+        form = DeviceAddForm()
         if form.validate_on_submit():
 
             agent = Agent(
                 uuid=form.device_uuid.data.upper() + '-AGENT',
                 external=False,
                 agent_port=form.port.data,
-                node_id=form.node.data.id,
             )
 
             current_user.submit_RQ_task('agent_up',
-                                        f'Deploying MTConnect agent {form.device_uuid.data.upper()} on {form.node.data} (this may take a while) ...',
+                                        f'Deploying device {form.device_uuid.data.upper()} (this may take a while) ...',
                                         agent,
                                         form.adapter_ip.data,
                                         form.adapter_port.data,
                                         os.path.join(get_configuration('datastore_system'), 'device.xml'),
                                         float(form.agent_cpus.data),
                                         float(form.producer_cpus.data))
-            return redirect(url_for('services.agents'))
+            return redirect(url_for('services.devices'))
         else:
-            flash('Cannot create the desired agent. Some entries are not valid', "danger")
-            return render_template("services/agents/agent_add.html",
+            flash('Cannot create the desired device. Some entries are not valid', "danger")
+            return render_template("services/devices/device_add.html",
                                    form=form,
-                                   title='Deploy New Agent')
+                                   title='Deploy New Device')

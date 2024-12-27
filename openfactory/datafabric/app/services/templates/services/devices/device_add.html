@@ -1,0 +1,70 @@
+{% extends "services/servicesBase.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+
+{% block content %}
+
+{% set ns = namespace(first_field=true) %}
+
+<h4>Deploy a New OpenFactory Device</h4>
+<hr>
+
+<form method="post" novalidate enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <div class="container-fullwidth">
+        <div class="row">
+
+            <!-- left colum -->
+            <div class="col-sm-5">
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <span data-toggle="tooltip" data-placement="right" title="Agent configurations">Agent</span>
+                    </div>
+                    <div class="card-body">
+                        {{ wtf.form_field(form.port, ns.first_field) }}
+                    </div>
+                </div><br>
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <span data-toggle="tooltip" data-placement="right" title="Runtime configurations">Runtime</span>
+                    </div>
+                    <div class="card-body">
+                        {{ wtf.form_field(form.agent_cpus, ns.first_field) }}
+                        {{ wtf.form_field(form.agent_memory, ns.first_field) }}
+                        {{ wtf.form_field(form.producer_cpus, ns.first_field) }}
+                        {{ wtf.form_field(form.producer_memory, ns.first_field) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- right colum -->
+            <div class="col-sm-5">
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <span data-toggle="tooltip" data-placement="right" title="Device configurations">Device</span>
+                    </div>
+                    <div class="card-body">
+                        {{ wtf.form_field(form.device_uuid, ns.first_field) }}
+                        {{ wtf.form_field(form.mtc_file, ns.first_field) }}
+                    </div>
+                </div><br>
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <span data-toggle="tooltip" data-placement="right" title="Adapter configurations">Adapter</span>
+                    </div>
+                    <div class="card-body">
+                        {{ wtf.form_field(form.adapter_ip, ns.first_field) }}
+                        {{ wtf.form_field(form.adapter_port, ns.first_field) }}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <br>
+    {{ wtf.form_field(form.submit, ns.first_field) }}
+
+</form>
+
+{% endblock content %}

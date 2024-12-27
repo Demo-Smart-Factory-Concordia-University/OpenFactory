@@ -14,14 +14,14 @@ from wtforms.validators import ValidationError
 from openfactory.models.configurations import get_configuration
 
 
-class LoadAgentsStackForm(FlaskForm):
+class LoadDevicesStackForm(FlaskForm):
     """
-    Agents stack load form
+    Devices stack load form
     """
-    yml_file = FileField('Agents Stack YAML configuration file',
-                         description='Agents Stack YAML configuration file',
+    yml_file = FileField('Devices Stack YAML configuration file',
+                         description='Devices Stack YAML configuration file',
                          validators=[FileRequired()])
-    submit = SubmitField('Load Agents Stack')
+    submit = SubmitField('Load Devices Stack')
 
     def validate_yml_file(form, field):
         """ Validate that uploaded file is a YAML file """
@@ -34,7 +34,7 @@ class LoadAgentsStackForm(FlaskForm):
             raise ValidationError("The file does not seem to be a YAML file")
 
 
-class AgentStackLoad(MethodView):
+class DeviceStackLoad(MethodView):
     """
     Stack add view
     """
@@ -47,24 +47,24 @@ class AgentStackLoad(MethodView):
         if get_configuration('datastore_system') is None:
             flash("Cannot create agent stacks. Administrator needs first to configure the 'datastore_system' variable", "danger")
             return redirect(url_for('infra.stacks'))
-        form = LoadAgentsStackForm()
-        return render_template('services/agents/agents_load.html',
+        form = LoadDevicesStackForm()
+        return render_template('services/devices/devices_load.html',
                                form=form,
-                               title='Load Agents Stack')
+                               title='Load Devices Stack')
 
     def post(self):
-        form = LoadAgentsStackForm()
+        form = LoadDevicesStackForm()
         if form.validate_on_submit():
             f = form.yml_file.data
             f.seek(0)
             stack_config_file = os.path.join(get_configuration('datastore_system'), 'stack_config_file.yml')
             f.save(stack_config_file)
             current_user.submit_RQ_task('load_agent_stack',
-                                        'Setting up agents stack (this may take a while) ...',
+                                        'Setting up devices stack (this may take a while) ...',
                                         stack_config_file)
             return redirect(url_for('services.home'))
         else:
-            flash('Cannot create the agent stack. Some entries are not valid', 'danger')
-            return render_template('Services/agents/agents_load.html',
+            flash('Cannot create the device stack. Some entries are not valid', 'danger')
+            return render_template('Services/devices/devices_load.html',
                                    form=form,
-                                   title='Load Agents Stack')
+                                   title='Load Devices Stack')
