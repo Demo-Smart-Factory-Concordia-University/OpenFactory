@@ -6,21 +6,6 @@ from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.app.services.devices.device_services import DeviceServicesList
 
 
-def calculate_uptime(timestamp):
-    """
-    Calculate uptime from the given timestamp
-    """
-    if not timestamp:
-        return "Unknown"
-    started_at = parse_datetime(timestamp)
-    uptime = datetime.now(timezone.utc) - started_at
-    minutes = divmod(uptime.total_seconds(), 60)[0]
-    if minutes < 60:
-        return f"{int(minutes)}m ago"
-    hours = divmod(minutes, 60)[0]
-    return f"{int(hours)}h {int(minutes % 60)}m ago"
-
-
 class ServicesTasksListView(DeviceServicesList):
     """
     Generic base class for listing all tasks of a list of services
@@ -34,6 +19,20 @@ class ServicesTasksListView(DeviceServicesList):
         Filter services
         """
         return [service for service in services if service.name.endswith(service_name)]
+
+    def calculate_uptime(self, timestamp):
+        """
+        Calculate uptime from the given timestamp
+        """
+        if not timestamp:
+            return "Unknown"
+        started_at = parse_datetime(timestamp)
+        uptime = datetime.now(timezone.utc) - started_at
+        minutes = divmod(uptime.total_seconds(), 60)[0]
+        if minutes < 60:
+            return f"{int(minutes)}m ago"
+        hours = divmod(minutes, 60)[0]
+        return f"{int(hours)}h {int(minutes % 60)}m ago"
 
     def dispatch_request(self, service_name):
         """
@@ -57,7 +56,7 @@ class ServicesTasksListView(DeviceServicesList):
                     node_id = task['NodeID']
                     state = task['Status']['State']
                     timestamp = task["Status"].get("Timestamp", None)
-                    uptime = calculate_uptime(timestamp)
+                    uptime = self.calculate_uptime(timestamp)
 
                     # Get the node name from the NodeID
                     node_name = dal.docker_client.api.inspect_node(node_id).get('Description', {}).get('Hostname', "Unknown")
