@@ -1,3 +1,5 @@
+<!-- List services -->
+
 {% extends "services/servicesBase.html" %}
 
 {% block content %}
@@ -13,8 +15,7 @@
         </thead>
 
         <tbody>
-            <tr style="transform: rotate(0);">
-                {% for service in services %}
+            {% for service in services %}
             <tr>
                 <th><a href="{{ url_for('services.service_tasks', service_name=service.name) }}">{{ service.name }}</th>
                 <td>{{ service.status }}</td>
