@@ -1,9 +1,9 @@
 from dateutil.parser import parse as parse_datetime
-from flask.views import View
 from flask import render_template
 from flask_login import login_required
 from datetime import datetime, timezone
 from openfactory.docker.docker_access_layer import dal
+from openfactory.datafabric.app.services.devices.device_services import DeviceServicesList
 
 
 def calculate_uptime(timestamp):
@@ -21,7 +21,7 @@ def calculate_uptime(timestamp):
     return f"{int(hours)}h {int(minutes % 60)}m ago"
 
 
-class ServicesTasksListView(View):
+class ServicesTasksListView(DeviceServicesList):
     """
     Generic base class for listing all tasks of a list of services
     """
@@ -77,4 +77,5 @@ class ServicesTasksListView(View):
         # Render the template with sorted services
         return render_template(self.template_name,
                                service_tasks=sorted(task_list, key=lambda x: x["name"]),
+                               data=self.fetch_data(service_name.replace('-', '_')),
                                title=self.service_name)

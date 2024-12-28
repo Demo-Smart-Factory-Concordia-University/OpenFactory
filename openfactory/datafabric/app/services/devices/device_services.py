@@ -20,8 +20,8 @@ class DeviceServicesList(ServicesListView):
         """
         return [service for service in services if service.name.startswith(self.device_uuid.lower())]
 
-    def fetch_data(self):
-        query = f"SELECT ID, VALUE, TYPE, TAG FROM {self.device_uuid.replace('-', '_')};"
+    def fetch_data(self, ksql_table):
+        query = f"SELECT ID, VALUE, TYPE, TAG FROM {ksql_table};"
         df = asyncio.run(ksql.query_to_dataframe(query))
         json_result = {
             "Samples": {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()},
@@ -41,5 +41,5 @@ class DeviceServicesList(ServicesListView):
         self.device_uuid = device_uuid
         return render_template(self.template_name,
                                services=self.fetch_service_list(),
-                               data=self.fetch_data(),
+                               data=self.fetch_data(self.device_uuid.replace('-', '_')),
                                title=device_uuid)
