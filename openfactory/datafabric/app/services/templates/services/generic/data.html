@@ -1,0 +1,90 @@
+<!-- Display data (Samples, Events and Conditions) -->
+
+<!-- Samples -->
+<div style="flex: 1; border: 1px solid #ddd; padding: 10px; overflow-y: auto">
+    <h5>Samples</h5>
+    <table class="table table-striped table-hover table-sm ">
+        <thead class="table-light">
+            <tr style="background-color: #b0d3d5; padding: 5px">
+                <th>ID</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for id, value in data.Samples.items() %}
+            <tr>
+                <td>{{ id }}</td>
+                <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Events -->
+<div style="flex: 1; border: 1px solid #ddd; padding: 10px; overflow-y: auto">
+    <h5>Events</h5>
+    <table class="table table-striped table-hover table-sm ">
+        <thead class="table-light">
+            <tr style="background-color: #b0d3d5; padding: 5px">
+                <th>ID</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for id, value in data.Events.items() %}
+            <tr>
+                <td>{{ id }}</td>
+                <td style="
+                        {% if id|lower == 'avail' %}
+                            background-color: 
+                            {% if value|lower == 'available' %}
+                                LimeGreen;
+                            {% elif value|lower == 'unavailable' %}
+                                OrangeRed;
+                            {% else %}
+                                inherit;
+                            {% endif %}
+                        {% endif %}
+                    ">
+                    {{ value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Conditions -->
+<div style="flex: 1; border: 1px solid #ddd; padding: 10px; overflow-y: auto">
+    <h5>Conditions</h5>
+    <table class="table table-striped table-hover table-sm ">
+        <thead class="table-light">
+            <tr style="background-color: #b0d3d5; padding: 5px">
+                <th>ID</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for condition in data.Conditions %}
+            <tr>
+                <td>{{ condition.ID }}</td>
+                <td style="
+                    {% if condition.TAG|lower == 'fault' %}
+                        background-color: OrangeRed;
+                    {% elif condition.TAG|lower == 'warning' %}
+                        background-color: gold;
+                    {% elif condition.TAG|lower == 'normal' %}
+                        background-color: LimeGreen;
+                    {% else %}
+                        background-color: inherit;
+                    {% endif %}
+                ">
+                    {{ condition.VALUE }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
