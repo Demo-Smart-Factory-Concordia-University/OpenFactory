@@ -40,6 +40,8 @@ The architecture supporting *OpenFactory* is organized into five distinct layers
 - **ksqlDB**: Provides real-time stream processing, enabling users to query and manipulate data dynamically for actionable insights.
 - **Docker Swarm**: Coordinates and manages microservices across the cluster for optimal performance.
 
+A detailed description of the OpenFactory architecture can be found [here](./docs/architecture/architecture.md).
+
 ## Scalability
 
 *OpenFactory* is built for scalability, enabling the addition of resources as demand grows. Its microservices architecture, managed by Docker Swarm, allows individual services to be scaled independently based on operational needs. This modularity ensures that as more devices are integrated or data processing requirements increase, *OpenFactory* can adapt efficiently, supporting both horizontal and vertical scaling.
