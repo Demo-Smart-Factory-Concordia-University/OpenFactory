@@ -5,7 +5,7 @@ Each OpenFactory node requires
 3. SSH password less access to the node from the OpenFactory manger machine for the OpenFactory user
 
 ## Setup OpenFactoryUser
-Any user account can be used, but it must be the same username across all OpenFactory nodes and it must be added to the [OpenFactory yml configuration file](../openfactory/config/openfactory.yml) under the field `OPENFACTORY_USER`. For example
+Any user account can be used, but it must be the same username across all OpenFactory nodes and it must be added to the [OpenFactory yml configuration file](../../openfactory/config/openfactory.yml) under the field `OPENFACTORY_USER`. For example
 ```
 ...
 # OpenFactory User
@@ -23,7 +23,7 @@ OPENFACTORY_USER: openfactory
    sudo usermod -aG docker openfactory
    ```
 
-3. Make sure the entry `OPENFACTORY_USER:` in the [OpenFactory yml configuration file](../openfactory/config/openfactory.yml) is equal to the user created :
+3. Make sure the entry `OPENFACTORY_USER:` in the [OpenFactory yml configuration file](../../openfactory/config/openfactory.yml) is equal to the user created :
    ```
    OPENFACTORY_USER: openfactory
    ```

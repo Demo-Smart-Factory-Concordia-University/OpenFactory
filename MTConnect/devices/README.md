@@ -1,57 +1,59 @@
-# OpenFactory Device files
-This folder contains examples of OpenFactory device configuration files.
+# OpenFactory Device Configuration Files
+This folder contains examples of OpenFactory device configuration files and their usage.
 
-## OpenFactory device configuration file
-An OpenFactory device configuration file supports so far this structure:
-```
+## OpenFactory Device Configuration File Structure
+An OpenFactory device configuration file follows this structure:
+
+```yaml
 devices:
-
   device-id:
-     uuid: <device-uuid>
-     agent:
-       ...
-     supervisor:
-       ...
-     influxdb:
-       ...
+    uuid: <device-uuid>
+    agent:
+      ...
+    supervisor:
+      ...
+    influxdb:
+      ...
 ```
-As many devices as desired can be defined within the `devices` section. 
-Each device will have a unique (unique for the configuration file) name (in the above example `device-id`). In each device section can be defined:
-- `uuid`: mandatory field containing the OpenFactory wide [unique identifier](#device-uuid) of the device
-- `agent`: mandatory section describing how the device [agent](#agent) is configured to collect the data from the device
-- `supervisor`: optional section describing how the device [supervisor](#supervisor) is configured to send commands to the device
-- `influxdb`: optional section describing the configuration of the device [InfluxDB connector](#influxdb-connector) to send data to an InfluxDB data base
+
+You can define multiple devices within the `devices` section. Each device must have a unique name (e.g., `device-id` in the example above). The following sections can be configured for each device:
+
+- **`uuid`**: A mandatory field containing the OpenFactory-wide [unique identifier](#device-uuid) for the device.
+- **`agent`**: A mandatory section describing how the device's [agent](#agent) collects data.
+- **`supervisor`**: An optional section describing how the [supervisor](#supervisor) sends commands to the device.
+- **`influxdb`**: An optional section configuring the [InfluxDB connector](#influxdb-connector) for sending data to an InfluxDB database.
 
 ### Device UUID
-Each device in OpenFactory needs to be assigned a unique identifier. This UUID is used to refer in a unique way to the device. For example, it is used to create various ksqlDB streams and tables for data stream processing.
+Every device in OpenFactory must be assigned a unique identifier (UUID). This UUID is used across OpenFactory for purposes such as creating ksqlDB streams and tables for data processing.
 
-### Agent
-The mandatory `agent` section descries how the device agent is configured to collect the data from the device. It can be configured either for MTConect ready devices or for devices requiring and adapter to collect the data
+### Agent Configuration
+The `agent` section is mandatory and describes how the device's agent collects data. The configuration depends on whether the device is MTConnect-ready or requires an adapter.
 
-#### MTConnect ready devices
-For MTConect ready devices the device configuration file will be:
-```
+#### MTConnect-Ready Devices
+For MTConnect-ready devices, the configuration file follows this structure:
+
+```yaml
 devices:
-
-  dht-ext:
-    uuid: DHT-EXT
+  device-id:
+    uuid: <device-uuid>
     agent:
       ip: <agent-ip-address>
       port: <agent-port>
 ```
-where the two mandatory fields within the `agent` section are:
-- `ip`: the IP address of the MTConnect ready device
-- `port`: the port on which the MTConnect agent of the device is running
 
-OpenFactory will use the UUID defined in the device configuration file regardless on which UUID the MTConnect ready device may be using.
+The mandatory fields are:
+- **`ip`**: The IP address of the MTConnect-ready device.
+- **`port`**: The port on which the device's MTConnect agent is running.
 
-#### Devices requiring an adapter
-For devices requiring an adapter to collect data the device configuration file will be:
-```
+**Note:** OpenFactory uses the UUID specified in the configuration file, regardless of the UUID used by the MTConnect-ready device.
+
+#### Devices Requiring an Adapter
+For devices that require an adapter, the configuration file follows this structure:
+
+```yaml
 devices:
-
-  dht-001:
-    uuid: DHT-001
+  device-id:
+    uuid: <device-uuid>
     agent:
       port: 3000
       device_xml: sensors/DHT/dht.xml
@@ -61,76 +63,80 @@ devices:
       deploy:
         ...
 ```
-where following fields and sections need to be defined within the `agent` section of the device:
-- `port`: the unique port (OpenFactory wide) on which the deployed agent will run
-- `device_xml`: the location of the MTConnect [device information model](#mtconnect-device-information-model-device_xml)
-- `adapter`: the [adapter section](#adapter-section-adapter) describing where the adapter is running
-- `deploy`: an optional [deploy section](#deploy-section-deploy)
 
-##### MTConnect device information model (`device_xml`)
-The location of the MTConnect device information model can be specified in one of the following ways:
-- **local files** : locally stored files can be specified with `relative/path/to/device_xml.xml` by using the path relative to the device configuration file
-- **GitHub stored files** : files stored in a GitHub repository can be refered as `github://repo@/path/to/device_.xml` where `repo` is the GitHub repo (e.g. `Demo-Smart-Factory-Concordia-University:DemoFactory`) and the full path of the device information model within this repo (e.g. `/devices/models/cnc/ZAIX/zaix-XZ.xml`)
+The required fields and sections under `agent` are:
+- **`port`**: A unique port (OpenFactory-wide) for the deployed agent.
+- **`device_xml`**: The location of the MTConnect [device information model](#mtconnect-device-information-model-device_xml).
+- **`adapter`**: The [adapter section](#adapter-section-adapter) specifying the adapter's configuration.
+- **`deploy`**: An optional [deploy section](#deploy-section-deploy).
 
-When using GitHub stored files, they need either to be in a public repository or, if in a private repository, a GitHub access token needs to be defin in the admin section of the OpenFactory web application. The access token has to be stored in the configuration variable `github_access_tokens` following this format:
-```
+##### MTConnect Device Information Model (`device_xml`)
+The MTConnect device information model can be specified in the following ways:
+- **Local Files**: Use a relative path to the OpenFactory device configuration file, e.g., `relative/path/device.xml`.
+- **GitHub Files**: Specify the path as `github://repo@/path/to/device.xml`. For example, `Demo-Smart-Factory-Concordia-University:DemoFactory/devices/models/cnc/ZAIX/zaix-XZ.xml`.
+
+**Note:** When using GitHub files:
+- Files in private repositories require a GitHub access token configured in the OpenFactory admin interface.
+- The access token must be stored in the `github_access_tokens` configuration variable in the following format:
+
+```json
 {
-    "repo1": 
-    {
-       "token": "<github-access-token>",
-       "user": "<github-user>"
-    },
-    "repo2": 
-    {
-       "token": "<github-access-token>",
-       "user": "<github-user>"
-    }
+  "repo1": {
+    "token": "<github-access-token>",
+    "user": "<github-user>"
+  },
+  "repo2": {
+    "token": "<github-access-token>",
+    "user": "<github-user>"
+  }
 }
+```
 
-```
-As many repositories as desired can be configured where the syntax is like so `Demo-Smart-Factory-Concordia-University:DemoFactory`.
+##### Adapter Section (`adapter`)
+Adapters can be external or deployed from a Docker image:
 
-The GitHub access token has to be configured in GitHub at the organisation level of the repository (personal access token - classics) for the GitHub user defined in the `github_access_tokens` configuration variable.
+- **External Adapter**:
+  ```yaml
+  adapter:
+    ip: <adapter-ip-address>
+    port: <adapter-port>
+  ```
+  - **`ip`**: IP address of the adapter.
+  - **`port`**: Port on which the adapter listens.
 
-##### Adapter section (`adapter`)
-The adapter section can be defined either for an external running adapter:
-```
-adapter:
-ip: <adapter-ip-address>
-port: <adapter-port>
-```
-where `ip` is the IP address where the adapter is running and `port` the port on which it listens, or for an adapter deployed from a Docker image:
-```
-adapter:
+- **Docker-Image-Based Adapter**:
+  ```yaml
+  adapter:
     image: <docker-image>
     port: <adapter-port>
     environment:
-        - MY_VAR1=val1
-        - MY_VAR2=val2
-```
-where `image` is a Docker image of the adapter (needs to be on DockerHub in order OpenFactory can deploy it to any OpenFactory node), `port` is the port on which the adapter will listen and `environment` is an optional section listing environment variable passed to the deployed adapter container.
+      - VAR1=value1
+      - VAR2=value2
+  ```
+  - **`image`**: Docker image of the adapter (must on a Docker repository in order each OpenFactory node can pull it).
+  - **`port`**: Port on which the adapter listens.
+  - **`environment`**: (Optional) List of environment variables for the container.
 
-##### Deploy section (`deploy`)
-In the optional `deploy` section instructions for the deployment of the services can be specified in the same format as in Docker Swarm:
-```
+##### Deploy Section (`deploy`)
+The optional `deploy` section specifies service deployment settings in Docker Swarm format:
+
+```yaml
 deploy:
-    replicas: 1
-    resources:
-        limits:
-        cpus: 1.0
-        memory: '1024M'
-        reservations:
-        cpus: 0.5
-        memory: '256M'
+  replicas: 1
+  resources:
+    limits:
+      cpus: 1.0
+      memory: '1024M'
+    reservations:
+      cpus: 0.5
+      memory: '256M'
 ```
-with
-- `replicas`: how many replications of the service (currently has no effect)
-- `limits` and `reservations`: specifications on maximal required resources (`cpus` and `memory`) and minimal requried ressources (`cpus` and `memory`)
 
+- **`replicas`**: Number of service instances (currently not functional in OpenFactory).
+- **`resources`**: Resource limits (`cpus`, `memory`) and reservations for deployment.
 
-## Supervisor
-More information is available [here](../../openfactory/cmds/)
+### Supervisor
+Refer to the [Supervisor Documentation](../../openfactory/cmds/) for more details.
 
-
-## InfluxDB connector
-More information is available [here](../../InfluxDB/connector/README.md)
+### InfluxDB Connector
+Refer to the [InfluxDB Connector Documentation](../../InfluxDB/connector/README.md) for more information.
