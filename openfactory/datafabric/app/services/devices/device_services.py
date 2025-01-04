@@ -23,18 +23,25 @@ class DeviceServicesList(ServicesListView):
     def fetch_data(self, ksql_table):
         query = f"SELECT ID, VALUE, TYPE, TAG FROM {ksql_table};"
         df = asyncio.run(ksql.query_to_dataframe(query))
-        json_result = {
-            "Samples": {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()},
-            "Events": {row.ID: row.VALUE for row in df[df["TYPE"] == "Events"].itertuples()},
-            "Conditions": [
-                {
-                    "ID": row.ID,
-                    "VALUE": None if str(row.TAG).lower() == "unavailable" else row.VALUE,
-                    "TAG": row.TAG
-                }
-                for row in df[df["TYPE"] == "Condition"].itertuples()
-            ]
-        }
+        if not df.empty:
+            json_result = {
+                "Samples": {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()},
+                "Events": {row.ID: row.VALUE for row in df[df["TYPE"] == "Events"].itertuples()},
+                "Conditions": [
+                    {
+                        "ID": row.ID,
+                        "VALUE": None if str(row.TAG).lower() == "unavailable" else row.VALUE,
+                        "TAG": row.TAG
+                    }
+                    for row in df[df["TYPE"] == "Condition"].itertuples()
+                ]
+            }
+        else:
+            json_result = {
+                "Samples": {},
+                "Events": {},
+                "Conditions": []
+            }
         return json_result
 
     def dispatch_request(self, device_uuid):
