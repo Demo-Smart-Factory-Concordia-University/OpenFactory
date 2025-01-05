@@ -1,0 +1,25 @@
+# docker compose project for development
+
+services:
+
+  influxdb_connector:
+    build:
+      context: ..
+      dockerfile: influxdb/Dockerfile
+    image: ofa/influxdb_connector_dev
+    container_name: influxdb_connector_dev
+    environment:
+      - KSQLDB_URL=${KSQLDB_URL}
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=demofactory
+      - INFLUXDB_BUCKET=devices_data
+      - DEVICE_UUID=ZAIX-001
+    # entrypoint: bash -c "tail -F anything"
+    networks:
+      - factory-net
+
+networks:
+  factory-net:
+    name: factory-net
+    external: true  
