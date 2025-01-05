@@ -1,0 +1,1 @@
+from .ofaapp import OpenFactoryApp
