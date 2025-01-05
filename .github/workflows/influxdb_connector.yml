@@ -22,8 +22,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./InfluxDB/connector
-          file: ./InfluxDB/connector/Dockerfile
+          context: ./openfactory/apps/connectors
+          file: ./openfactory/apps/connectors/influxdb/Dockerfile
           push: true
           tags: ghcr.io/demo-smart-factory-concordia-university/influxdb_connector:latest
           build-args: |
