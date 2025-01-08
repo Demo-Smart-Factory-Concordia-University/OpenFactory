@@ -19,6 +19,7 @@ x-datafabric-common:
   &datafabric-common
   <<: *openfactory-common
   environment:
+      - KSQL_HOST=${KSQL_HOST}
       - SQL_ALCHEMY_CONN=sqlite:////home/ofauser/local/openfact.db
       - DATABASE_URL=sqlite:////home/ofauser/local/openfact.db
       - FLASK_APP=openfactory.datafabric.datafabric
