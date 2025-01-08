@@ -1,0 +1,11 @@
+# ksqldb-cli
+# usefull if ksqldb server is running externally
+
+services:
+
+  ksqldb-cli:
+    # To run interactively:
+    # docker exec -it ksqldb-cli ksql http://<ksqldb-server>:8088
+    image: confluentinc/cp-ksqldb-cli:7.7.0
+    container_name: ksqldb-cli
+    tty: true
