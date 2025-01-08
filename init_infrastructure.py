@@ -129,12 +129,13 @@ def init_infrastructure(networks, manager_labels, volumes):
     print(f"Network '{config.OPENFACTORY_NETWORK}' created successfully.")
 
     # create docker volumes
-    for volume_name, volume_config in volumes.items():
-        if volume_config:
-            driver_opts = volume_config.get('driver_opts', {})
-        else:
-            driver_opts = {}
-        create_volume(client, volume_name, driver_opts)
+    if volumes:
+        for volume_name, volume_config in volumes.items():
+            if volume_config:
+                driver_opts = volume_config.get('driver_opts', {})
+            else:
+                driver_opts = {}
+            create_volume(client, volume_name, driver_opts)
 
 
 if __name__ == '__main__':
