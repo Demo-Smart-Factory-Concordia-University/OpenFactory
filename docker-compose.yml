@@ -64,5 +64,4 @@ services:
 networks:
   factory-net:
     name: factory-net
-    driver: overlay
     external: true
