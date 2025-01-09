@@ -47,6 +47,17 @@
                             {% else %}
                                 inherit;
                             {% endif %}
+                        {% elif 'connection_status' in id|lower %}
+                            background-color: 
+                            {% if value|lower == 'established' %}
+                                LimeGreen;
+                            {% elif value|lower == 'listen' %}
+                                Gold;
+                            {% elif value|lower == 'closed' %}
+                                OrangeRed;
+                            {% else %}
+                                inherit;
+                            {% endif %}
                         {% endif %}
                     ">
                     {{ value }}</td>
