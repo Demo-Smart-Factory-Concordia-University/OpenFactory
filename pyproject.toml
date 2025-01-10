@@ -5,8 +5,6 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openfactory"
 version = "0.1.0"
-packages = ["openfactory", "openfactory.*"]
-include-package-data = true
 dependencies = [
     "paramiko",
     "docker",
@@ -30,3 +28,6 @@ dependencies = [
     "PyKSQL @ git+https://github.com/rwuthric/PyKSQL.git",
     "mtc2kafka @ git+https://github.com/rwuthric/python-mtc2kafka.git"
 ]
+
+[tool.setuptools.packages]
+find = { where = ["."], include = ["openfactory", "openfactory.*"] }
