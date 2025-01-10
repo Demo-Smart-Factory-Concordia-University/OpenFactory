@@ -28,10 +28,8 @@ setup(
         "flask-wtf",
         "WTForms-SQLAlchemy",
         "python-on-whales",
-        "rq"
-    ],
-    dependency_links=[
-        "git+https://github.com/rwuthric/PyKSQL.git#egg=PyKSQL",
-        "git+https://github.com/rwuthric/python-mtc2kafka.git#egg=python-mtc2kafka",
+        "rq",
+        "repo @ https://github.com/rwuthric/PyKSQL.git#egg=PyKSQL",
+        "repo @ https://github.com/rwuthric/python-mtc2kafka.git#egg=python-mtc2kafka"
     ],
 )
