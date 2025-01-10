@@ -340,6 +340,7 @@ class Agent(Base):
                 name=self.device_uuid.lower() + '-influxdb-connector',
                 mode={"Replicated": {"Replicas": 1}},
                 env=[f'DEVICE_UUID={self.device_uuid}',
+                     f'KSQLDB_URL={config.KSQLDB}',
                      f'INFLUXDB_URL={influxdb_config["url"]}',
                      f'INFLUXDB_TOKEN={influxdb_config["token"]}',
                      f'INFLUXDB_ORG={influxdb_config["organisation"]}',
