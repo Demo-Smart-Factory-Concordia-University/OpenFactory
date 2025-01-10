@@ -17,11 +17,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-# Install pip requirements
+# Install OpenFactory
 RUN apt-get update
 RUN apt-get -y install git
-RUN python -m pip install influxdb-client
-RUN python -m pip install git+https://github.com/rwuthric/PyKSQL.git
+RUN python -m pip install git+https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory.git
 
 USER $UNAME
 WORKDIR /home/$UNAME/influxdb

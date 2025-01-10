@@ -1,5 +1,5 @@
 import os
-from .influxdb_connector import InfluxDBConnector
+from openfactory.apps.connectors.influxdb.influxdb_connector import InfluxDBConnector
 
 DEBUG = os.getenv('DEBUG', 0)
 
