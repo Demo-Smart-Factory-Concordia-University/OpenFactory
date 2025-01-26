@@ -114,6 +114,7 @@ class OPCUASupervisor(BaseSupervisor):
             if self.connectionStatus == 'CLOSED':
                 print("Attempting to reconnect to adapter...")
                 await self._connect_to_adapter()
+                self._send_available_commands()
             await asyncio.sleep(self.RECONNECT_INTERVAL)
 
     async def shutdown(self):
