@@ -50,27 +50,7 @@ class OPCUASupervisor(BaseSupervisor):
             self.connectionStatus = "ESTABLISHED"
 
             # Get methods of the OPC UA adapter
-            methods = await self.opcua_adapter.get_methods()
-            print(f"Exposed methods for supervisor adapter {self.browseName}:")
-
-            for method_node in methods:
-                # Fetch and print the method's browse name
-                node_id = method_node.nodeid
-                identifier = node_id.Identifier
-
-                try:
-                    # Fetch and print the method's display name (similar to interactive example)
-                    display_name = await method_node.read_display_name()
-                    description = await method_node.read_description()
-
-                    command_dict = {
-                        "command": display_name.Text,
-                        "description": description.Text
-                    }
-                    self.commands.append(command_dict)
-                    print(f"   Method: {display_name.Text} ({description.Text})")
-                except Exception as e:
-                    print(f"   Failed to get browse name for method {identifier}: {e}")
+            await self._fetch_available_commands()
 
         except Exception as e:
             print(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
@@ -102,6 +82,34 @@ class OPCUASupervisor(BaseSupervisor):
         except Exception as e:
             print(f"Failed to send adapter connection status message for supervisor: {e}")
         return
+
+    async def _fetch_available_commands(self):
+        """
+        Fetch commands from OPC UA server
+        """
+        if not self.opcua_adapter:
+            return
+        methods = await self.opcua_adapter.get_methods()
+        print(f"Exposed methods for supervisor adapter {self.browseName}:")
+
+        for method_node in methods:
+            # Fetch and print the method's browse name
+            node_id = method_node.nodeid
+            identifier = node_id.Identifier
+
+            try:
+                # Fetch and print the method's display name (similar to interactive example)
+                display_name = await method_node.read_display_name()
+                description = await method_node.read_description()
+
+                command_dict = {
+                    "command": display_name.Text,
+                    "description": description.Text
+                }
+                self.commands.append(command_dict)
+                print(f"   Method: {display_name.Text} ({description.Text})")
+            except Exception as e:
+                print(f"   Failed to get browse name for method {identifier}: {e}")
 
     def available_commands(self):
         return self.commands
