@@ -11,7 +11,7 @@ class OPCUASupervisor(BaseSupervisor):
     """
 
     namespace_uri = os.getenv('NAMESPACE_URI', 'openfactory')
-    browseName = os.getenv('BROWSE_NAME')
+    browseName = os.getenv('BROWSE_NAME', 'ZAIX-001')
 
     RECONNECT_INTERVAL = 10  # Time in seconds to wait before trying to reconnect
 
@@ -40,6 +40,7 @@ class OPCUASupervisor(BaseSupervisor):
         """
         Attempt to connect to the adapter at the specified address
         """
+        self.commands = []
         try:
             await self.opcua_client.connect()
             self.idx = await self.opcua_client.get_namespace_index(self.namespace_uri)
@@ -47,6 +48,30 @@ class OPCUASupervisor(BaseSupervisor):
             self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])
             print(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
             self.connectionStatus = "ESTABLISHED"
+
+            # Get methods of the OPC UA adapter
+            methods = await self.opcua_adapter.get_methods()
+            print(f"Exposed methods for supervisor adapter {self.browseName}:")
+
+            for method_node in methods:
+                # Fetch and print the method's browse name
+                node_id = method_node.nodeid
+                identifier = node_id.Identifier
+
+                try:
+                    # Fetch and print the method's display name (similar to interactive example)
+                    display_name = await method_node.read_display_name()
+                    description = await method_node.read_description()
+
+                    command_dict = {
+                        "command": display_name.Text,
+                        "description": description.Text
+                    }
+                    self.commands.append(command_dict)
+                    print(f"   Method: {display_name.Text} ({description.Text})")
+                except Exception as e:
+                    print(f"   Failed to get browse name for method {identifier}: {e}")
+
         except Exception as e:
             print(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
             try:
@@ -77,6 +102,9 @@ class OPCUASupervisor(BaseSupervisor):
         except Exception as e:
             print(f"Failed to send adapter connection status message for supervisor: {e}")
         return
+
+    def available_commands(self):
+        return self.commands
 
     async def _monitor_adapter(self):
         """
@@ -124,7 +152,7 @@ class OPCUASupervisor(BaseSupervisor):
 def main():
 
     supervisor = OPCUASupervisor(
-        device_uuid=os.getenv('DEVICE_UUID'),
+        device_uuid=os.getenv('DEVICE_UUID', 'ZAIX-001'),
         ksql_url=os.getenv('KSQL_URL', 'http://localhost:8088'),
         adapter_ip=os.getenv('ADAPTER_IP', '127.0.0.1'),
         adapter_port=os.getenv('ADAPTER_PORT', 4840)

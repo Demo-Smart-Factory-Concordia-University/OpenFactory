@@ -76,6 +76,28 @@ class BaseSupervisor:
         except Exception as e:
             print(f"Failed to send availability message: {e}")
 
+    def available_commands(self):
+        """ Return the list of exposed commands by the supervisor """
+        raise NotImplementedError("You must implement the 'available_commands' method.")
+
+    def _send_available_commands(self):
+        """ Send available commands to ksqlDB """
+        for cmd in self.available_commands():
+            msg = [
+                {
+                    "device_uuid": self.supervisor_uuid,
+                    "id": cmd['command'],
+                    "value": cmd['description'],
+                    "tag": 'Method',
+                    "type": 'Condition'
+                }
+            ]
+            try:
+                resp = self.ksql.insert_into_stream('DEVICES_STREAM', msg)
+                print(f"Sent method {cmd['command']} description, Response: {resp}")
+            except Exception as e:
+                print(f"Failed to send method description: {e}")
+
     async def fetch_streaming_cmds(self):
         """ Fetch streaming commands from the ksqlDB stream """
         try:
@@ -149,6 +171,7 @@ class BaseSupervisor:
         print(f"Starting OpenFactory supervisor for {self.device_uuid}")
         print("-------------------------------------------------------")
         self.send_availability('AVAILABLE')
+        self._send_available_commands()
         self._event_loop.run_until_complete(self._main_loop())
 
 
