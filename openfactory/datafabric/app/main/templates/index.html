@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <h1>Home</h1>
+<div>
+    <h1>Welcome to OpenFactory</h1>
+    <br>
+    <img src="{{ url_for('main.static', filename='figures/DataFlow.png') }}" 
+         alt="OpenFactory" 
+         style="width: 90%; margin: 0 auto; display: block;" />
+</div>
 {% endblock app_content %}
