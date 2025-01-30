@@ -2,6 +2,7 @@ import os
 import asyncio
 from asyncua import Client
 from asyncua import ua
+from asyncua.ua import uaerrors
 from basesupervisor import BaseSupervisor
 
 
@@ -154,8 +155,14 @@ class OPCUASupervisor(BaseSupervisor):
             if self.connectionStatus == 'CLOSED':
                 return
 
-        return await self.opcua_adapter.call_method(f"{self.idx}:{cmd.strip()}",
-                                                    ua.Variant(args.strip(), ua.VariantType.String))
+        # request execution of method on OPCUA server
+        try:
+            ret = await self.opcua_adapter.call_method(f"{self.idx}:{cmd.strip()}",
+                                                       ua.Variant(args.strip(), ua.VariantType.String))
+        except uaerrors:
+            ret = "Unknown method"
+
+        return ret
 
 
 def main():
