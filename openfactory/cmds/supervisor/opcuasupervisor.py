@@ -159,8 +159,11 @@ class OPCUASupervisor(BaseSupervisor):
         try:
             ret = await self.opcua_adapter.call_method(f"{self.idx}:{cmd.strip()}",
                                                        ua.Variant(args.strip(), ua.VariantType.String))
-        except uaerrors:
+        except uaerrors._auto.BadNoMatch:
             ret = "Unknown method"
+        except Exception as e:
+            print(f"An unexpected error occured: {e}")
+            ret = "Unknown error"
 
         return ret
 
