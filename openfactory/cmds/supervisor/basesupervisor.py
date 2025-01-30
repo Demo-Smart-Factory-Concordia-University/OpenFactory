@@ -94,7 +94,7 @@ class BaseSupervisor:
             ]
             try:
                 resp = self.ksql.insert_into_stream('DEVICES_STREAM', msg)
-                print(f"Sent method {cmd['command']} description, Response: {resp}")
+                print(f"Sent method {cmd['command']} | {cmd['description']}, Response: {resp}")
             except Exception as e:
                 print(f"Failed to send method description: {e}")
 
