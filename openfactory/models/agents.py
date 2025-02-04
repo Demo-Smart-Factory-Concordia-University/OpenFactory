@@ -217,6 +217,7 @@ class Agent(Base):
         try:
             service = client.services.get(self.device_uuid.lower() + '-agent')
             service.remove()
+            self.send_unavailable()
             user_notify.success(f"Agent {self.uuid} stopped successfully")
         except docker.errors.NotFound:
             user_notify.info(f"Agent {self.uuid} was not running")
@@ -290,6 +291,27 @@ class Agent(Base):
             pass
         except docker.errors.APIError as err:
             raise OFAException(err)
+        
+    def send_unavailable(self):
+        """ Send agent and device unavailable messages to ksqlDB """
+        ksql = KSQL(config.KSQLDB)
+        msg = [
+            {
+                "device_uuid": self.uuid,
+                "id": "avail",
+                "value": "UNAVAILABLE",
+                "tag": "Availability",
+                "type": "Events"
+            },
+            {
+                "device_uuid": self.device_uuid,
+                "id": "avail",
+                "value": "UNAVAILABLE",
+                "tag": "Availability",
+                "type": "Events"
+            }
+        ]
+        ksql.insert_into_stream("DEVICES_STREAM", msg)
 
     def create_ksqldb_tables(self):
         """ Create ksqlDB tables related to the agent """
