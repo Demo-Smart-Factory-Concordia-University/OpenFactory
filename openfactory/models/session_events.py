@@ -11,4 +11,4 @@ def receive_persistent_to_deleted(session, instance):
     Sends user notifications when objects are deleted
     """
     if isinstance(instance, Agent):
-        user_notify.success(f"Agent {instance.uuid} removed successfully")
+        user_notify.success(f"Agent {instance.uuid} shut down successfully")

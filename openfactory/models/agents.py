@@ -250,7 +250,7 @@ class Agent(Base):
         try:
             service = client.services.get(self.device_uuid.lower() + '-producer')
             service.remove()
-            user_notify.success(f"Kafka producer for agent {self.uuid} stopped successfully")
+            user_notify.success(f"Kafka producer for agent {self.uuid} shut down successfully")
         except docker.errors.NotFound:
             user_notify.info(f"Kafka producer for agent {self.uuid} was not running")
         except docker.errors.APIError as err:
@@ -279,13 +279,13 @@ class Agent(Base):
             return
         user_notify.success(f"Adapter {self.device_uuid.lower() + '-adapter'} created successfully")
 
-    def remove_adapter(self):
+    def shut_down_adapter(self):
         """ Removes adapter if it is a Docker swarm service """
         client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-adapter')
             service.remove()
-            user_notify.success(f"Adapter for agent {self.uuid} removed successfully")
+            user_notify.success(f"Adapter for agent {self.uuid} shut down successfully")
         except docker.errors.NotFound:
             # no adapter running as a Docker swarm service
             pass
@@ -397,6 +397,6 @@ def agent_before_delete(mapper, connection, target):
     """
     Stop the various services
     """
-    target.remove_adapter()
+    target.shut_down_adapter()
     target.detach()
     target.stop()

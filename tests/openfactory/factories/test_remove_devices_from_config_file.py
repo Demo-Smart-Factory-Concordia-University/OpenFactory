@@ -9,7 +9,7 @@ import tests.mocks as mock
 from openfactory.ofa.db import db
 from openfactory.docker.docker_access_layer import dal
 from openfactory.factories import create_agents_from_config_file
-from openfactory.factories import remove_devices_from_config_file
+from openfactory.factories import shut_down_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
 from openfactory.models.agents import Agent
@@ -76,7 +76,7 @@ class Test_remove_devices_from_config_file(TestCase):
         # remove agent
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_one_agent.yml')
-        remove_devices_from_config_file(db.session, config_agent)
+        shut_down_devices_from_config_file(db.session, config_agent)
 
         # check agent-001 was removed but not agent-002
         query = select(Agent).where(Agent.uuid == "TEST-ZAIX-001-AGENT")
@@ -87,7 +87,7 @@ class Test_remove_devices_from_config_file(TestCase):
         # remove agent-001 and agent-002
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_agents.yml')
-        remove_devices_from_config_file(db.session, config_agent)
+        shut_down_devices_from_config_file(db.session, config_agent)
 
         # check agent-002 removed
         query = select(Agent).where(Agent.uuid == "TEST-ZAIX-002-AGENT")
@@ -96,9 +96,9 @@ class Test_remove_devices_from_config_file(TestCase):
         # clean up
         self.cleanup()
 
-    def test_remove_devices_notifications(self, *args):
+    def test_shut_down_devices_notifications(self, *args):
         """
-        Test user notifications during device removal
+        Test user notifications during device shut down
         """
 
         # setup agent
@@ -111,7 +111,7 @@ class Test_remove_devices_from_config_file(TestCase):
         user_notify.success.reset_mock()
         config_agent = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'mocks/mock_agents.yml')
-        remove_devices_from_config_file(db.session, config_agent)
+        shut_down_devices_from_config_file(db.session, config_agent)
 
         # check notifications
         calls = user_notify.info.call_args_list
@@ -120,10 +120,10 @@ class Test_remove_devices_from_config_file(TestCase):
         self.assertEqual(calls[2], call('No Agent TEST-ZAIX-002-AGENT defined in OpenFactory'))
 
         calls = user_notify.success.call_args_list
-        self.assertIn(call('Kafka producer for agent TEST-ZAIX-001-AGENT stopped successfully'), calls)
+        self.assertIn(call('Kafka producer for agent TEST-ZAIX-001-AGENT shut down successfully'), calls)
         self.assertIn(call('Agent TEST-ZAIX-001-AGENT stopped successfully'), calls)
-        self.assertIn(call('Agent TEST-ZAIX-001-AGENT removed successfully'), calls)
-        self.assertIn(call('TEST-ZAIX-001 removed successfully'), calls)
+        self.assertIn(call('Agent TEST-ZAIX-001-AGENT shut down successfully'), calls)
+        self.assertIn(call('TEST-ZAIX-001 shut down successfully'), calls)
 
         # clean up
         self.cleanup()
@@ -143,7 +143,7 @@ class Test_remove_devices_from_config_file(TestCase):
 
         # make delete agent to raise OFAException
         mock_db_session.delete = Mock(side_effect=OFAException('Delete error'))
-        remove_devices_from_config_file(mock_db_session, config_agent)
+        shut_down_devices_from_config_file(mock_db_session, config_agent)
 
         # check errors were captured and handled
         calls = user_notify.fail.call_args_list
@@ -165,7 +165,7 @@ class Test_remove_devices_from_config_file(TestCase):
         mock.docker_service.remove.side_effect = docker.errors.APIError('Mocking Docker API error')
 
         # check it is handled correctly
-        remove_devices_from_config_file(db.session, config_agent)
+        shut_down_devices_from_config_file(db.session, config_agent)
         calls = user_notify.fail.call_args_list
         self.assertIn(call('Cannot remove TEST-ZAIX-001 - Mocking Docker API error'), calls)
 

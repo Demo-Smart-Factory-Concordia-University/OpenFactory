@@ -8,7 +8,7 @@ from openfactory.ofa.db import db
 from openfactory.models.base import Base
 
 
-@patch("openfactory.factories.remove_devices_from_config_file")
+@patch("openfactory.factories.shut_down_devices_from_config_file")
 class TestDeviceDown(TestCase):
     """
     Unit tests for ofa.stack.click_down
@@ -26,15 +26,15 @@ class TestDeviceDown(TestCase):
         Base.metadata.drop_all(db.engine)
         db.session.close()
 
-    def test_device_down(self, mock_remove_devices_from_config_file):
+    def test_device_down(self, mock_shut_down_devices_from_config_file):
         """
-        Test remove_devices_from_config_file called correctly
+        Test shut_down_devices_from_config_file called correctly
         """
         runner = CliRunner()
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_agents.yml')
         result = runner.invoke(ofa.device.click_down, [config_file])
-        mock_remove_devices_from_config_file.called_once_with(db.session, config_file)
+        mock_shut_down_devices_from_config_file.called_once_with(db.session, config_file)
         self.assertEqual(result.exit_code, 0)
 
     def test_device_down_none_existent_file(self, *args):

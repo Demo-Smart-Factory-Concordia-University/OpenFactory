@@ -6,9 +6,9 @@ from openfactory.models.agents import Agent
 from openfactory.factories.remove_supervisor import remove_device_supervisor
 
 
-def remove_devices_from_config_file(db_session, yaml_config_file):
+def shut_down_devices_from_config_file(db_session, yaml_config_file):
     """
-    Removes devices based on a config file
+    Shut down devices based on a config file
     """
 
     # Load yaml description file
@@ -32,4 +32,4 @@ def remove_devices_from_config_file(db_session, yaml_config_file):
             user_notify.fail(f"Cannot remove {device['uuid']} - {err}")
         if device['supervisor']:
             remove_device_supervisor(device)
-        user_notify.success(f"{device['uuid']} removed successfully")
+        user_notify.success(f"{device['uuid']} shut down successfully")
