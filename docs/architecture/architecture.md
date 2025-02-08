@@ -66,7 +66,7 @@ The GitHub workflow [opcua_supervisor.yml](../../.github/workflows/opcua_supervi
 
 ## OpenFactory Devices  
 
-OpenFactory devices are digital representations of physical devices, adhering to the [MTConnect standard](https://www.mtconnect.org/) for their data information model. However, the command information model must be defined by the OpenFactory user as their is no universal industry standard for commands available.  
+OpenFactory devices are digital representations of physical devices, adhering to the [MTConnect standard](https://www.mtconnect.org/) for their data information model. However, the command information model must be defined by the OpenFactory user as there is no universal industry standard for commands available.  
 
 For OPC-UA devices, OpenFactory can connect to the device’s OPC-UA server to send commands.  
 
@@ -81,9 +81,7 @@ Each device must have a unique UUID. For this example, we assume the UUID is `DE
 - **`DEVICE_UUID_AGENT`**: Tracks state information of the device agent.  
 - **`DEVICE_UUID_PRODUCER`**: Tracks state information of the Kafka producer.  
 - **`DEVICE_UUID_SUPERVISOR`**: Tracks state information of the Supervisor (if deployed).  
-- **`DEVICE_UUID_CMDS`**: Derived from `DEVICE_UUID_CMDS` stream (if it exists).  
-
-Here’s an improved version of the section with better readability, clarity, and formatting:
+- **`DEVICE_UUID_CMDS`**: Derived from `DEVICE_UUID_CMDS` stream (if it exists).
 
 ## OpenFactory Deployment Tool  
 The OpenFactory deployment tool, [`ofa.py`](../../ofa.py), automates the deployment of services and the creation of device streams and tables in ksqlDB, based on instructions provided in the device configuration files.  
