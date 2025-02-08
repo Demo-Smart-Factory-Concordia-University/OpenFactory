@@ -1,6 +1,6 @@
 SET 'auto.offset.reset' = 'earliest';
 
--- MTConnect Devices data streams and tables
+-- MTConnect Devices data stream
 CREATE STREAM devices_stream (
         device_uuid VARCHAR KEY,
         id VARCHAR,
@@ -13,9 +13,31 @@ CREATE STREAM devices_stream (
         VALUE_FORMAT = 'JSON'
     );
 
-CREATE TABLE devices_avail AS
-    SELECT device_uuid,
-           LATEST_BY_OFFSET(value) AS availability
-    FROM devices_stream
-    WHERE ID='avail' OR ID='agent_avail'
-    GROUP BY device_uuid;
+-- Stream for devices availability tombstones
+CREATE STREAM devices_avail_tombstones WITH (
+    KAFKA_TOPIC = 'devices_avail_topic',
+    VALUE_FORMAT = 'KAFKA',
+    PARTITIONS = 1
+) AS 
+SELECT device_uuid, CAST(NULL AS VARCHAR) AS value
+FROM devices_stream
+WHERE (id IN ('avail', 'agent_avail') AND value = 'delete');
+
+-- Stream for devices availability
+CREATE STREAM devices_avail_stream WITH (
+    KAFKA_TOPIC = 'devices_avail_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+) AS 
+SELECT * FROM devices_stream 
+WHERE (id IN ('avail', 'agent_avail') AND value != 'delete');
+
+-- Table for devices availability status
+CREATE SOURCE TABLE devices_avail (
+    device_uuid VARCHAR PRIMARY KEY,
+    value VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'devices_avail_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+);
