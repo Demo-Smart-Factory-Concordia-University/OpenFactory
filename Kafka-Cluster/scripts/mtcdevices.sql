@@ -53,13 +53,14 @@ CREATE STREAM devices_avail_stream WITH (
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 ) AS 
-SELECT * FROM devices_stream 
+SELECT device_uuid, value AS availability
+FROM devices_stream 
 WHERE (id IN ('avail', 'agent_avail') AND value != 'delete');
 
 -- Table for devices availability status
 CREATE SOURCE TABLE devices_avail (
     device_uuid VARCHAR PRIMARY KEY,
-    value VARCHAR
+    availability VARCHAR
 ) WITH (
     KAFKA_TOPIC = 'devices_avail_topic',
     VALUE_FORMAT = 'JSON',
