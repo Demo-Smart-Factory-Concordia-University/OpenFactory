@@ -22,7 +22,7 @@ class DeviceServicesList(ServicesListView):
 
     def fetch_data(self, device_uuid):
         """ Fetch data from devices table `"""
-        query = f"SELECT ID, VALUE, TYPE, TAG FROM devices WHERE DEVICE_UUID='{device_uuid.upper()}';"
+        query = f"SELECT ID, VALUE, TYPE, TAG FROM devices WHERE KEY LIKE '{device_uuid.upper()}|%';"
         df = asyncio.run(ksql.query_to_dataframe(query))
         if not df.empty:
             json_result = {
