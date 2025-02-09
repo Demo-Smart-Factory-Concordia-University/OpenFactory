@@ -18,12 +18,12 @@ CREATE STREAM rekeyed_devices_stream AS
   SELECT 
     device_uuid,
     id,
-    concat(concat(CAST(device_uuid AS STRING), '_'), CAST(id AS STRING)) AS key,
+    concat(concat(CAST(device_uuid AS STRING), '|'), CAST(id AS STRING)) AS key,
     value,
     type,
     tag
   FROM devices_stream
-  PARTITION BY concat(concat(CAST(device_uuid AS STRING), '_'), CAST(id AS STRING));
+  PARTITION BY concat(concat(CAST(device_uuid AS STRING), '|'), CAST(id AS STRING));
 
 -- MTConnect Devices data table
 CREATE TABLE devices AS

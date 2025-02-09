@@ -18,12 +18,26 @@ and defines the following ksqlDB stream topology for the status of the availabil
 
 ### How to List the Current State of a Device
 
-Query the table `DEVICES`:
+To list the current sate of all dataItems of a device, query the table `DEVICES`:
 
+```sql
+SELECT * FROM devices WHERE key LIKE 'DEVICE-UUID|%';
+```
+where `DEVICE-UUID` is the UUID of the device from which one wants to obtain the current state.
+
+#### Note: 
+To use instead
 ```sql
 SELECT * FROM devices WHERE DEVICE_UUID='DEVICE-UUID';
 ```
-where `DEVICE-UUID` is the UUID of the device from which one wants to obtain the current state.
+would return as well the correct results, but is significantly less efficient as ksqlDB will have to scan over all
+partitions of the table `DEVICES` as the table key is the field `KEY` and not `DEVICE_UUID`.
+
+In case a specific dataItem of a device is to be queries, the most efficient syntax is
+```sql
+SELECT * FROM devices WHERE key='DEVICE-UUID|DATA_ITEM_ID';
+```
+where `DATA_ITEM_ID` is the ID of the dataItem one wants to obtain the current state.
 
 ### How to Remove a Row in `DEVICES_AVAIL`  
 
