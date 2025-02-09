@@ -4,11 +4,14 @@ This folder contains the ksqlDB scripts used to create the initial streams and t
 
 ## MTCDevice  
 
-The script [mtcdevices.sql](mtcdevices.sql) defines the following ksqlDB streams and tables:  
+The script [mtcdevices.sql](mtcdevices.sql) defines the following ksqlDB streams and tables for the data of the devices:  
 
 - **`DEVICES_STREAM`**: A stream containing all Kafka messages from the `mtc_devices` topic, which is used by the Kafka producers of the deployed devices in OpenFactory.
 - **`REKEYED_DEVICES_STREAM`**: A derived stream rekeying `DEVICES_STREAM` with the composite key `DEVICE_UUID`-`ID`.
 - **`DEVICES`**: A table listing by device the current values of each `ID`.
+
+and defines the following ksqlDB stream topology for the status of the availability of the devices:
+![Stream processing topology for device availability status](devices_avail_stream_topology.png) 
 - **`DEVICES_AVAIL_STREAM`**: A derived stream that selects only the availability entries of devices.
 - **`DEVICES_AVAIL_TOMBSTONES`**: A stream ensuring that any Kafka message in the `mtc_devices` topic (or equivalently in the `DEVICES_STREAM`) with an availability value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).
 - **`DEVICES_AVAIL`**: A table listing the availability status of OpenFactory devices.
