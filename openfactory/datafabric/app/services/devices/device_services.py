@@ -20,8 +20,9 @@ class DeviceServicesList(ServicesListView):
         """
         return [service for service in services if service.name.startswith(self.device_uuid.lower())]
 
-    def fetch_data(self, ksql_table):
-        query = f"SELECT ID, VALUE, TYPE, TAG FROM {ksql_table};"
+    def fetch_data(self, device_uuid):
+        """ Fetch data from devices table `"""
+        query = f"SELECT ID, VALUE, TYPE, TAG FROM devices WHERE DEVICE_UUID='{device_uuid.upper()}';"
         df = asyncio.run(ksql.query_to_dataframe(query))
         if not df.empty:
             json_result = {
@@ -48,5 +49,5 @@ class DeviceServicesList(ServicesListView):
         self.device_uuid = device_uuid
         return render_template(self.template_name,
                                services=self.fetch_service_list(),
-                               data=self.fetch_data(self.device_uuid.replace('-', '_')),
+                               data=self.fetch_data(device_uuid),
                                title=device_uuid)
