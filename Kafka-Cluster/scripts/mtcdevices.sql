@@ -13,6 +13,30 @@ CREATE STREAM devices_stream (
         VALUE_FORMAT = 'JSON'
     );
 
+-- MTConnect Devices data stream with composite key
+CREATE STREAM rekeyed_devices_stream AS
+  SELECT 
+    device_uuid,
+    id,
+    concat(concat(CAST(device_uuid AS STRING), '_'), CAST(id AS STRING)) AS key,
+    value,
+    type,
+    tag
+  FROM devices_stream
+  PARTITION BY concat(concat(CAST(device_uuid AS STRING), '_'), CAST(id AS STRING));
+
+-- MTConnect Devices data table
+CREATE TABLE devices AS
+  SELECT 
+    key,
+    LATEST_BY_OFFSET(device_uuid) AS device_uuid,
+    LATEST_BY_OFFSET(id) AS id,
+    LATEST_BY_OFFSET(value) AS value,
+    LATEST_BY_OFFSET(type) AS type,
+    LATEST_BY_OFFSET(tag) AS tag
+  FROM rekeyed_devices_stream
+  GROUP BY key;
+
 -- Stream for devices availability tombstones
 CREATE STREAM devices_avail_tombstones WITH (
     KAFKA_TOPIC = 'devices_avail_topic',

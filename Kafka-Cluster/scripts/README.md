@@ -6,10 +6,21 @@ This folder contains the ksqlDB scripts used to create the initial streams and t
 
 The script [mtcdevices.sql](mtcdevices.sql) defines the following ksqlDB streams and tables:  
 
-- **`DEVICES_STREAM`**: A stream containing all Kafka messages from the `mtc_devices` topic, which is used by the Kafka producers of the deployed devices in OpenFactory.  
-- **`DEVICES_AVAIL_STREAM`**: A derived stream that selects only the availability entries of devices.  
-- **`DEVICES_AVAIL_TOMBSTONES`**: A stream ensuring that any Kafka message in the `mtc_devices` topic (or equivalently in the `DEVICES_STREAM`) with an availability value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).  
-- **`DEVICES_AVAIL`**: A table listing the availability status of OpenFactory devices.  
+- **`DEVICES_STREAM`**: A stream containing all Kafka messages from the `mtc_devices` topic, which is used by the Kafka producers of the deployed devices in OpenFactory.
+- **`REKEYED_DEVICES_STREAM`**: A derived stream rekeying `DEVICES_STREAM` with the composite key `DEVICE_UUID`-`ID`.
+- **`DEVICES`**: A table listing by device the current values of each `ID`.
+- **`DEVICES_AVAIL_STREAM`**: A derived stream that selects only the availability entries of devices.
+- **`DEVICES_AVAIL_TOMBSTONES`**: A stream ensuring that any Kafka message in the `mtc_devices` topic (or equivalently in the `DEVICES_STREAM`) with an availability value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).
+- **`DEVICES_AVAIL`**: A table listing the availability status of OpenFactory devices.
+
+### How to List the Current State of a Device
+
+Query the table `DEVICES`:
+
+```sql
+SELECT * FROM devices WHERE DEVICE_UUID='DEVICE-UUID';
+```
+where `DEVICE-UUID` is the UUID of the device from which one wants to obtain the current state.
 
 ### How to Remove a Row in `DEVICES_AVAIL`  
 
