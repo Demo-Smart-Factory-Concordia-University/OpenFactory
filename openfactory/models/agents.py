@@ -10,6 +10,7 @@ from sqlalchemy import JSON
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from confluent_kafka import Producer
 from pyksql.ksql import KSQL
 from httpx import HTTPError
 from paramiko.ssh_exception import SSHException
@@ -196,14 +197,14 @@ class Agent(Base):
         except docker.errors.APIError as err:
             raise OFAException(f"Producer {self.device_uuid.lower() + '-producer'} could not be created\n{err}")
 
-    def start(self):
+    def start(self, ksql_tables):
         """ Start agent """
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
         try:
             self.deploy_agent()
-            self.attach()
+            self.attach(ksql_tables)
         except OFAException as err:
             user_notify.fail(f"Agent {self.uuid} could not be started\n{err}")
         user_notify.success(f"Agent {self.uuid} started successfully")
@@ -226,12 +227,12 @@ class Agent(Base):
         if self.kafka_producer:
             self.kafka_producer.send_agent_availability('UNAVAILABLE')
 
-    def attach(self):
+    def attach(self, ksql_tables):
         """ Attach a Kafka producer to the MTConnect agent """
 
         # create ksqlDB table for agent
         try:
-            self.create_ksqldb_tables()
+            self.create_ksqldb_tables(ksql_tables)
         except HTTPError:
             raise OFAException(f"Could not connect to ksqlDB {config.KSQLDB}")
 
@@ -291,7 +292,7 @@ class Agent(Base):
             pass
         except docker.errors.APIError as err:
             raise OFAException(err)
-        
+
     def send_unavailable(self):
         """ Send agent and device unavailable messages to ksqlDB """
         ksql = KSQL(config.KSQLDB)
@@ -313,45 +314,74 @@ class Agent(Base):
         ]
         ksql.insert_into_stream("DEVICES_STREAM", msg)
 
-    def create_ksqldb_tables(self):
+    def create_ksqldb_tables(self, ksql_tables):
         """ Create ksqlDB tables related to the agent """
+        if ksql_tables is None:
+            return
         ksql = KSQL(config.KSQLDB)
-        # device stream
-        ksql._statement_query(f"""CREATE STREAM {self.device_uuid.replace('-', '_')}_STREAM AS
-                                      SELECT *
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{self.device_uuid}';""")
-        user_notify.success((f"ksqlDB stream {self.device_uuid.replace('-', '_')}_STREAM created successfully"))
-        # device table
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.device_uuid.replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value,
-                                             LATEST_BY_OFFSET(type) AS type,
-                                             LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{self.device_uuid}'
-                                      GROUP BY id;""")
-        # agent table
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.uuid.upper().replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value,
-                                             LATEST_BY_OFFSET(type) AS type,
-                                             LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{self.uuid}'
-                                      GROUP BY id;""")
+
+        if 'device' in ksql_tables:
+            # device stream
+            ksql._statement_query(f"""CREATE STREAM {self.device_uuid.replace('-', '_')}_STREAM AS
+                                        SELECT *
+                                        FROM devices_stream
+                                        WHERE device_uuid = '{self.device_uuid}';""")
+            user_notify.success((f"ksqlDB stream {self.device_uuid.replace('-', '_')}_STREAM created successfully"))
+            # device table
+            ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.device_uuid.replace('-', '_')} AS
+                                        SELECT id,
+                                                LATEST_BY_OFFSET(value) AS value,
+                                                LATEST_BY_OFFSET(type) AS type,
+                                                LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
+                                        FROM devices_stream
+                                        WHERE device_uuid = '{self.device_uuid}'
+                                        GROUP BY id;""")
+            user_notify.success((f"ksqlDB table {self.device_uuid.replace('-', '_')} created successfully"))
+        if 'agent' in ksql_tables:
+            # agent table
+            ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.uuid.upper().replace('-', '_')} AS
+                                        SELECT id,
+                                                LATEST_BY_OFFSET(value) AS value,
+                                                LATEST_BY_OFFSET(type) AS type,
+                                                LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
+                                        FROM devices_stream
+                                        WHERE device_uuid = '{self.uuid}'
+                                        GROUP BY id;""")
+            user_notify.success((f"ksqlDB table {self.uuid.upper().replace('-', '_')} created successfully"))
+        if 'producer' in ksql_tables:
+            # producer table
+            ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.producer_uuid.replace('-', '_')} AS
+                                        SELECT id,
+                                                LATEST_BY_OFFSET(value) AS value,
+                                                LATEST_BY_OFFSET(type) AS type,
+                                                LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
+                                        FROM devices_stream
+                                        WHERE device_uuid = '{self.producer_uuid}'
+                                        GROUP BY id;""")
+            user_notify.success((f"ksqlDB table {self.producer_uuid.replace('-', '_')} created successfully"))
+
+    def remove_ksqldb_tables(self):
+        """ Remove ksqlDB tables related to the agent """
+        ksql = KSQL(config.KSQLDB)
+
         # producer table
-        ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {self.producer_uuid.replace('-', '_')} AS
-                                      SELECT id,
-                                             LATEST_BY_OFFSET(value) AS value,
-                                             LATEST_BY_OFFSET(type) AS type,
-                                             LATEST_BY_OFFSET(REGEXP_REPLACE(tag, '\\{{[^}}]*\\}}', '')) AS tag
-                                      FROM devices_stream
-                                      WHERE device_uuid = '{self.producer_uuid}'
-                                      GROUP BY id;""")
-        user_notify.success((f"ksqlDB tables {self.device_uuid.replace('-', '_')}, "
-                             f"{self.uuid.upper().replace('-', '_')} and "
-                             f"{self.producer_uuid.replace('-', '_')} created successfully"))
+        ksql._statement_query(f"""DROP TABLE {self.producer_uuid.replace('-', '_')} DELETE TOPIC;""")
+
+        # agent table
+        ksql._statement_query(f"""DROP TABLE {self.uuid.upper().replace('-', '_')} DELETE TOPIC;""")
+
+        # device table
+        ksql._statement_query(f"""DROP TABLE {self.device_uuid.replace('-', '_')} DELETE TOPIC;""")
+
+        # device stream
+        ksql._statement_query(f"""DROP STREAM {self.device_uuid.replace('-', '_')} DELETE TOPIC;""")
+
+        # tombstone message for table DEVICES_AVAIL
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=ksql.get_kafka_topic('devices_avail'),
+                     key=self.device_uuid.encode('utf-8'),
+                     value=None)
+        prod.flush()
 
     def create_influxdb_connector(self, influxdb_config, cpus_limit=1, cpus_reservation=0.5):
         """ Create Docker container for influxDB connector """

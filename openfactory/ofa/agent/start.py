@@ -17,7 +17,7 @@ def click_start(agent_uuid):
         exit(1)
     else:
         try:
-            agent[0].start()
+            agent[0].start(None)
         except OFAException as err:
             user_notify.fail(f'Could not start agent {agent_uuid}: {err}')
             exit(1)

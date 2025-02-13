@@ -113,7 +113,6 @@ class Device(BaseModel):
 
     @field_validator('ksql_tables', mode='before', check_fields=False)
     def validate_ksql_tables(cls, value):
-        print("validating....")
         allowed_values = {'device', 'producer', 'agent'}
         if value:
             invalid_entries = set(value) - allowed_values

@@ -95,7 +95,7 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
         if external:
             if run:
                 try:
-                    agent.attach()
+                    agent.attach(device['ksql_tables'])
                 except OFAException as err:
                     user_notify.fail(f"Could not attach {device['uuid'].upper()}-AGENT\nError was: {err}")
             continue
@@ -122,11 +122,11 @@ def create_agents_from_config_file(db_session, yaml_config_file, run=False, atta
             deploy_device_supervisor(device)
 
         if run:
-            agent.start()
+            agent.start(device['ksql_tables'])
             continue
 
         if attach:
             try:
-                agent.attach()
+                agent.attach(device['ksql_tables'])
             except OFAException as err:
                 user_notify.fail(f"Could not attach {device['uuid'].upper()}-AGENT\nError was: {err}")
