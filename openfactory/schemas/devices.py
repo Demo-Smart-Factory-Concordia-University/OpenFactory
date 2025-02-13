@@ -32,10 +32,11 @@ class Adapter(BaseModel):
     environment: List[str] = None
     deploy: Optional[Deploy] = None
 
-    @classmethod
-    def validate(cls, values):
+    @model_validator(mode='before')
+    def validate_adapter(cls, values):
         ip = values.get('ip')
         image = values.get('image')
+        # Either 'ip' or 'image' must be specified, but not both
         if (ip is None and image is None) or (ip and image):
             raise ValueError("Either 'ip' or 'image' must be specified in the adapter.")
         return values

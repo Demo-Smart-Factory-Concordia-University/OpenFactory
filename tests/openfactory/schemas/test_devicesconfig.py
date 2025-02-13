@@ -54,8 +54,8 @@ class TestDevicesConfig(unittest.TestCase):
             }
         }
 
-        devices_config = DevicesConfig(devices=devices_data)
-        self.assertRaises(ValueError, devices_config.validate_devices)
+        with self.assertRaises(ValueError):
+            DevicesConfig(devices=devices_data)
 
         # both ip and image defined for adapter
         devices_data = {
@@ -73,8 +73,8 @@ class TestDevicesConfig(unittest.TestCase):
             }
         }
 
-        devices_config = DevicesConfig(devices=devices_data)
-        self.assertRaises(ValueError, devices_config.validate_devices)
+        with self.assertRaises(ValueError):
+            DevicesConfig(devices=devices_data)
 
         # both ip and adapter defiend for agent
         devices_data = {
