@@ -92,8 +92,8 @@ class TestDevicesConfig(unittest.TestCase):
             }
         }
 
-        devices_config = DevicesConfig(devices=devices_data)
-        self.assertRaises(ValueError, devices_config.validate_devices)
+        with self.assertRaises(ValueError):
+            DevicesConfig(devices=devices_data)
 
         # both ip and device_xml defiend for agent
         devices_data = {
@@ -107,8 +107,8 @@ class TestDevicesConfig(unittest.TestCase):
             }
         }
 
-        devices_config = DevicesConfig(devices=devices_data)
-        self.assertRaises(ValueError, devices_config.validate_devices)
+        with self.assertRaises(ValueError):
+            DevicesConfig(devices=devices_data)
 
     def test_agent_resources(self):
         """

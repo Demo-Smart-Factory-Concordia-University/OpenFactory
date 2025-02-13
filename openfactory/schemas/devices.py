@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from openfactory.models.user_notifications import user_notify
 from openfactory.config import load_yaml
 import openfactory.config as config
@@ -48,11 +48,11 @@ class Agent(BaseModel):
     adapter: Optional[Adapter] = None
     deploy: Optional[Deploy] = None
 
-    @classmethod
-    def validate(cls, values):
+    @model_validator(mode='before')
+    def validate_agent(cls, values):
         ip = values.get('ip')
         adapter = values.get('adapter')
-        if (ip is None):
+        if ip is None:
             if values.get('device_xml') is None:
                 raise ValueError("'device_xml' is missing")
             if adapter is None:
@@ -62,6 +62,7 @@ class Agent(BaseModel):
                 raise ValueError("'adapter' can not be defined for an external agent")
             if values.get('device_xml'):
                 raise ValueError("'device_xml' can not be defined for an external agent")
+        return values
 
 
 class Supervisor(BaseModel):
