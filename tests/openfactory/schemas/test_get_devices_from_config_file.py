@@ -87,7 +87,8 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         "port": 8080,
                         "device_xml": "xml1",
                         "adapter": {"image": "ofa/adapter", "port": 9090}
-                    }
+                    },
+                    "ksql_tables": [],
                 },
                 "device2": {
                     "uuid": "uuid2",
@@ -129,6 +130,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
                         'supervisor': None,
+                        'ksql_tables': [],
                         'influxdb': None,
                         },
                     'device2': {
@@ -143,6 +145,7 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                                        'placement': {'constraints': ["type=ofa", "zone=factory1"]}},
                             },
                         'supervisor': None,
+                        'ksql_tables': None,
                         'influxdb': None,
                         },
                     'device3': {
@@ -158,10 +161,14 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                             'deploy': {'replicas': 1, 'resources': None, 'placement': None}
                             },
                         'supervisor': None,
+                        'ksql_tables': None,
                         'influxdb': {'url': 'http://mock-url', 'organisation': None, 'token': 'mock-token', 'bucket': None},
                         }
                     }
 
+                print()
+                print(devices_dict['device1'])
+                print(expected['device1'])
                 self.assertEqual(devices_dict, expected)
                 mock_user_notify.fail.assert_not_called()
 

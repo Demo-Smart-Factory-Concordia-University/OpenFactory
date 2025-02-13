@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from openfactory.models.user_notifications import user_notify
 from openfactory.config import load_yaml
 import openfactory.config as config
@@ -97,6 +97,7 @@ class Device(BaseModel):
     uuid: str
     agent: Agent
     supervisor: Optional[Supervisor] = None
+    ksql_tables: Optional[List[str]] = None
     influxdb: Optional[InfluxDB] = None
 
     def __init__(self, **data):
@@ -107,6 +108,16 @@ class Device(BaseModel):
         elif self.agent.deploy.replicas is None:
             # If deploy is provided but replicas is missing, set replicas to 1
             self.agent.deploy.replicas = 1
+
+    @field_validator('ksql_tables', mode='before', check_fields=False)
+    def validate_ksql_tables(cls, value):
+        print("validating....")
+        allowed_values = {'device', 'producer', 'agent'}
+        if value:
+            invalid_entries = set(value) - allowed_values
+            if invalid_entries:
+                raise ValueError(f"Invalid entries in ksql-tables: {invalid_entries}")
+        return value
 
 
 class DevicesConfig(BaseModel):

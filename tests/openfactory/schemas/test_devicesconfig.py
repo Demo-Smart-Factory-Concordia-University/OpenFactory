@@ -173,3 +173,43 @@ class TestDevicesConfig(unittest.TestCase):
         self.assertEqual(devices_config.devices['device1'].agent.deploy.replicas, 3)
         # Test that replicas defaults to 1 in case it is not defined
         self.assertEqual(devices_config.devices['device2'].agent.deploy.replicas, 1)
+
+    def test_ksql_tables_valid_entries(self):
+        """
+        Test ksql tables with valid entries
+        """
+        devices_data = {
+            "device1": {
+                "uuid": "uuid1",
+                "agent": {
+                    "ip": "10.0.0.1",
+                    "port": 8080,
+                },
+                "ksql_tables": ['agent', 'device', 'producer'],
+            }
+        }
+        devices_config = DevicesConfig(devices=devices_data)
+
+        # Check that the data is correctly stored in the model
+        self.assertEqual(devices_config.devices['device1'].ksql_tables, ['agent', 'device', 'producer'])
+
+    def test_ksql_tables_invalid_entries(self):
+        """
+        Test ksql tables with invalid entries
+        """
+        devices_data = {
+            "device1": {
+                "uuid": "uuid1",
+                "agent": {
+                    "ip": "10.0.0.1",
+                    "port": 8080,
+                },
+                "ksql_tables": ['toto'],
+            }
+        }
+
+        with self.assertRaises(ValueError) as context:
+            DevicesConfig(devices=devices_data)
+
+        # Check error message
+        self.assertIn("Invalid entries in ksql-tables: {'toto'}", str(context.exception))
