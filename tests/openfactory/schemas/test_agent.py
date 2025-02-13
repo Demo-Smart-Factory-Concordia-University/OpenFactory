@@ -30,7 +30,6 @@ class TestAgent(unittest.TestCase):
             "device_xml": "xml1",
             "adapter": {
                 "ip": "1.2.3.4",
-                "image": "ofa/adapter",
                 "port": 7878
                 }
         }
@@ -51,7 +50,6 @@ class TestAgent(unittest.TestCase):
             "port": 5000,
             "adapter": {
                 "ip": "1.2.3.4",
-                "image": "ofa/adapter",
                 "port": 7878
                 }
         }
@@ -88,7 +86,6 @@ class TestAgent(unittest.TestCase):
             "port": 5000,
             "adapter": {
                 "ip": "1.2.3.4",
-                "image": "ofa/adapter",
                 "port": 7878
                 }
         }
