@@ -10,6 +10,12 @@ The script [mtcdevices.sql](mtcdevices.sql) defines the following ksqlDB streams
 - **`REKEYED_DEVICES_STREAM`**: A derived stream rekeying `DEVICES_STREAM` with the composite key `DEVICE_UUID`-`ID`.
 - **`DEVICES`**: A table listing by device the current values of each `ID`.
 
+defines the following ksqlDB stream topology for the deployed assets in OpenFactory:
+![Stream processing topology for deployed assets](assets_stream_topology.png)
+- **`ASSETS_STREAM`**: A derived stream that selects only the AssetType entries of `DEVICES_STREAM`.
+- **`ASSETS_TOMBSTONES`**: A stream ensuring that any Kafka message in the `mtc_devices` topic (or equivalently in the `DEVICES_STREAM`) with an AssetType value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).
+- **`ASSETS`**: A table listing the type of assets deployed in OpenFactory.
+
 and defines the following ksqlDB stream topology for the status of the availability of the devices:
 ![Stream processing topology for device availability status](devices_avail_stream_topology.png) 
 - **`DEVICES_AVAIL_STREAM`**: A derived stream that selects only the availability entries of devices.
@@ -38,6 +44,53 @@ In case a specific dataItem of a device is to be queries, the most efficient syn
 SELECT * FROM devices WHERE key='DEVICE-UUID|DATA_ITEM_ID';
 ```
 where `DATA_ITEM_ID` is the ID of the dataItem one wants to obtain the current state.
+
+### How to List the Assets Deployed in OpenFactory
+To list the assets deployed in OpenFactory query the table `ASSETS`:
+```sql
+SELECT * FROM assets;
+```
+
+### How to List the Availability of Assets Deployed in OpenFactory
+To list the availability assets deployed in OpenFactory query the table `DEVICES_AVAIL`:
+```sql
+SELECT * FROM devices_avail;
+```
+
+#### Note:
+An asset can be deployed while being unavailable. For example, a sensor can have all its services deployed,
+but still be unavailable (if the MTConnect Agent and Kafka Producer are deployed, but the adapter is not running)
+
+### How to Remove a Row in `ASSETS`  
+
+#### Using ksqlDB  
+
+Insert a message into the `DEVICES_STREAM` like this:  
+
+```sql
+INSERT INTO devices_stream (device_uuid, id, value, type)
+VALUES ('DEVICE-UUID', 'AssetType', 'delete', 'OpenFactory');
+```
+
+where `DEVICE-UUID` is the UUID of the device whose entry should be removed from the `ASSETS` table.  
+
+#### Using Python  
+
+Insert a tombstone message into the topic associated with the `ASSETS` table:  
+
+```python
+from confluent_kafka import Producer
+from pyksql.ksql import KSQL
+import openfactory.config as config
+
+device_uuid = 'DEVICE-UUID'
+ksql = KSQL(config.KSQLDB)
+prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+prod.produce(topic=ksql.get_kafka_topic('assets'),
+             key=device_uuid.encode('utf-8'),
+             value=None)
+prod.flush()
+```
 
 ### How to Remove a Row in `DEVICES_AVAIL`  
 

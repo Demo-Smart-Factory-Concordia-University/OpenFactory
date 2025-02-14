@@ -37,6 +37,42 @@ CREATE TABLE devices AS
   FROM rekeyed_devices_stream
   GROUP BY key;
 
+-- ---------------------------------------------------------------------
+-- Assets deployed on OpenFactory cluster 
+
+-- Stream for OpenFactory Assets tombstones
+CREATE STREAM assets_tombstones WITH (
+    KAFKA_TOPIC = 'assets_topic',
+    VALUE_FORMAT = 'KAFKA',
+    PARTITIONS = 1
+) AS 
+SELECT device_uuid, CAST(NULL AS VARCHAR) AS type
+FROM devices_stream
+WHERE ID = 'AssetType' AND TYPE = 'OpenFactory' AND VALUE = 'delete';
+
+-- Stream for OpenFactory Assets types
+CREATE STREAM assets_stream WITH (
+    KAFKA_TOPIC = 'assets_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+) AS 
+SELECT device_uuid, value AS type
+FROM devices_stream 
+WHERE ID = 'AssetType' AND TYPE = 'OpenFactory';
+
+-- Table for OpenFactory Assets
+CREATE SOURCE TABLE assets (
+    device_uuid VARCHAR PRIMARY KEY,
+    type VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'assets_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+);
+
+-- ---------------------------------------------------------------------
+-- OpenFactory Assets availability
+
 -- Stream for devices availability tombstones
 CREATE STREAM devices_avail_tombstones WITH (
     KAFKA_TOPIC = 'devices_avail_topic',
