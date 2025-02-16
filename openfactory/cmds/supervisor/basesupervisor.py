@@ -87,11 +87,11 @@ class BaseSupervisor:
         for cmd in self.available_commands():
             msg = [
                 {
-                    "device_uuid": self.supervisor_uuid,
+                    "device_uuid": self.device_uuid,
                     "id": cmd['command'],
                     "value": cmd['description'],
                     "tag": 'Method',
-                    "type": 'Condition'
+                    "type": 'Method'
                 }
             ]
             try:
