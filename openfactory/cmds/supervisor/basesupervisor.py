@@ -19,15 +19,17 @@ class BaseSupervisor:
         self.supervisor_uuid = device_uuid + "-SUPERVISOR"
         self.ksql_url = ksql_url
         self.ksql = KSQL(ksql_url)
-        self.creat_ksqldb_table()
 
         self.shutdown_triggered = False
 
         # store event loop
         self._event_loop = asyncio.get_event_loop()
 
-    def creat_ksqldb_table(self):
-        """ Create ksqlDB table related to the supervisor """
+    def create_ksqldb_table(self):
+        """
+        Create ksqlDB table and stream related to the supervisor
+        Can be called by chidren if desired
+        """
         # supervisor table
         supervisor_table = self.supervisor_uuid.replace('-', '_')
         self.ksql._statement_query(f"""CREATE TABLE IF NOT EXISTS {supervisor_table} AS
@@ -102,7 +104,7 @@ class BaseSupervisor:
         """ Fetch streaming commands from the ksqlDB stream """
         try:
             await self.ksql.query(
-                query=f"SELECT CMD, ARGS FROM {self.device_uuid.replace('-', '_')}_cmds_stream EMIT CHANGES;",
+                query=f"SELECT CMD, ARGS FROM cmds_stream WHERE DEVICE_UUID = '{self.device_uuid.upper()}' EMIT CHANGES;",
                 earliest=False,
                 on_new_row=lambda row: asyncio.create_task(self.new_cmd(row[0], row[1]))
             )
