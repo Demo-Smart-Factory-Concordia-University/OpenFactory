@@ -2,6 +2,7 @@ import docker
 import openfactory.config as config
 from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
+from openfactory.utils import register_asset
 
 
 def get_nested(data, keys, default=None):
@@ -63,6 +64,5 @@ def deploy_device_supervisor(device):
     except docker.errors.APIError as err:
         user_notify.fail(f"Supervisor {device['uuid'].lower()}-supervisor could not be created\n{err}")
         return
+    register_asset(f"{device['uuid'].upper()}-SUPERVISOR", 'Supervisor')
     user_notify.success(f"Supervisor {device['uuid'].lower()}-supervisor started successfully")
-    user_notify.success(f"ksqlDB stream {device['uuid'].upper().replace('-', '_')}_CMDS_STREAM created successfully")
-    user_notify.success(f"ksqlDB tables {device['uuid'].upper().replace('-', '_')}_CMDS and {device['uuid'].upper().replace('-', '_')}_SUPERVISOR created successfully")
