@@ -34,9 +34,17 @@
 </div>
 
 <h4>Data of {{ title }}</h4>
-<div style="height: 75%; display: flex; flex-direction: row; overflow-y: hidden">
+<div style="height: 35%; display: flex; flex-direction: row; overflow-y: hidden">
 
     {% include "services/generic/data.html" %}
+
+</div>
+
+<br>
+<h4>Methods of {{ title }}</h4>
+<div style="height: 30%; display: flex; flex-direction: row; overflow-y: hidden">
+
+    {% include "services/generic/methods.html" %}
 
 </div>
 {% endblock content %}

@@ -1,0 +1,21 @@
+<!-- Display metods -->
+
+<div style="flex: 1; border: 1px solid #ddd; padding: 10px; overflow-y: auto">
+    <table class="table table-striped table-hover table-sm ">
+        <thead class="table-light">
+            <tr style="background-color: #b0d3d5; padding: 5px">
+                <th>Method</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for id, value in data.Methods.items() %}
+            <tr>
+                <td>{{ id }}</td>
+                <td>{{ value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

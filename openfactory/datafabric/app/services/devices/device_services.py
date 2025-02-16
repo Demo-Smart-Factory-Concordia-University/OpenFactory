@@ -35,7 +35,8 @@ class DeviceServicesList(ServicesListView):
                         "TAG": row.TAG
                     }
                     for row in df[df["TYPE"] == "Condition"].itertuples()
-                ]
+                ],
+                "Methods": {row.ID: row.VALUE for row in df[df["TYPE"] == "Method"].itertuples()},
             }
         else:
             json_result = {
