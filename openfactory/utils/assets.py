@@ -18,3 +18,15 @@ def register_asset(asset_uuid, asset_type):
                  key=asset_uuid,
                  value=json.dumps(msg))
     prod.flush()
+
+
+def deregister_asset(asset_uuid):
+    """ Deregister an asset from OpenFactory """
+    ksql = KSQL(config.KSQLDB)
+
+    # tombstone message for table ASSETS
+    prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+    prod.produce(topic=ksql.get_kafka_topic('assets'),
+                 key=asset_uuid,
+                 value=None)
+    prod.flush()
