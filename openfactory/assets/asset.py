@@ -25,25 +25,25 @@ class Asset():
         query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()}
-    
+
     def events(self):
         """ return events of asset """
         query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return {row.ID: row.VALUE for row in df[df["TYPE"] == "Events"].itertuples()}
-    
+
     def conditions(self):
         """ return conditions of asset """
         query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return {row.ID: row.VALUE for row in df[df["TYPE"] == "Condition"].itertuples()}
-    
+
     def methods(self):
         """ return methods of asset """
         query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return {row.ID: row.VALUE for row in df[df["TYPE"] == "Method"].itertuples()}
-    
+
     def method(self, method, args=""):
         """ request execution of an asset method """
         print(f'Requesting execution of method {method}({args})')
@@ -57,7 +57,7 @@ class Asset():
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         prod.flush()
-  
+
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
         query = f"SELECT VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|{attribute_id}';"
@@ -67,11 +67,11 @@ class Asset():
 
         if df['TYPE'][0] == 'Samples':
             return float(df['VALUE'][0])
-        
+
         if df['TYPE'][0] == 'Method':
             def method_caller(*args, **kwargs):
                 args_str = " ".join(map(str, args))
                 return self.method(attribute_id, args_str)
             return method_caller
-        
+
         return df['VALUE'][0]

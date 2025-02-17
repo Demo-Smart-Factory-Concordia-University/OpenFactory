@@ -1,4 +1,3 @@
-import json
 import docker
 import docker.errors
 from sqlalchemy import event
@@ -21,6 +20,7 @@ from openfactory.docker.docker_access_layer import dal
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
+from openfactory.utils.assets import register_asset, deregister_asset
 from .user_notifications import user_notify
 from .base import Base
 
@@ -134,32 +134,6 @@ class Agent(Base):
         else:
             return "Stopped"
 
-    def register_asset(self, asset_uuid, asset_type):
-        """ Register an asset in OpenFactory """
-        msg = {
-            "ID": "AssetType",
-            "VALUE": asset_type,
-            "TAG": "AssetType",
-            "TYPE": "OpenFactory"
-        }
-        ksql = KSQL(config.KSQLDB)
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=ksql.get_kafka_topic('DEVICES_STREAM'),
-                     key=asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
-
-    def deregister_asset(self, asset_uuid):
-        """ Deregister an asset from OpenFactory """
-        ksql = KSQL(config.KSQLDB)
-
-        # tombstone message for table ASSETS
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=ksql.get_kafka_topic('assets'),
-                     key=asset_uuid,
-                     value=None)
-        prod.flush()
-
     def load_device_xml(self):
         """ Loads device xml model from source based on xml model uri """
         xml_model = ""
@@ -204,7 +178,7 @@ class Agent(Base):
             raise OFAException(err)
 
         # register agent in OpenFactory
-        self.register_asset(self.uuid, "MTConnectAgent")
+        register_asset(self.uuid, "MTConnectAgent")
 
     def deploy_producer(self):
         """ Deploy Kafka producer on Docker swarm cluster """
@@ -228,7 +202,7 @@ class Agent(Base):
             raise OFAException(f"Producer {self.device_uuid.lower() + '-producer'} could not be created\n{err}")
 
         # register producer in OpenFactory
-        self.register_asset(self.producer_uuid, "KafkaProducer")
+        register_asset(self.producer_uuid, "KafkaProducer")
 
     def start(self, ksql_tables):
         """ Start agent """
@@ -259,13 +233,13 @@ class Agent(Base):
             raise OFAException(err)
         if self.kafka_producer:
             self.kafka_producer.send_agent_availability('UNAVAILABLE')
-        self.deregister_asset(self.uuid)
+        deregister_asset(self.uuid)
 
     def attach(self, ksql_tables):
         """ Attach a Kafka producer to the MTConnect agent """
 
         # register asset in OpenFactory
-        self.register_asset(self.device_uuid, "Device")
+        register_asset(self.device_uuid, "Device")
 
         # create ksqlDB table for agent
         try:
@@ -295,8 +269,8 @@ class Agent(Base):
             raise OFAException(err)
         if self.kafka_producer:
             self.kafka_producer.send_producer_availability('UNAVAILABLE')
-        self.deregister_asset(self.device_uuid)
-        self.deregister_asset(self.producer_uuid)
+        deregister_asset(self.device_uuid)
+        deregister_asset(self.producer_uuid)
 
     def create_adapter(self, adapter_image, cpus_limit=1, cpus_reservation=0.5, environment=[]):
         """ Create Docker container for adapter """
