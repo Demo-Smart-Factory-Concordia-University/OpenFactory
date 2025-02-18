@@ -154,11 +154,12 @@ class Agent(Base):
             raise OFAException(f"Could not find the MTConnect model file '{config.MTCONNECT_AGENT_CFG_FILE}'")
 
         command = "sh -c 'printf \"%b\" \"$XML_MODEL\" > device.xml; printf \"%b\" \"$AGENT_CFG_FILE\" > agent.cfg; mtcagent run agent.cfg'"
+        service_name = self.device_uuid.lower() + '-agent'
         try:
             client.services.create(
                 image=config.MTCONNECT_AGENT_IMAGE,
                 command=command,
-                name=self.device_uuid.lower() + '-agent',
+                name=service_name,
                 mode={"Replicated": {"Replicas": 1}},
                 env=[f'MTC_AGENT_UUID={self.uuid.upper()}',
                      f'ADAPTER_UUID={self.device_uuid.upper()}',
@@ -178,7 +179,7 @@ class Agent(Base):
             raise OFAException(err)
 
         # register agent in OpenFactory
-        register_asset(self.uuid, "MTConnectAgent")
+        register_asset(self.uuid, "MTConnectAgent", service_name)
 
     def deploy_producer(self):
         """ Deploy Kafka producer on Docker swarm cluster """
@@ -187,10 +188,11 @@ class Agent(Base):
             MTC_AGENT = f"{self.agent_ip}:{self.agent_port}"
         else:
             MTC_AGENT = f'{self.device_uuid.lower()}-agent:5000'
+        service_name = self.device_uuid.lower() + '-producer'
         try:
             client.services.create(
                 image=config.MTCONNECT_PRODUCER_IMAGE,
-                name=self.device_uuid.lower() + '-producer',
+                name=service_name,
                 mode={"Replicated": {"Replicas": 1}},
                 env=[f'KAFKA_BROKER={config.KAFKA_BROKER}',
                      f'KAFKA_PRODUCER_UUID={self.producer_uuid}',
@@ -202,7 +204,7 @@ class Agent(Base):
             raise OFAException(f"Producer {self.device_uuid.lower() + '-producer'} could not be created\n{err}")
 
         # register producer in OpenFactory
-        register_asset(self.producer_uuid, "KafkaProducer")
+        register_asset(self.producer_uuid, "KafkaProducer", service_name)
 
     def start(self, ksql_tables):
         """ Start agent """

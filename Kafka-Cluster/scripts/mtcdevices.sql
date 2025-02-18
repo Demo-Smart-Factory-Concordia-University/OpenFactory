@@ -38,6 +38,29 @@ CREATE TABLE devices AS
   GROUP BY key;
 
 -- ---------------------------------------------------------------------
+-- Docker Swarm services of assets
+
+-- Stream for Docker services of OpenFactory Assets
+CREATE STREAM docker_services_stream WITH (
+    KAFKA_TOPIC = 'docker_services_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+) AS 
+SELECT device_uuid, VALUE AS docker_service
+FROM devices_stream 
+WHERE ID = 'DockerService' AND TYPE = 'OpenFactory';
+
+-- Table for Docker services of OpenFactory Assets
+CREATE SOURCE TABLE docker_services (
+    device_uuid VARCHAR PRIMARY KEY,
+    docker_service VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'docker_services_topic',
+    VALUE_FORMAT = 'JSON',
+    PARTITIONS = 1
+);
+
+-- ---------------------------------------------------------------------
 -- Assets deployed on OpenFactory cluster 
 
 -- Stream for OpenFactory Assets tombstones

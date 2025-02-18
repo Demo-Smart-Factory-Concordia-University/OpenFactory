@@ -22,6 +22,10 @@ and defines the following ksqlDB stream topology for the status of the availabil
 - **`DEVICES_AVAIL_TOMBSTONES`**: A stream ensuring that any Kafka message in the `mtc_devices` topic (or equivalently in the `DEVICES_STREAM`) with an availability value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).
 - **`DEVICES_AVAIL`**: A table listing the availability status of OpenFactory devices.
 
+It further defines a topology for keeping track of the Docker Swarm services running the needed codes for an OpenFactory asset. This topology is mainly inteded for internal use of OpenFactory or for tools helping monitoring the Docker Swarm services on the OpenFactory cluster:
+- **`DOCKER_SERVICES_STREAM`**: A derived stream that selects only the `DockerService` entries of devices.
+- **`DOCKER_SERVICES`**: A table listing the Docker Swarm services of OpenFactory devices.
+
 ### How to List the Current State of a Device
 
 To list the current sate of all dataItems of a device, query the table `DEVICES`:
