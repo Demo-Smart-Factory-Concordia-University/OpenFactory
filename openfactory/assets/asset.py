@@ -20,6 +20,12 @@ class Asset():
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
         self.type = df['TYPE'][0]
 
+    def attributes(self):
+        """ returns all attributes of the asset """
+        query = f"SELECT ID FROM devices WHERE device_uuid='{self.asset_uuid}' AND TYPE != 'Method';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        return df.ID.tolist()
+
     def samples(self):
         """ return samples of asset """
         query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
@@ -51,9 +57,8 @@ class Asset():
             "CMD": method,
             "ARGS": args
         }
-        ksql = KSQL(config.KSQLDB)
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=ksql.get_kafka_topic('CMDS_STREAM'),
+        prod.produce(topic=self.ksql.get_kafka_topic('CMDS_STREAM'),
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         prod.flush()
