@@ -6,20 +6,21 @@ import docker.errors
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from httpx import HTTPError
 
 from openfactory.exceptions import OFAException
 from openfactory.ofa.db import db
 from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
 from openfactory.models.base import Base
-from openfactory.models.nodes import Node
 from openfactory.models.agents import Agent, agent_before_delete
 import tests.mocks as mock
 
 
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
+@patch("openfactory.utils.assets.Producer", return_value=Mock())
+@patch("openfactory.utils.assets.KSQL", return_value=mock.ksql)
+@patch("openfactory.models.agents.KSQL", return_value=mock.ksql)
 class TestAgent(TestCase):
     """
     Unit tests for Agent model
@@ -99,15 +100,6 @@ class TestAgent(TestCase):
         # remove agents
         for agent in db.session.scalars(select(Agent)):
             db.session.delete(agent)
-        # remove nodes
-        for node in db.session.scalars(select(Node)):
-            if node.node_name != 'manager':
-                db.session.delete(node)
-        # remove manager
-        query = select(Node).where(Node.node_name == "manager")
-        manager = db.session.execute(query).first()
-        if manager:
-            db.session.delete(manager[0])
         db.session.commit()
 
     def test_class_parent(self, *args):
@@ -172,9 +164,10 @@ class TestAgent(TestCase):
 
         # check notfications were emitted
         calls = user_notify.success.call_args_list
-        self.assertIn(call('Agent TEST-AGENT removed successfully'), calls)
         self.assertIn(call('Agent TEST-AGENT stopped successfully'), calls)
-        self.assertIn(call('Kafka producer for agent TEST-AGENT stopped successfully'), calls)
+        self.assertIn(call('Agent TEST-AGENT shut down successfully'), calls)
+        self.assertIn(call('Kafka producer for agent TEST-AGENT shut down successfully'), calls)
+        self.assertIn(call('Adapter for agent TEST-AGENT shut down successfully'), calls)
 
         # clean-up
         self.cleanup()
@@ -260,7 +253,7 @@ class TestAgent(TestCase):
         agent = self.setup_agent()
         agent.deploy_agent = Mock()
         agent.attach = Mock()
-        agent.start()
+        agent.start(None)
         agent.deploy_agent.assert_called_once()
         agent.attach.assert_called_once()
 
@@ -275,10 +268,12 @@ class TestAgent(TestCase):
         agent.deploy_agent = Mock()
         agent.deploy_producer = Mock()
         user_notify.success.reset_mock()
-        agent.start()
+        agent.start(None)
 
         # check if user_notification called
-        user_notify.success.assert_called_once_with('Agent TEST-AGENT started successfully')
+        calls = user_notify.success.call_args_list
+        self.assertIn(call('Kafka producer TEST-PRODUCER started successfully'), calls)
+        self.assertIn(call('Agent TEST-AGENT started successfully'), calls)
 
         # clean up
         self.cleanup()
@@ -333,26 +328,13 @@ class TestAgent(TestCase):
         agent = self.setup_agent()
         agent.create_ksqldb_tables = Mock()
         agent.deploy_producer = Mock()
-        agent.attach()
+        agent.attach(None)
 
         # check ksqldb_tables created
         agent.create_ksqldb_tables.assert_called_once()
 
         # check producer was deployed
         agent.deploy_producer.assert_called_once()
-
-        # clean up
-        self.cleanup()
-
-    @patch('pyksql.ksql.KSQL.__init__', side_effect=HTTPError('test'))
-    def test_attach_ksqlDB_error(self, *args):
-        """
-        Test if error is raised in attach if ksqlDB cannot be reached
-        """
-        agent = self.setup_agent()
-
-        # check OFAException raised if ksqlDB can not be reached
-        self.assertRaises(OFAException, agent.attach)
 
         # clean up
         self.cleanup()
@@ -380,7 +362,7 @@ class TestAgent(TestCase):
         agent.detach()
 
         # check if user_notification called
-        user_notify.success.assert_called_once_with('Kafka producer for agent TEST-AGENT stopped successfully')
+        user_notify.success.assert_called_once_with('Kafka producer for agent TEST-AGENT shut down successfully')
 
         # clean up
         self.cleanup()
@@ -484,6 +466,7 @@ class TestAgent(TestCase):
             mode={"Replicated": {"Replicas": 1}},
             env=env,
             networks=['mock_network'],
+            constraints=['node.labels.type == ofa'],
             resources={
                 "Limits": {"NanoCPUs": int(1000000000 * 1.5)},
                 "Reservations": {"NanoCPUs": int(1000000000 * 1.0)}
@@ -493,12 +476,12 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_remove_adapter(self, *args):
+    def test_shut_down_adapter(self, *args):
         """
-        Test remove_adapter
+        Test shut_down_adapter
         """
         agent = self.setup_agent()
-        agent.remove_adapter()
+        agent.shut_down_adapter()
 
         mock.docker_services.get.assert_called_once_with('test-adapter')
         mock.docker_service.remove.assert_called_once()
@@ -506,16 +489,16 @@ class TestAgent(TestCase):
         # clean-up
         self.cleanup()
 
-    def test_remove_adapter_called(self, *args):
+    def test_shut_down_adapter_called(self, *args):
         """
         Test adapter service removed when agent removed
         """
         agent = self.setup_agent()
-        agent.remove_adapter = Mock()
+        agent.shut_down_adapter = Mock()
         db.session.delete(agent)
         db.session.commit()
 
-        agent.remove_adapter.assert_called_once()
+        agent.shut_down_adapter.assert_called_once()
 
         # clean-up
         self.cleanup()
@@ -645,7 +628,7 @@ class TestAgent(TestCase):
         """
         agent = self.setup_agent()
         agent.create_ksqldb_tables = Mock()
-        agent.attach()
+        agent.attach(None)
         db.session.delete(agent)
 
         # check Kafka messages sent

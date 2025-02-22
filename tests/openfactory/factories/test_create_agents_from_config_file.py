@@ -17,6 +17,9 @@ from openfactory.factories import create_agents_from_config_file
 
 @patch.object(Agent, 'status', new_callable=Mock(return_value='running'))
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
+@patch("openfactory.utils.assets.Producer", return_value=Mock())
+@patch("openfactory.utils.assets.KSQL", return_value=Mock())
+@patch("openfactory.models.agents.KSQL", return_value=Mock())
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
 class Test_create_agents_from_config_file(TestCase):

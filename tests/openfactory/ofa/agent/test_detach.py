@@ -16,6 +16,9 @@ from openfactory.exceptions import OFAException
 @patch("openfactory.models.agents.AgentKafkaProducer", return_value=mock.agent_kafka_producer)
 @patch("docker.DockerClient", return_value=mock.docker_client)
 @patch("docker.APIClient", return_value=mock.docker_apiclient)
+@patch("openfactory.utils.assets.Producer", return_value=Mock())
+@patch("openfactory.utils.assets.KSQL", return_value=Mock())
+@patch("openfactory.models.agents.KSQL", return_value=Mock())
 class Test_ofa_agent_detach(TestCase):
     """
     Unit tests for ofa.agent.click_detach function

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from sqlalchemy import select
 from mtc2kafka.connectors import MTCSourceConnector
 
@@ -13,6 +13,9 @@ from openfactory.models.agents import Agent
 
 
 @patch("docker.DockerClient", return_value=mock.docker_client)
+@patch("openfactory.utils.assets.Producer", return_value=Mock())
+@patch("openfactory.utils.assets.KSQL", return_value=Mock())
+@patch("openfactory.models.agents.KSQL", return_value=Mock())
 @patch("mtc2kafka.connectors.MTCSourceConnector")
 @patch("mtc2kafka.connectors.MTCSourceConnector.send_producer_availability")
 @patch("mtc2kafka.connectors.MTCSourceConnector.send_agent_availability")

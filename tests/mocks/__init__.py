@@ -11,3 +11,5 @@ from .mock_docker import docker_client
 from .mock_docker import docker_apiclient
 
 from .mock_agentkafkaproducer import agent_kafka_producer
+
+from .mock_ksql import ksql
