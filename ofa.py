@@ -37,7 +37,6 @@ nodes.add_command(ofa.nodes.click_ls)
 
 cli.add_command(agent)
 agent.add_command(ofa.agent.ls)
-agent.add_command(ofa.agent.click_create)
 
 cli.add_command(device)
 device.add_command(ofa.device.click_up)
