@@ -255,4 +255,3 @@ class TestAsset(TestCase):
 
         expected_query = "SELECT VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
-
