@@ -31,3 +31,6 @@ dependencies = [
 
 [tool.setuptools.packages]
 find = { where = ["."], include = ["openfactory", "openfactory.*"] }
+
+[project.scripts]
+ofa = "openfactory.ofacli:cli"

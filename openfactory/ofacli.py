@@ -5,6 +5,22 @@ from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.db import db
 import openfactory.config as config
 
+"""
+OpenFactory Command Line Interface
+
+Usage: ofa [OPTIONS] COMMAND [ARGS]...
+Help: ofa --help
+
+
+Becomes available after installing OpenFactory (after cloning the repository locally) like
+
+> pip install .
+
+or (during development)
+
+> pip install -e .
+"""
+
 
 @click.group()
 def cli():
@@ -12,23 +28,25 @@ def cli():
     pass
 
 
-@click.group
+@click.group()
 def nodes():
     """ Manage OpenFactory infrastructure """
     pass
 
 
-@click.group
+@click.group()
 def agent():
     """ Manage MTConnect agents """
     pass
 
 
-@click.group
+@click.group()
 def device():
     """ Manage MTConnect devices """
     pass
 
+
+cli.add_command(ofa.config)
 
 cli.add_command(nodes)
 nodes.add_command(ofa.nodes.click_up)
