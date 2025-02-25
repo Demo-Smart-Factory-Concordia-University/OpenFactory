@@ -14,7 +14,7 @@ CREATE STREAM devices_stream (
     );
 
 -- MTConnect Devices data stream with composite key
-CREATE STREAM rekeyed_devices_stream AS
+CREATE STREAM enriched_devices_stream AS
   SELECT 
     device_uuid,
     id,
@@ -23,7 +23,7 @@ CREATE STREAM rekeyed_devices_stream AS
     type,
     tag
   FROM devices_stream
-  PARTITION BY concat(concat(CAST(device_uuid AS STRING), '|'), CAST(id AS STRING));
+  PARTITION BY device_uuid;
 
 -- MTConnect Devices data table
 CREATE TABLE devices AS
@@ -34,7 +34,7 @@ CREATE TABLE devices AS
     LATEST_BY_OFFSET(value) AS value,
     LATEST_BY_OFFSET(type) AS type,
     LATEST_BY_OFFSET(tag) AS tag
-  FROM rekeyed_devices_stream
+  FROM enriched_devices_stream
   GROUP BY key;
 
 -- ---------------------------------------------------------------------
