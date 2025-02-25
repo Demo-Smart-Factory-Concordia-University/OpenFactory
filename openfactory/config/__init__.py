@@ -3,6 +3,7 @@ import os
 import json
 import ast
 from dotenv import load_dotenv
+from pathlib import Path
 
 
 def load_yaml(yaml_file):
@@ -10,7 +11,7 @@ def load_yaml(yaml_file):
     Loads a yaml file and parses environment variables
     """
 
-    # load environment variables
+    # load environment variables from working directory
     load_dotenv('.ofaenv')
 
     # load configuration file
@@ -23,4 +24,5 @@ def load_yaml(yaml_file):
 
 
 # assign variables
-globals().update(load_yaml('openfactory/config/openfactory.yml'))
+config_file = Path.joinpath(Path(__file__).resolve().parent, 'openfactory.yml')
+globals().update(load_yaml(config_file))
