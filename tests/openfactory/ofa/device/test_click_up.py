@@ -8,7 +8,7 @@ from openfactory.ofa.db import db
 from openfactory.models.base import Base
 
 
-@patch("openfactory.ofa.device.up.create_agents_from_config_file")
+@patch("openfactory.ofa.device.up.deploy_devices_from_config_file")
 class TestDeviceUp(TestCase):
     """
     Unit tests for ofa.stack.click_up
@@ -26,15 +26,15 @@ class TestDeviceUp(TestCase):
         Base.metadata.drop_all(db.engine)
         db.session.close()
 
-    def test_device_up(self, mock_create_agents_from_config_file):
+    def test_device_up(self, mock_deploy_devices_from_config_file):
         """
-        Test create_agents_from_config_file called correctly
+        Test deploy_devices_from_config_file called correctly
         """
         runner = CliRunner()
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_agents.yml')
         result = runner.invoke(ofa.device.click_up, [config_file])
-        mock_create_agents_from_config_file.called_once_with(db.session, config_file, run=True, attach=True)
+        mock_deploy_devices_from_config_file.called_once_with(db.session, config_file, run=True, attach=True)
         self.assertEqual(result.exit_code, 0)
 
     def test_stack_up_none_existent_file(self, *args):

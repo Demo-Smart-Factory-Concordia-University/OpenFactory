@@ -1,6 +1,5 @@
-from .agents import create_agents_from_config_file
+from .deploy_devices_from_config_file import deploy_devices_from_config_file
 from .shut_down_devices_from_config_file import shut_down_devices_from_config_file
 from .create_infra import create_infrastack
 from .remove_infra import remove_infrastack
 from .connect_inlfuxdb import connect_devices_to_influxdb
-from .create_supervisor import deploy_device_supervisor
