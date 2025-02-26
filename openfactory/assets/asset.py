@@ -14,7 +14,7 @@ class Asset():
     def __init__(self, asset_uuid):
         self.ksql = KSQL(config.KSQLDB)
         self.asset_uuid = asset_uuid
-        query = f"SELECT TYPE FROM assets WHERE DEVICE_UUID = '{asset_uuid}';"
+        query = f"SELECT TYPE FROM assets_type_stream WHERE ASSET_UUID='{asset_uuid}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
@@ -22,33 +22,33 @@ class Asset():
 
     def attributes(self):
         """ returns all attributes of the asset """
-        query = f"SELECT ID FROM devices WHERE device_uuid='{self.asset_uuid}' AND TYPE != 'Method';"
+        query = f"SELECT ID FROM assets WHERE asset_uuid='{self.asset_uuid}' AND TYPE != 'Method';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return df.ID.tolist()
 
     def samples(self):
         """ return samples of asset """
-        query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
+        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()}
+        return {row.ID: row.VALUE for row in df.itertuples()}
 
     def events(self):
         """ return events of asset """
-        query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
+        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return {row.ID: row.VALUE for row in df[df["TYPE"] == "Events"].itertuples()}
+        return {row.ID: row.VALUE for row in df.itertuples()}
 
     def conditions(self):
         """ return conditions of asset """
-        query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
+        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return {row.ID: row.VALUE for row in df[df["TYPE"] == "Condition"].itertuples()}
+        return {row.ID: row.VALUE for row in df.itertuples()}
 
     def methods(self):
         """ return methods of asset """
-        query = f"SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|%';"
+        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Method';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return {row.ID: row.VALUE for row in df[df["TYPE"] == "Method"].itertuples()}
+        return {row.ID: row.VALUE for row in df.itertuples()}
 
     def method(self, method, args=""):
         """ request execution of an asset method """
@@ -65,7 +65,7 @@ class Asset():
 
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
-        query = f"SELECT VALUE, TYPE FROM devices WHERE key LIKE '{self.asset_uuid}|{attribute_id}';"
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             raise AttributeError(f"Asset {self.asset_uuid} has no attribute '{attribute_id}'")

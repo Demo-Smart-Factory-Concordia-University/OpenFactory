@@ -26,7 +26,7 @@ class TestAsset(TestCase):
         self.assertEqual(asset.type, "MockedType")
 
         # Check if the correct query was executed
-        expected_query = "SELECT TYPE FROM assets WHERE DEVICE_UUID = 'uuid-123';"
+        expected_query = "SELECT TYPE FROM assets_type_stream WHERE ASSET_UUID='uuid-123';"
         mock_ksql.query_to_dataframe.assert_called_once_with(expected_query)
 
     def test_asset_initialization_failure(self, mock_async_run, MockKSQL):
@@ -42,7 +42,7 @@ class TestAsset(TestCase):
         """ Test attributes() returns correct attribute IDs """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         attributes_df = pd.DataFrame({"ID": [101, 102, 103]})
 
@@ -55,7 +55,7 @@ class TestAsset(TestCase):
         self.assertEqual(attributes, [101, 102, 103])  # Expected list of IDs
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID FROM devices WHERE device_uuid='uuid-123' AND TYPE != 'Method';")
+        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID FROM assets WHERE asset_uuid='uuid-123' AND TYPE != 'Method';")
 
     def test_attributes_empty(self, mock_async_run, MockKSQL):
         """ Test attributes() returns an empty list when no attributes exist """
@@ -77,11 +77,10 @@ class TestAsset(TestCase):
         """ Test samples() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
-        samples_df = pd.DataFrame({"ID": ["id1", "id2", "id3", "id4"],
-                                   "VALUE": ["val1", "val2", "val3", "val4"],
-                                   "TYPE": ["Samples", "Events", "Condition", "Method"]})
+        samples_df = pd.DataFrame({"ID": ["id1"],
+                                   "VALUE": ["val1"]})
 
         # Mock return values of asyncio.run
         mock_async_run.side_effect = [asset_df, samples_df]
@@ -92,7 +91,7 @@ class TestAsset(TestCase):
         self.assertEqual(samples, {'id1': 'val1'})
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|%';")
+        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Samples';")
 
     def test_events(self, mock_async_run, MockKSQL):
         """ Test events() """
@@ -100,9 +99,8 @@ class TestAsset(TestCase):
 
         asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
-        events_df = pd.DataFrame({"ID": ["id1", "id2", "id3", "id4"],
-                                  "VALUE": ["val1", "val2", "val3", "val4"],
-                                  "TYPE": ["Samples", "Events", "Condition", "Method"]})
+        events_df = pd.DataFrame({"ID": ["id2"],
+                                  "VALUE": ["val2"]})
 
         # Mock return values of asyncio.run
         mock_async_run.side_effect = [asset_df, events_df]
@@ -113,7 +111,7 @@ class TestAsset(TestCase):
         self.assertEqual(events, {'id2': 'val2'})
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|%';")
+        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Events';")
 
     def test_conditions(self, mock_async_run, MockKSQL):
         """ Test conditions() """
@@ -121,9 +119,8 @@ class TestAsset(TestCase):
 
         asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
-        cond_df = pd.DataFrame({"ID": ["id1", "id2", "id3", "id4"],
-                                "VALUE": ["val1", "val2", "val3", "val4"],
-                                "TYPE": ["Samples", "Events", "Condition", "Method"]})
+        cond_df = pd.DataFrame({"ID": ["id3"],
+                                "VALUE": ["val3"]})
 
         # Mock return values of asyncio.run
         mock_async_run.side_effect = [asset_df, cond_df]
@@ -134,7 +131,7 @@ class TestAsset(TestCase):
         self.assertEqual(conditions, {'id3': 'val3'})
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|%';")
+        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Condition';")
 
     def test_methods(self, mock_async_run, MockKSQL):
         """ Test methods() """
@@ -142,9 +139,8 @@ class TestAsset(TestCase):
 
         asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
-        meth_df = pd.DataFrame({"ID": ["id1", "id2", "id3", "id4"],
-                                "VALUE": ["val1", "val2", "val3", "val4"],
-                                "TYPE": ["Samples", "Events", "Condition", "Method"]})
+        meth_df = pd.DataFrame({"ID": ["id4"],
+                                "VALUE": ["val4"]})
 
         # Mock return values of asyncio.run
         mock_async_run.side_effect = [asset_df, meth_df]
@@ -155,7 +151,7 @@ class TestAsset(TestCase):
         self.assertEqual(methods, {'id4': 'val4'})
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|%';")
+        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Method';")
 
     @patch("openfactory.assets.asset.Producer")
     def test_method_execution(self, MockProducer, mock_async_run, MockKSQL):
@@ -210,7 +206,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(sample_value, 42.5)
 
-        expected_query = "SELECT VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|id1';"
+        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|id1';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     def test_getattr_string_value(self, mock_async_run, MockKSQL):
@@ -230,7 +226,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(sample_value, "val2")
 
-        expected_query = "SELECT VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|id2';"
+        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|id2';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Asset.method")
@@ -253,5 +249,5 @@ class TestAsset(TestCase):
         self.assertEqual(ret, "Mocked method called successfully")
         mock_method.assert_called_once_with("a_method", "arg1 arg2")
 
-        expected_query = "SELECT VALUE, TYPE FROM devices WHERE key LIKE 'uuid-123|a_method';"
+        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
