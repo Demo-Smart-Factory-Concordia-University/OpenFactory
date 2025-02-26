@@ -1,6 +1,6 @@
 import json
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pandas as pd
 from openfactory.exceptions import OFAException
 from openfactory.assets.asset import Asset
@@ -97,7 +97,7 @@ class TestAsset(TestCase):
         """ Test events() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         events_df = pd.DataFrame({"ID": ["id2"],
                                   "VALUE": ["val2"]})
@@ -117,7 +117,7 @@ class TestAsset(TestCase):
         """ Test conditions() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         cond_df = pd.DataFrame({"ID": ["id3"],
                                 "VALUE": ["val3"]})
@@ -137,7 +137,7 @@ class TestAsset(TestCase):
         """ Test methods() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         meth_df = pd.DataFrame({"ID": ["id4"],
                                 "VALUE": ["val4"]})
@@ -193,7 +193,7 @@ class TestAsset(TestCase):
         """ Test __getattr__ returns float for 'Samples' type """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["id1"],
                                  "VALUE": ["42.5"],
@@ -213,7 +213,7 @@ class TestAsset(TestCase):
         """ Test __getattr__ returns raw VALUE for non-'Samples' and non-'Method' types """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["id2"],
                                  "VALUE": ["val2"],
@@ -235,7 +235,7 @@ class TestAsset(TestCase):
         mock_ksql = MockKSQL.return_value
         mock_method.return_value = "Mocked method called successfully"
 
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["a_method"],
                                  "VALUE": ["val4"],
@@ -251,3 +251,60 @@ class TestAsset(TestCase):
 
         expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_set_references(self, MockProducer, mock_async_run, MockKSQL):
+        """ Test setting asset references """
+        test_df = pd.DataFrame({"TYPE": ["MockedType"]})
+        mock_async_run.return_value = test_df
+        asset = Asset("asset-001")
+
+        mock_producer = MockProducer.return_value
+        mock_producer.produce = MagicMock()
+        mock_producer.flush = MagicMock()
+
+        # Call set_references
+        asset.set_references("asset-002, asset-003")
+
+        # Verify Kafka producer was called with the right arguments
+        mock_producer.produce.assert_called_once()
+        args, kwargs = mock_producer.produce.call_args
+        self.assertEqual(kwargs['key'], "asset-001")
+        self.assertEqual('{"ID": "references", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
+
+        # Ensure flush was called
+        mock_producer.flush.assert_called_once()
+
+    def test_references_no_references(self, mock_async_run, MockKSQL):
+        """ Test references when there are no linked assets """
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({})
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+        MockKSQL.query_to_dataframe.return_value = MagicMock(empty=True)
+
+        # Expect an empty list
+        self.assertEqual(asset.references, [])
+
+    def test_references_with_data(self, mock_async_run, MockKSQL):
+        """ Test references when assets are linked """
+
+        # Mock the various assets/queries
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({"VALUE": ["asset-002, asset-003"]})
+        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
+                                  "TYPE": ["MockedType"]})
+        asset3_df = pd.DataFrame({"ASSET_UUID": "asset-003",
+                                  "TYPE": ["MockedType"]})
+        mock_async_run.side_effect = [asset_df, query_df, asset2_df, asset3_df]
+        asset = Asset("asset-001")
+
+        # Expect references to return a list of Asset objects
+        refs = asset.references
+        self.assertEqual(len(refs), 2)
+        self.assertIsInstance(refs[0], Asset)
+        self.assertEqual(refs[0].asset_uuid, "asset-002")
+        self.assertEqual(refs[1].asset_uuid, "asset-003")

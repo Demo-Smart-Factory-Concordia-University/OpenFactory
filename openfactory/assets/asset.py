@@ -52,7 +52,6 @@ class Asset():
 
     def method(self, method, args=""):
         """ request execution of an asset method """
-        print(f'Requesting execution of method {method}({args})')
         msg = {
             "CMD": method,
             "ARGS": args
@@ -80,3 +79,26 @@ class Asset():
             return method_caller
 
         return df['VALUE'][0]
+
+    @property
+    def references(self):
+        """ References to other OpenFactory assets """
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty:
+            return []
+        return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
+
+    def set_references(self, asset_references):
+        """ Set references to other assets """
+        msg = {
+            "ID": "references",
+            "VALUE": asset_references,
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        prod.flush()
