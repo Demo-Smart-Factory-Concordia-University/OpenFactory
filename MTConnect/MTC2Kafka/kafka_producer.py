@@ -7,6 +7,7 @@ class MTC_Producer(MTCSourceConnector):
     """ Kafka producer for MTConnect data """
 
     bootstrap_servers = [os.environ.get('KAFKA_BROKER', os.environ['KAFKA_BROKER'])]
+    mtconnect_devices_topic = 'ofa_assets'
     mtc_agent = os.environ['MTC_AGENT']
     kafka_producer_uuid = os.environ['KAFKA_PRODUCER_UUID']
 
