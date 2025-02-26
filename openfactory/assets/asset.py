@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from confluent_kafka import Producer
 from pyksql.ksql import KSQL
 import openfactory.config as config
@@ -40,9 +41,13 @@ class Asset():
 
     def conditions(self):
         """ return conditions of asset """
-        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
+        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return {row.ID: row.VALUE for row in df.itertuples()}
+        return [{
+            "ID": row.ID,
+            "VALUE": row.VALUE,
+            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
+            for row in df.itertuples()]
 
     def methods(self):
         """ return methods of asset """

@@ -119,8 +119,11 @@ class TestAsset(TestCase):
 
         asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
-        cond_df = pd.DataFrame({"ID": ["id3"],
-                                "VALUE": ["val3"]})
+        cond_df = pd.DataFrame({
+            "ID": ["id3"],
+            "VALUE": ["val3"],
+            "TAG": ["{urn:mtconnect.org:MTConnectStreams:2.2}Unavailable"]
+        })
 
         # Mock return values of asyncio.run
         mock_async_run.side_effect = [asset_df, cond_df]
@@ -128,10 +131,17 @@ class TestAsset(TestCase):
         asset = Asset("uuid-123")
         conditions = asset.conditions()
 
-        self.assertEqual(conditions, {'id3': 'val3'})
+        expected_conditions = [{
+            "ID": "id3",
+            "VALUE": "val3",
+            "TAG": "Unavailable"  # The namespace is removed
+        }]
+        self.assertEqual(conditions, expected_conditions)
 
         # Ensure correct query was exectued
-        mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Condition';")
+        mock_ksql.query_to_dataframe.assert_any_call(
+            "SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Condition';"
+        )
 
     def test_methods(self, mock_async_run, MockKSQL):
         """ Test methods() """
