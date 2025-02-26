@@ -26,7 +26,7 @@ class TestAsset(TestCase):
         self.assertEqual(asset.type, "MockedType")
 
         # Check if the correct query was executed
-        expected_query = "SELECT TYPE FROM assets_type_stream WHERE ASSET_UUID='uuid-123';"
+        expected_query = "SELECT TYPE FROM assets_type WHERE ASSET_UUID='uuid-123';"
         mock_ksql.query_to_dataframe.assert_called_once_with(expected_query)
 
     def test_asset_initialization_failure(self, mock_async_run, MockKSQL):

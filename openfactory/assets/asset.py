@@ -15,7 +15,7 @@ class Asset():
     def __init__(self, asset_uuid):
         self.ksql = KSQL(config.KSQLDB)
         self.asset_uuid = asset_uuid
-        query = f"SELECT TYPE FROM assets_type_stream WHERE ASSET_UUID='{asset_uuid}';"
+        query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{asset_uuid}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
