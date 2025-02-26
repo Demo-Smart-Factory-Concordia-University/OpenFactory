@@ -20,17 +20,17 @@ class OpenFactory:
 
     def assets(self):
         """ Return list of assets deployed on OpenFactory """
-        query = "SELECT * FROM assets;"
+        query = "SELECT * FROM assets_type;"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
 
         if df.empty:
             return []
 
-        return [Asset(asset_uuid=row.DEVICE_UUID) for row in df.itertuples()]
+        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
 
     def assets_availability(self):
         """ Return availability of OpenFactory assets """
-        query = "SELECT * FROM devices_avail;"
+        query = "SELECT * FROM assets_avail;"
         return asyncio.run(self.ksql.query_to_dataframe(query))
 
     def assets_docker_services(self):
@@ -40,18 +40,18 @@ class OpenFactory:
 
     def devices(self):
         """ Return devices deployed on OpenFactory """
-        query = "SELECT DEVICE_UUID FROM assets WHERE TYPE = 'Device';"
+        query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return df['DEVICE_UUID'].to_list()
+        return df['ASSET_UUID'].to_list()
 
     def agents(self):
         """ Return MTConnect agents deployed on OpenFactory """
-        query = "SELECT DEVICE_UUID FROM assets WHERE TYPE = 'MTConnectAgent';"
+        query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'MTConnectAgent';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return df['DEVICE_UUID'].to_list()
+        return df['ASSET_UUID'].to_list()
 
     def producers(self):
         """ Return Kafka producers deployed on OpenFactory """
-        query = "SELECT DEVICE_UUID FROM assets WHERE TYPE = 'KafkaProducer';"
+        query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return df['DEVICE_UUID'].to_list()
+        return df['ASSET_UUID'].to_list()

@@ -16,7 +16,7 @@ def register_asset(asset_uuid, asset_type, docker_service=""):
         "TAG": "AssetType",
         "TYPE": "OpenFactory"
     }
-    prod.produce(topic=ksql.get_kafka_topic('DEVICES_STREAM'),
+    prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
                  key=asset_uuid,
                  value=json.dumps(msg1))
 
@@ -27,7 +27,7 @@ def register_asset(asset_uuid, asset_type, docker_service=""):
         "TAG": "DockerService",
         "TYPE": "OpenFactory"
     }
-    prod.produce(topic=ksql.get_kafka_topic('DEVICES_STREAM'),
+    prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
                  key=asset_uuid,
                  value=json.dumps(msg2))
 
@@ -46,12 +46,12 @@ def deregister_asset(asset_uuid):
         "TAG": "Availability",
         "TYPE": "Events"
     }
-    prod.produce(topic=ksql.get_kafka_topic('DEVICES_STREAM'),
+    prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
                  key=asset_uuid,
                  value=json.dumps(msg))
 
     # tombstone message for table ASSETS
-    prod.produce(topic=ksql.get_kafka_topic('assets'),
+    prod.produce(topic=ksql.get_kafka_topic('assets_type'),
                  key=asset_uuid,
                  value=None)
 

@@ -1,40 +1,40 @@
 SET 'auto.offset.reset' = 'earliest';
 
--- MTConnect Devices data stream
-CREATE STREAM devices_stream (
-        device_uuid VARCHAR KEY,
+-- OpenFactory Assets data stream
+CREATE STREAM assets_stream (
+        asset_uuid VARCHAR KEY,
         id VARCHAR,
         value VARCHAR,
         tag VARCHAR,
         type VARCHAR
     ) WITH (
-        KAFKA_TOPIC = 'mtc_devices',
+        KAFKA_TOPIC = 'ofa_assets',
         PARTITIONS = 1,
         VALUE_FORMAT = 'JSON'
     );
 
--- MTConnect Devices data stream with composite key
-CREATE STREAM enriched_devices_stream AS
+-- OpenFactory Assets data stream with composite key
+CREATE STREAM enriched_assets_stream AS
   SELECT 
-    device_uuid,
+    asset_uuid,
     id,
-    concat(concat(CAST(device_uuid AS STRING), '|'), CAST(id AS STRING)) AS key,
+    concat(concat(CAST(asset_uuid AS STRING), '|'), CAST(id AS STRING)) AS key,
     value,
     type,
     tag
-  FROM devices_stream
-  PARTITION BY device_uuid;
+  FROM assets_stream
+  PARTITION BY asset_uuid;
 
--- MTConnect Devices data table
-CREATE TABLE devices AS
+-- OpenFactory Assets data table
+CREATE TABLE assets AS
   SELECT 
     key,
-    LATEST_BY_OFFSET(device_uuid) AS device_uuid,
+    LATEST_BY_OFFSET(asset_uuid) AS asset_uuid,
     LATEST_BY_OFFSET(id) AS id,
     LATEST_BY_OFFSET(value) AS value,
     LATEST_BY_OFFSET(type) AS type,
     LATEST_BY_OFFSET(tag) AS tag
-  FROM enriched_devices_stream
+  FROM enriched_assets_stream
   GROUP BY key;
 
 -- ---------------------------------------------------------------------
@@ -46,13 +46,13 @@ CREATE STREAM docker_services_stream WITH (
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 ) AS 
-SELECT device_uuid, VALUE AS docker_service
-FROM devices_stream 
+SELECT asset_uuid, VALUE AS docker_service
+FROM assets_stream 
 WHERE ID = 'DockerService' AND TYPE = 'OpenFactory';
 
 -- Table for Docker services of OpenFactory Assets
 CREATE SOURCE TABLE docker_services (
-    device_uuid VARCHAR PRIMARY KEY,
+    asset_uuid VARCHAR PRIMARY KEY,
     docker_service VARCHAR
 ) WITH (
     KAFKA_TOPIC = 'docker_services_topic',
@@ -64,31 +64,31 @@ CREATE SOURCE TABLE docker_services (
 -- Assets deployed on OpenFactory cluster 
 
 -- Stream for OpenFactory Assets tombstones
-CREATE STREAM assets_tombstones WITH (
-    KAFKA_TOPIC = 'assets_topic',
+CREATE STREAM assets_type_tombstones WITH (
+    KAFKA_TOPIC = 'assets_types_topic',
     VALUE_FORMAT = 'KAFKA',
     PARTITIONS = 1
 ) AS 
-SELECT device_uuid, CAST(NULL AS VARCHAR) AS type
-FROM devices_stream
+SELECT asset_uuid, CAST(NULL AS VARCHAR) AS type
+FROM assets_stream
 WHERE ID = 'AssetType' AND TYPE = 'OpenFactory' AND VALUE = 'delete';
 
 -- Stream for OpenFactory Assets types
-CREATE STREAM assets_stream WITH (
-    KAFKA_TOPIC = 'assets_topic',
+CREATE STREAM assets_type_stream WITH (
+    KAFKA_TOPIC = 'assets_types_topic',
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 ) AS 
-SELECT device_uuid, value AS type
-FROM devices_stream 
+SELECT asset_uuid, value AS type
+FROM assets_stream 
 WHERE ID = 'AssetType' AND TYPE = 'OpenFactory';
 
 -- Table for OpenFactory Assets
-CREATE SOURCE TABLE assets (
-    device_uuid VARCHAR PRIMARY KEY,
+CREATE SOURCE TABLE assets_type (
+    asset_uuid VARCHAR PRIMARY KEY,
     type VARCHAR
 ) WITH (
-    KAFKA_TOPIC = 'assets_topic',
+    KAFKA_TOPIC = 'assets_types_topic',
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 );
@@ -96,32 +96,32 @@ CREATE SOURCE TABLE assets (
 -- ---------------------------------------------------------------------
 -- OpenFactory Assets availability
 
--- Stream for devices availability tombstones
-CREATE STREAM devices_avail_tombstones WITH (
-    KAFKA_TOPIC = 'devices_avail_topic',
+-- Stream for assets availability tombstones
+CREATE STREAM assets_avail_tombstones WITH (
+    KAFKA_TOPIC = 'assets_avail_topic',
     VALUE_FORMAT = 'KAFKA',
     PARTITIONS = 1
 ) AS 
-SELECT device_uuid, CAST(NULL AS VARCHAR) AS value
-FROM devices_stream
+SELECT asset_uuid, CAST(NULL AS VARCHAR) AS value
+FROM assets_stream
 WHERE (id IN ('avail', 'agent_avail') AND value = 'delete');
 
--- Stream for devices availability
-CREATE STREAM devices_avail_stream WITH (
-    KAFKA_TOPIC = 'devices_avail_topic',
+-- Stream for assets availability
+CREATE STREAM assets_avail_stream WITH (
+    KAFKA_TOPIC = 'assets_avail_topic',
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 ) AS 
-SELECT device_uuid, value AS availability
-FROM devices_stream 
+SELECT asset_uuid, value AS availability
+FROM assets_stream 
 WHERE (id IN ('avail', 'agent_avail') AND value != 'delete');
 
--- Table for devices availability status
-CREATE SOURCE TABLE devices_avail (
-    device_uuid VARCHAR PRIMARY KEY,
+-- Table for assets availability status
+CREATE SOURCE TABLE assets_avail (
+    asset_uuid VARCHAR PRIMARY KEY,
     availability VARCHAR
 ) WITH (
-    KAFKA_TOPIC = 'devices_avail_topic',
+    KAFKA_TOPIC = 'assets_avail_topic',
     VALUE_FORMAT = 'JSON',
     PARTITIONS = 1
 );

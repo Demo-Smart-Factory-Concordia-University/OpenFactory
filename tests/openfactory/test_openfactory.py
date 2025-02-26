@@ -40,7 +40,7 @@ class TestOpenFactory(TestCase):
 
     def test_assets_with_data(self, mock_async_run, MockKSQL):
         """ Test assets() when assets exist """
-        test_data = pd.DataFrame({"DEVICE_UUID": ["uuid1", "uuid2"],
+        test_data = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"],
                                   "TYPE": ["type1", "type2"]})
         mock_async_run.return_value = test_data  # Simulate DataFrame with data
 
@@ -56,7 +56,7 @@ class TestOpenFactory(TestCase):
         """ Test assets_availability() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"DEVICE_UUID": [1, 2], "available": ["AVAILABLE", "UNAVAILABLE"]})
+        test_df = pd.DataFrame({"ASSET_UUID": [1, 2], "available": ["AVAILABLE", "UNAVAILABLE"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
@@ -66,7 +66,7 @@ class TestOpenFactory(TestCase):
         pd.testing.assert_frame_equal(result, test_df)
 
         # Verify the correct query was executed
-        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT * FROM devices_avail;")
+        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT * FROM assets_avail;")
 
     def test_assets_docker_services(self, mock_async_run, MockKSQL):
         """ Test assets_docker_services() """
@@ -88,7 +88,7 @@ class TestOpenFactory(TestCase):
         """ Test devices() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"DEVICE_UUID": ["uuid1", "uuid2"]})
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
@@ -98,13 +98,13 @@ class TestOpenFactory(TestCase):
         self.assertEqual(result, ["uuid1", "uuid2"])
 
         # Verify the correct query was executed
-        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT DEVICE_UUID FROM assets WHERE TYPE = 'Device';")
+        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';")
 
     def test_agents(self, mock_async_run, MockKSQL):
         """ Test agents() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"DEVICE_UUID": ["uuid1", "uuid2"]})
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
@@ -114,13 +114,13 @@ class TestOpenFactory(TestCase):
         self.assertEqual(result, ["uuid1", "uuid2"])
 
         # Verify the correct query was executed
-        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT DEVICE_UUID FROM assets WHERE TYPE = 'MTConnectAgent';")
+        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'MTConnectAgent';")
 
     def test_producers(self, mock_async_run, MockKSQL):
         """ Test producers() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"DEVICE_UUID": ["uuid1", "uuid2"]})
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
@@ -130,4 +130,4 @@ class TestOpenFactory(TestCase):
         self.assertEqual(result, ["uuid1", "uuid2"])
 
         # Verify the correct query was executed
-        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT DEVICE_UUID FROM assets WHERE TYPE = 'KafkaProducer';")
+        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';")
