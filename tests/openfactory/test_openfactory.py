@@ -88,14 +88,20 @@ class TestOpenFactory(TestCase):
         """ Test devices() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
-        mock_async_run.return_value = test_df
+        test_df = pd.DataFrame({"ASSET_UUID": ["asset-001", "asset-002"]})
+        asset1_df = pd.DataFrame({"ASSET_UUID": "asset-001",
+                                  "TYPE": ["MockedType"]})
+        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
+                                  "TYPE": ["MockedType"]})
+        mock_async_run.side_effect = [test_df, asset1_df, asset2_df]
 
         ofa = OpenFactory("http://fake-url")
         result = ofa.devices()
 
         # Ensure the function returns the expected result
-        self.assertEqual(result, ["uuid1", "uuid2"])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].asset_uuid, "asset-001")
+        self.assertEqual(result[1].asset_uuid, "asset-002")
 
         # Verify the correct query was executed
         mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';")

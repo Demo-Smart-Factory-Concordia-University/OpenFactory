@@ -42,7 +42,9 @@ class OpenFactory:
         """ Return devices deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
 
     def agents(self):
         """ Return MTConnect agents deployed on OpenFactory """
