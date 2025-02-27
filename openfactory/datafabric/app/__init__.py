@@ -11,7 +11,7 @@ from pyksql.ksql import KSQL
 from openfactory.models.base import Base
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
-from openfactory.datafabric.filters import availability_color
+import openfactory.datafabric.filters as filters
 
 db = SQLAlchemy(model_class=Base)
 admin_app = Admin(name='DataFabric', template_mode='bootstrap3')
@@ -23,7 +23,8 @@ def create_app():
     app.config.from_object(Config)
 
     # jinja filters
-    app.jinja_env.filters['availability_color'] = availability_color
+    app.jinja_env.filters['availability_color'] = filters.availability_color
+    app.jinja_env.filters['connection_status_color'] = filters.connection_status_color
 
     # setup instance folder
     Path(Config.INSTANCE_PATH).mkdir(parents=True, exist_ok=True)
