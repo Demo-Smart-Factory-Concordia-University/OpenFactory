@@ -8,22 +8,32 @@
       <thead class="table-light">
         <tr style="background-color: #b0d3d5; padding: 5px">
            <th scope="col">UUID</th>
-           <th scope="col">Agent Port</th>
-           <th scope="col">Node</th> 
-           <th scope="col">Agent Status</th>
+           <th scope="col">Availability</th>
+           <th scope="col">Agent</th>
+           <th scope="col">Producer</th>
+           <th scope="col">Supervisor</th>
            <th></th>
         </tr>
       </thead>
     
       <tbody>
         <tr style="transform: rotate(0);">
-        {% for agent in agents %}
+        {% for device in devices %}
         <tr>
-          <th><a href="{{ url_for('services.device_services_list', device_uuid=agent.device_uuid) }}">{{ agent.device_uuid }}</th>
-          <td>{{ agent.agent_port }}</td>
-          <td>{{ agent.node }}</td>
-          <td>{{ agent.status }}</td>
-          <td><button onclick=location.href="{{ url_for('services.device_remove', agent_id=agent.id) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
+          <th><a href="{{ url_for('services.device_services_list', device_uuid=device.asset_uuid) }}">{{ device.asset_uuid }}</th>
+            <td style="background-color: {{ device.avail | availability_color }};">
+              {{ device.avail }}
+            </td>
+            <td style="background-color: {{ device.agent_avail | availability_color }};">
+              {{ device.producer_avail }}
+            </td>
+            <td style="background-color: {{ device.producer_avail | availability_color }};">
+              {{ device.agent_avail }}
+            </td>
+            <td style="background-color: {{ device.supervisor_avail | availability_color }};">
+              {{ device.supervisor_avail }}
+            </td>
+          <td><button onclick=location.href="{{ url_for('services.device_remove', agent_id=1) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
         </tr>   
         {% endfor %}
       </tbody>

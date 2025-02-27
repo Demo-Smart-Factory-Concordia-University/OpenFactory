@@ -1,10 +1,10 @@
 """
 DataFabric Device services list view
 """
-import asyncio
 from flask import render_template
 from openfactory.datafabric.app.services.core.services_list_view import ServicesListView
-from openfactory.datafabric.app import ksql
+from openfactory.assets import Asset
+from openfactory.exceptions import OFAException
 
 
 class DeviceServicesList(ServicesListView):
@@ -22,23 +22,15 @@ class DeviceServicesList(ServicesListView):
 
     def fetch_data(self, device_uuid):
         """ Fetch data from devices table `"""
-        query = f"SELECT ID, VALUE, TYPE, TAG FROM devices WHERE KEY LIKE '{device_uuid.upper()}|%';"
-        df = asyncio.run(ksql.query_to_dataframe(query))
-        if not df.empty:
+        try:
+            device = Asset(device_uuid)
             json_result = {
-                "Samples": {row.ID: row.VALUE for row in df[df["TYPE"] == "Samples"].itertuples()},
-                "Events": {row.ID: row.VALUE for row in df[df["TYPE"] == "Events"].itertuples()},
-                "Conditions": [
-                    {
-                        "ID": row.ID,
-                        "VALUE": None if str(row.TAG).lower() == "unavailable" else row.VALUE,
-                        "TAG": row.TAG
-                    }
-                    for row in df[df["TYPE"] == "Condition"].itertuples()
-                ],
-                "Methods": {row.ID: row.VALUE for row in df[df["TYPE"] == "Method"].itertuples()},
+                "Samples": device.samples(),
+                "Events": device.events(),
+                "Conditions": device.conditions(),
+                "Methods": device.methods(),
             }
-        else:
+        except OFAException:
             json_result = {
                 "Samples": {},
                 "Events": {},

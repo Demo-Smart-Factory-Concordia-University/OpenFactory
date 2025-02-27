@@ -39,25 +39,9 @@
                 <td>{{ id }}</td>
                 <td style="
                         {% if 'avail' in id|lower %}
-                            background-color: 
-                            {% if value|lower == 'available' %}
-                                LimeGreen;
-                            {% elif value|lower == 'unavailable' %}
-                                OrangeRed;
-                            {% else %}
-                                inherit;
-                            {% endif %}
+                            background-color: {{ value | availability_color }}
                         {% elif 'connection_status' in id|lower %}
-                            background-color: 
-                            {% if value|lower == 'established' %}
-                                LimeGreen;
-                            {% elif value|lower == 'listen' %}
-                                Gold;
-                            {% elif value|lower == 'closed' %}
-                                OrangeRed;
-                            {% else %}
-                                inherit;
-                            {% endif %}
+                            background-color: {{ value | connection_status_color }}
                         {% endif %}
                     ">
                     {{ value }}</td>

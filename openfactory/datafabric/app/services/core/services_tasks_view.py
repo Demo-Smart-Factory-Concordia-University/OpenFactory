@@ -76,5 +76,5 @@ class ServicesTasksListView(DeviceServicesList):
         # Render the template with sorted services
         return render_template(self.template_name,
                                service_tasks=sorted(task_list, key=lambda x: x["name"]),
-                               data=self.fetch_data(service_name),
+                               data=self.fetch_data(service_name.upper()),
                                title=self.service_name)
