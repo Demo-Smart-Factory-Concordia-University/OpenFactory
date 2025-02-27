@@ -64,14 +64,14 @@ class OPCUASupervisor(BaseSupervisor):
 
         msg = [
             {
-                "device_uuid": self.supervisor_uuid,
+                "asset_uuid": self.supervisor_uuid,
                 "id": "adapter_uri",
                 "value": f"opc.tcp://{self.adapter_ip}:{self.adapter_port}",
                 "tag": 'AdapterURI',
                 "type": 'Events'
             },
             {
-                "device_uuid": self.supervisor_uuid,
+                "asset_uuid": self.supervisor_uuid,
                 "id": "adapter_connection_status",
                 "value": self.connectionStatus,
                 "tag": 'ConnectionStatus',
@@ -79,7 +79,7 @@ class OPCUASupervisor(BaseSupervisor):
             }
         ]
         try:
-            self.ksql.insert_into_stream('DEVICES_STREAM', msg)
+            self.ksql.insert_into_stream('ASSETS_STREAM', msg)
         except Exception as e:
             print(f"Failed to send adapter connection status message for supervisor: {e}")
         return

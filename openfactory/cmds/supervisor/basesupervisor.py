@@ -65,7 +65,7 @@ class BaseSupervisor:
         """ Send Supervisor Availability message to ksqlDB """
         msg = [
             {
-                "device_uuid": self.supervisor_uuid,
+                "asset_uuid": self.supervisor_uuid,
                 "id": "avail",
                 "value": availability,
                 "tag": 'Availability',
@@ -73,7 +73,7 @@ class BaseSupervisor:
             }
         ]
         try:
-            resp = self.ksql.insert_into_stream('DEVICES_STREAM', msg)
+            resp = self.ksql.insert_into_stream('ASSETS_STREAM', msg)
             print(f"Sent availability message: {availability}, Response: {resp}")
         except Exception as e:
             print(f"Failed to send availability message: {e}")
@@ -87,7 +87,7 @@ class BaseSupervisor:
         for cmd in self.available_commands():
             msg = [
                 {
-                    "device_uuid": self.device_uuid,
+                    "asset_uuid": self.device_uuid,
                     "id": cmd['command'],
                     "value": cmd['description'],
                     "tag": 'Method',
@@ -95,7 +95,7 @@ class BaseSupervisor:
                 }
             ]
             try:
-                resp = self.ksql.insert_into_stream('DEVICES_STREAM', msg)
+                resp = self.ksql.insert_into_stream('ASSETS_STREAM', msg)
                 print(f"Sent method {cmd['command']} | {cmd['description']}, Response: {resp}")
             except Exception as e:
                 print(f"Failed to send method description: {e}")
@@ -114,7 +114,7 @@ class BaseSupervisor:
             return
         except Exception as e:
             print(f"An error occurred: {e}")
-        print(f"ERROR - ksqlDB query for stream {self.device_uuid.replace('-', '_')}_cmds_stream terminated.\nDoes this stream exist (supervisor up?)?")
+        print("ERROR - ksqlDB query for stream cmds_stream terminated.\nDoes this stream exist (supervisor up?)?")
 
     async def new_cmd(self, cmd, args):
         """
@@ -130,7 +130,7 @@ class BaseSupervisor:
         self.send_availability('UNAVAILABLE')
         msg = [
             {
-                "device_uuid": self.supervisor_uuid,
+                "asset_uuid": self.supervisor_uuid,
                 "id": "adapter_connection_status",
                 "value": "CLOSED",
                 "tag": 'ConnectionStatus',
@@ -138,7 +138,7 @@ class BaseSupervisor:
             }
         ]
         try:
-            self.ksql.insert_into_stream('DEVICES_STREAM', msg)
+            self.ksql.insert_into_stream('ASSETS_STREAM', msg)
         except Exception as e:
             print(f"Failed to send adapter connection status message for supervisor: {e}")
 
