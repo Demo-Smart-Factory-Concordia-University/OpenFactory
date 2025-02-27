@@ -14,10 +14,11 @@ def shut_down_devices_from_config_file(yaml_config_file):
         return
 
     ofa = OpenFactoryManager()
+    uuid_list = [device.asset_uuid for device in ofa.devices()]
 
     for dev_name, device in devices.items():
         user_notify.info(f"{dev_name}:")
-        if not device['uuid'] in ofa.devices():
+        if not device['uuid'] in uuid_list:
             user_notify.info(f"No device {device['uuid']} deployed in OpenFactory")
             continue
 
