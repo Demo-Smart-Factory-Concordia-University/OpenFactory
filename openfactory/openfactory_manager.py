@@ -152,9 +152,14 @@ class OpenFactoryManager(OpenFactory):
             constraints = None
 
         if device['agent']['ip']:
-            MTC_AGENT = f"{device['agent']['ip']}:{device['agent']['port']}"
+            print(device['agent']['port'])
+            if device['agent']['port'] == 443:
+                MTC_AGENT = f"https://{device['agent']['ip']}:443"
+            else:
+                MTC_AGENT = f"http://{device['agent']['ip']}:{device['agent']['port']}"
+            print(MTC_AGENT)
         else:
-            MTC_AGENT = f"{device['uuid'].lower()}-agent:5000"
+            MTC_AGENT = f"http://{device['uuid'].lower()}-agent:5000"
 
         service_name = device['uuid'].lower() + '-producer'
         producer_uuid = device['uuid'].upper() + '-PRODUCER'
