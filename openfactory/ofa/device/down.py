@@ -1,5 +1,5 @@
 import click
-from openfactory.factories.shut_down_devices_from_config_file import shut_down_devices_from_config_file
+from openfactory.factories import shut_down_devices_from_config_file
 
 
 @click.command(name='down')
