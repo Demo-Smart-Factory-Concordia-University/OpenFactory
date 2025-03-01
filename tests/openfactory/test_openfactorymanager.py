@@ -165,8 +165,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Expected environment variables (env)
         expected_env = [
             f'KAFKA_BROKER={mock_config.KAFKA_BROKER}',
-            f'KAFKA_PRODUCER_UUID={device["uuid"].upper()}-PRODUCER',
-            f'MTC_AGENT={device["uuid"].lower()}-agent:5000'
+            f'KAFKA_PRODUCER_UUID={device["uuid"]}-PRODUCER',
+            f'MTC_AGENT=http://{device["uuid"].lower()}-agent:5000'
         ]
 
         # Check that the correct parameters were passed in 'env'
@@ -187,7 +187,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         self.assertEqual(kwargs['constraints'], expected_constraints)
 
         # Ensure register_asset was called
-        mock_register_asset.assert_called_once_with(device['uuid'].upper() + '-PRODUCER',
+        mock_register_asset.assert_called_once_with(device['uuid'] + '-PRODUCER',
                                                     'KafkaProducer',
                                                     device['uuid'].lower() + '-producer')
 
