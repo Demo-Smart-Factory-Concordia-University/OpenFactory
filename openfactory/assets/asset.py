@@ -86,18 +86,41 @@ class Asset():
         return df['VALUE'][0]
 
     @property
-    def references(self):
-        """ References to other OpenFactory assets """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references';"
+    def references_above(self):
+        """ References to above (upstream) OpenFactory assets """
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
 
-    def set_references(self, asset_references):
-        """ Set references to other assets """
+    def set_references_above(self, asset_references):
+        """ Set references to above (upstream) assets """
         msg = {
-            "ID": "references",
+            "ID": "references_above",
+            "VALUE": asset_references,
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        prod.flush()
+
+    @property
+    def references_below(self):
+        """ References to below (downstream) OpenFactory assets """
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty:
+            return []
+        return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
+
+    def set_references_below(self, asset_references):
+        """ Set references to below (downstream) assets """
+        msg = {
+            "ID": "references_below",
             "VALUE": asset_references,
             "TAG": "AssetsReferences",
             "TYPE": "OpenFactory"

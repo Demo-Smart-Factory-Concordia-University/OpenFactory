@@ -263,8 +263,8 @@ class TestAsset(TestCase):
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Producer")
-    def test_set_references(self, MockProducer, mock_async_run, MockKSQL):
-        """ Test setting asset references """
+    def test_set_references_above(self, MockProducer, mock_async_run, MockKSQL):
+        """ Test setting asset references_above """
         test_df = pd.DataFrame({"TYPE": ["MockedType"]})
         mock_async_run.return_value = test_df
         asset = Asset("asset-001")
@@ -274,19 +274,19 @@ class TestAsset(TestCase):
         mock_producer.flush = MagicMock()
 
         # Call set_references
-        asset.set_references("asset-002, asset-003")
+        asset.set_references_above("asset-002, asset-003")
 
         # Verify Kafka producer was called with the right arguments
         mock_producer.produce.assert_called_once()
         args, kwargs = mock_producer.produce.call_args
         self.assertEqual(kwargs['key'], "asset-001")
-        self.assertEqual('{"ID": "references", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
+        self.assertEqual('{"ID": "references_above", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
 
         # Ensure flush was called
         mock_producer.flush.assert_called_once()
 
-    def test_references_no_references(self, mock_async_run, MockKSQL):
-        """ Test references when there are no linked assets """
+    def test_references_above_no_references(self, mock_async_run, MockKSQL):
+        """ Test references_above when there are no linked assets """
         asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
                                  "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({})
@@ -296,10 +296,10 @@ class TestAsset(TestCase):
         MockKSQL.query_to_dataframe.return_value = MagicMock(empty=True)
 
         # Expect an empty list
-        self.assertEqual(asset.references, [])
+        self.assertEqual(asset.references_above, [])
 
-    def test_references_with_data(self, mock_async_run, MockKSQL):
-        """ Test references when assets are linked """
+    def test_references_above_with_data(self, mock_async_run, MockKSQL):
+        """ Test references_above when assets are linked """
 
         # Mock the various assets/queries
         asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
@@ -313,7 +313,64 @@ class TestAsset(TestCase):
         asset = Asset("asset-001")
 
         # Expect references to return a list of Asset objects
-        refs = asset.references
+        refs = asset.references_above
+        self.assertEqual(len(refs), 2)
+        self.assertIsInstance(refs[0], Asset)
+        self.assertEqual(refs[0].asset_uuid, "asset-002")
+        self.assertEqual(refs[1].asset_uuid, "asset-003")
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_set_references_below(self, MockProducer, mock_async_run, MockKSQL):
+        """ Test setting asset references_below """
+        test_df = pd.DataFrame({"TYPE": ["MockedType"]})
+        mock_async_run.return_value = test_df
+        asset = Asset("asset-001")
+
+        mock_producer = MockProducer.return_value
+        mock_producer.produce = MagicMock()
+        mock_producer.flush = MagicMock()
+
+        # Call set_references
+        asset.set_references_below("asset-002, asset-003")
+
+        # Verify Kafka producer was called with the right arguments
+        mock_producer.produce.assert_called_once()
+        args, kwargs = mock_producer.produce.call_args
+        self.assertEqual(kwargs['key'], "asset-001")
+        self.assertEqual('{"ID": "references_below", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
+
+        # Ensure flush was called
+        mock_producer.flush.assert_called_once()
+
+    def test_references_below_no_references(self, mock_async_run, MockKSQL):
+        """ Test references_below when there are no linked assets """
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({})
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+        MockKSQL.query_to_dataframe.return_value = MagicMock(empty=True)
+
+        # Expect an empty list
+        self.assertEqual(asset.references_below, [])
+
+    def test_references_below_with_data(self, mock_async_run, MockKSQL):
+        """ Test references_below when assets are linked """
+
+        # Mock the various assets/queries
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({"VALUE": ["asset-002, asset-003"]})
+        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
+                                  "TYPE": ["MockedType"]})
+        asset3_df = pd.DataFrame({"ASSET_UUID": "asset-003",
+                                  "TYPE": ["MockedType"]})
+        mock_async_run.side_effect = [asset_df, query_df, asset2_df, asset3_df]
+        asset = Asset("asset-001")
+
+        # Expect references to return a list of Asset objects
+        refs = asset.references_below
         self.assertEqual(len(refs), 2)
         self.assertIsInstance(refs[0], Asset)
         self.assertEqual(refs[0].asset_uuid, "asset-002")
