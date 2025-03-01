@@ -20,8 +20,11 @@ class DevicesList(View):
         ofa = OpenFactory()
         devices = ofa.devices()
         for device in devices:
-            agent = Asset(device.asset_uuid + '-AGENT')
-            device.agent_avail = agent.agent_avail
+            try:
+                agent = Asset(device.asset_uuid + '-AGENT')
+                device.agent_avail = agent.agent_avail
+            except (OFAException, AttributeError):
+                device.agent_avail = "External"
             producer = Asset(device.asset_uuid + '-PRODUCER')
             device.producer_avail = producer.avail
             try:
