@@ -1,3 +1,4 @@
+import asyncio
 import docker
 import openfactory.config as config
 from openfactory import OpenFactory
@@ -152,17 +153,15 @@ class OpenFactoryManager(OpenFactory):
             constraints = None
 
         if device['agent']['ip']:
-            print(device['agent']['port'])
             if device['agent']['port'] == 443:
                 MTC_AGENT = f"https://{device['agent']['ip']}:443"
             else:
                 MTC_AGENT = f"http://{device['agent']['ip']}:{device['agent']['port']}"
-            print(MTC_AGENT)
         else:
             MTC_AGENT = f"http://{device['uuid'].lower()}-agent:5000"
 
         service_name = device['uuid'].lower() + '-producer'
-        producer_uuid = device['uuid'].upper() + '-PRODUCER'
+        producer_uuid = device['uuid'] + '-PRODUCER'
         try:
             dal.docker_client.services.create(
                 image=config.MTCONNECT_PRODUCER_IMAGE,
@@ -334,3 +333,13 @@ class OpenFactoryManager(OpenFactory):
 
         deregister_asset(device_uuid)
         user_notify.success(f"{device_uuid} shut down successfully")
+
+    def get_asset_uuid_from_docker_service(self, docker_service_name):
+        """
+        Return ASSET_UUID of the asset running on the Docker service docker_service_name
+        """
+        query = f"select ASSET_UUID from DOCKER_SERVICES where DOCKER_SERVICE='{docker_service_name}';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty:
+            return ""
+        return df['ASSET_UUID'][0]

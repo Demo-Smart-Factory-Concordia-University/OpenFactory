@@ -2,6 +2,7 @@ from dateutil.parser import parse as parse_datetime
 from flask import render_template
 from flask_login import login_required
 from datetime import datetime, timezone
+from openfactory import OpenFactoryManager
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.app.services.devices.device_services import DeviceServicesList
 
@@ -74,7 +75,9 @@ class ServicesTasksListView(DeviceServicesList):
         task_list = sorted(task_list, key=lambda x: parse_datetime(x["timestamp"]) if x["timestamp"] else datetime.min, reverse=True)
 
         # Render the template with sorted services
+        ofa = OpenFactoryManager()
+        asset_uuid = ofa.get_asset_uuid_from_docker_service(service_name)
         return render_template(self.template_name,
                                service_tasks=sorted(task_list, key=lambda x: x["name"]),
-                               data=self.fetch_data(service_name.upper()),
+                               data=self.fetch_data(asset_uuid),
                                title=self.service_name)
