@@ -17,6 +17,7 @@ dependencies = [
     "fsspec",
     "influxdb-client",
     "asyncua",
+    "confluent-kafka",
     "flask",
     "flask-sqlalchemy",
     "flask-admin",
