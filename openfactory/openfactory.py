@@ -57,3 +57,11 @@ class OpenFactory:
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         return df['ASSET_UUID'].to_list()
+
+    def supervisors(self):
+        """ Return Supervisors deployed on OpenFactory """
+        query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Supervisor';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty:
+            return []
+        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
