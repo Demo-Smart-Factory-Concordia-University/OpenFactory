@@ -29,6 +29,9 @@ dependencies = [
     "mtc2kafka @ git+https://github.com/rwuthric/python-mtc2kafka.git"
 ]
 
+[tool.setuptools]
+include-package-data = true 
+
 [tool.setuptools.packages]
 find = { where = ["."], include = ["openfactory", "openfactory.*"] }
 
