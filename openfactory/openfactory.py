@@ -12,6 +12,7 @@ class OpenFactory:
     """
 
     def __init__(self, ksqldb_url=config.KSQLDB):
+        self.ksqldb_url = ksqldb_url
         self.ksql = KSQL(ksqldb_url)
         try:
             self.ksql.info()
@@ -26,7 +27,7 @@ class OpenFactory:
         if df.empty:
             return []
 
-        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
+        return [Asset(asset_uuid=row.ASSET_UUID, ksqldb_url=self.ksqldb_url) for row in df.itertuples()]
 
     def assets_availability(self):
         """ Return availability of OpenFactory assets """
@@ -44,7 +45,7 @@ class OpenFactory:
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             return []
-        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
+        return [Asset(asset_uuid=row.ASSET_UUID, ksqldb_url=self.ksqldb_url) for row in df.itertuples()]
 
     def agents(self):
         """ Return MTConnect agents deployed on OpenFactory """
@@ -64,4 +65,4 @@ class OpenFactory:
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
             return []
-        return [Asset(asset_uuid=row.ASSET_UUID) for row in df.itertuples()]
+        return [Asset(asset_uuid=row.ASSET_UUID, ksqldb_url=self.ksqldb_url) for row in df.itertuples()]

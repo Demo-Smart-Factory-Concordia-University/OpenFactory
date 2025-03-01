@@ -12,8 +12,8 @@ class Asset():
     OpenFactory Asset
     """
 
-    def __init__(self, asset_uuid):
-        self.ksql = KSQL(config.KSQLDB)
+    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB):
+        self.ksql = KSQL(ksqldb_url)
         self.asset_uuid = asset_uuid
         query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{asset_uuid}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
