@@ -34,6 +34,8 @@ def deploy_devices_from_config_file(yaml_config_file):
                 if not os.path.isabs(device_xml_uri):
                     device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
 
+        register_asset(device['uuid'], "Device", "")
+
         ofa.deploy_mtconnect_agent(device_uuid=device['uuid'],
                                    device_xml_uri=device_xml_uri,
                                    agent=device['agent'])
@@ -48,5 +50,4 @@ def deploy_devices_from_config_file(yaml_config_file):
             ofa.deploy_device_supervisor(device_uuid=device['uuid'],
                                          supervisor=device['supervisor'])
 
-        register_asset(device['uuid'], "Device", "")
         user_notify.success(f"Device {device['uuid']} deployed successfully")

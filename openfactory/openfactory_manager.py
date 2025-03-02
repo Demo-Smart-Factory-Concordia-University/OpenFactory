@@ -2,6 +2,7 @@ import asyncio
 import docker
 import openfactory.config as config
 from openfactory import OpenFactory
+from openfactory.assets import Asset
 from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
 from openfactory.models.user_notifications import user_notify
@@ -90,6 +91,10 @@ class OpenFactoryManager(OpenFactory):
 
         # register agent in OpenFactory
         register_asset(agent_uuid, "MTConnectAgent", service_name)
+        device = Asset(device_uuid, self.ksqldb_url)
+        device.add_reference_below(agent_uuid)
+        agent = Asset(agent_uuid, self.ksqldb_url)
+        agent.add_reference_above(device_uuid)
 
         user_notify.success(f"Agent {device_uuid.lower()}-agent deployed successfully")
 
@@ -182,6 +187,11 @@ class OpenFactoryManager(OpenFactory):
 
         # register producer in OpenFactory
         register_asset(producer_uuid, "KafkaProducer", service_name)
+        dev = Asset(device['uuid'], self.ksqldb_url)
+        dev.add_reference_below(producer_uuid)
+        producer = Asset(producer_uuid, self.ksqldb_url)
+        producer.add_reference_above(device['uuid'])
+
         user_notify.success(f"Kafka producer {service_name} deployed successfully")
 
     def deploy_device_supervisor(self, device_uuid, supervisor):
@@ -229,7 +239,13 @@ class OpenFactoryManager(OpenFactory):
         except docker.errors.APIError as err:
             user_notify.fail(f"Supervisor {device_uuid.lower()}-supervisor could not be deployed\n{err}")
             return
-        register_asset(f"{device_uuid.upper()}-SUPERVISOR", 'Supervisor')
+        supervisor_uuid = f"{device_uuid.upper()}-SUPERVISOR"
+        register_asset(supervisor_uuid, 'Supervisor')
+        device = Asset(device_uuid, self.ksqldb_url)
+        device.add_reference_below(supervisor_uuid)
+        supervisor = Asset(supervisor_uuid, self.ksqldb_url)
+        supervisor.add_reference_above(device_uuid)
+
         user_notify.success(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):

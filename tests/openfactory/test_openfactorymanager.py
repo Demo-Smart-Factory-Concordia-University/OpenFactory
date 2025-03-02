@@ -17,7 +17,8 @@ class TestOpenFactoryManager(unittest.TestCase):
     @patch("openfactory.openfactory_manager.open_ofa")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
-    def test_deploy_mtconnect_agent(self, mock_register_asset, mock_user_notify, mock_open_ofa, mock_dal, mock_config, mock_open, MockKSQL):
+    @patch("openfactory.openfactory_manager.Asset")
+    def test_deploy_mtconnect_agent(self, MockAsset, mock_register_asset, mock_user_notify, mock_open_ofa, mock_dal, mock_config, mock_open, MockKSQL):
         """
         Test deploy_mtconnect_agent
         """
@@ -61,7 +62,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_xml_uri = "http://example.com/device.xml"
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        manager = OpenFactoryManager('http://mocked_url')
         manager.deploy_mtconnect_agent(device_uuid, device_xml_uri, agent)
 
         # Check that the services.create method was called on the Docker client
@@ -119,7 +120,8 @@ class TestOpenFactoryManager(unittest.TestCase):
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
-    def test_deploy_kafka_producer(self, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
+    @patch("openfactory.openfactory_manager.Asset")
+    def test_deploy_kafka_producer(self, MockAsset, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
         """
         Test deploy_kafka_producer
         """
@@ -148,7 +150,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         }
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        manager = OpenFactoryManager('http://mocked_url')
         manager.deploy_kafka_producer(device)
 
         # Check that the services.create method was called on the Docker client
@@ -199,7 +201,8 @@ class TestOpenFactoryManager(unittest.TestCase):
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
-    def test_deploy_device_supervisor(self, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
+    @patch("openfactory.openfactory_manager.Asset")
+    def test_deploy_device_supervisor(self, mock_Asset, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
         """
         Test deploy_device_supervisor
         """
@@ -234,7 +237,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_uuid = 'DEVICE-UUID-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        manager = OpenFactoryManager('http://mocked_url')
         manager.deploy_device_supervisor(device_uuid, supervisor)
 
         # Check that the services.create method was called on the Docker client
