@@ -84,37 +84,53 @@ class TestOpenFactory(TestCase):
         # Verify the correct query was executed
         mock_ksql.query_to_dataframe.assert_called_once_with("SELECT * FROM docker_services;")
 
-    def test_devices(self, mock_async_run, MockKSQL):
-        """ Test devices() """
-        mock_ksql = MockKSQL.return_value
-        mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"ASSET_UUID": ["asset-001", "asset-002"]})
-        asset1_df = pd.DataFrame({"ASSET_UUID": "asset-001",
-                                  "TYPE": ["MockedType"]})
-        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
-                                  "TYPE": ["MockedType"]})
-        mock_async_run.side_effect = [test_df, asset1_df, asset2_df]
-
-        ofa = OpenFactory("http://fake-url")
-        result = ofa.devices()
-
-        # Ensure the function returns the expected result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].asset_uuid, "asset-001")
-        self.assertEqual(result[1].asset_uuid, "asset-002")
-
-        # Verify the correct query was executed
-        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';")
-
-    def test_agents(self, mock_async_run, MockKSQL):
-        """ Test agents() """
+    def test_devices_uuid(self, mock_async_run, MockKSQL):
+        """ Test devices_uuid() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
-        result = ofa.agents()
+        result = ofa.devices_uuid()
+
+        # Ensure the function returns the expected result
+        self.assertEqual(result, ["uuid1", "uuid2"])
+
+        # Verify the correct query was executed
+        mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';")
+
+    @patch("openfactory.openfactory.Asset")
+    def test_devices(self, MockAsset, mock_async_run, MockKSQL):
+        """ Test devices() """
+
+        # Mock Asset instances
+        mock_asset_instances = [MagicMock(), MagicMock()]
+        MockAsset.side_effect = mock_asset_instances
+
+        ksqldb_url = "http://fake-url"
+        ofa = OpenFactory(ksqldb_url)
+        ofa.devices_uuid = MagicMock()
+        ofa.devices_uuid.return_value = ["asset-001", "asset-002"]
+
+        result = ofa.devices()
+
+        # Assert that Asset was called with the correct arguments
+        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+
+        # Assert that the return value matches the mock objects
+        self.assertEqual(result, mock_asset_instances)
+
+    def test_agents_uuid(self, mock_async_run, MockKSQL):
+        """ Test agents_uuid() """
+        mock_ksql = MockKSQL.return_value
+        mock_ksql.query_to_dataframe = MagicMock()
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
+        mock_async_run.return_value = test_df
+
+        ofa = OpenFactory("http://fake-url")
+        result = ofa.agents_uuid()
 
         # Ensure the function returns the expected result
         self.assertEqual(result, ["uuid1", "uuid2"])
@@ -122,15 +138,37 @@ class TestOpenFactory(TestCase):
         # Verify the correct query was executed
         mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'MTConnectAgent';")
 
-    def test_producers(self, mock_async_run, MockKSQL):
-        """ Test producers() """
+    @patch("openfactory.openfactory.Asset")
+    def test_agents(self, MockAsset, mock_async_run, MockKSQL):
+        """ Test agents() """
+
+        # Mock Asset instances
+        mock_asset_instances = [MagicMock(), MagicMock()]
+        MockAsset.side_effect = mock_asset_instances
+
+        ksqldb_url = "http://fake-url"
+        ofa = OpenFactory(ksqldb_url)
+        ofa.agents_uuid = MagicMock()
+        ofa.agents_uuid.return_value = ["asset-001", "asset-002"]
+
+        result = ofa.agents()
+
+        # Assert that Asset was called with the correct arguments
+        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+
+        # Assert that the return value matches the mock objects
+        self.assertEqual(result, mock_asset_instances)
+
+    def test_producers_uuid(self, mock_async_run, MockKSQL):
+        """ Test producers_uuid() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
-        result = ofa.producers()
+        result = ofa.producers_uuid()
 
         # Ensure the function returns the expected result
         self.assertEqual(result, ["uuid1", "uuid2"])
@@ -138,24 +176,62 @@ class TestOpenFactory(TestCase):
         # Verify the correct query was executed
         mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';")
 
-    def test_supervisors(self, mock_async_run, MockKSQL):
-        """ Test supervisors() """
+    @patch("openfactory.openfactory.Asset")
+    def test_producers(self, MockAsset, mock_async_run, MockKSQL):
+        """ Test producers() """
+
+        # Mock Asset instances
+        mock_asset_instances = [MagicMock(), MagicMock()]
+        MockAsset.side_effect = mock_asset_instances
+
+        ksqldb_url = "http://fake-url"
+        ofa = OpenFactory(ksqldb_url)
+        ofa.producers_uuid = MagicMock()
+        ofa.producers_uuid.return_value = ["asset-001", "asset-002"]
+
+        result = ofa.producers()
+
+        # Assert that Asset was called with the correct arguments
+        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+
+        # Assert that the return value matches the mock objects
+        self.assertEqual(result, mock_asset_instances)
+
+    def test_supervisors_uuid(self, mock_async_run, MockKSQL):
+        """ Test supervisors_uuid() """
         mock_ksql = MockKSQL.return_value
         mock_ksql.query_to_dataframe = MagicMock()
-        test_df = pd.DataFrame({"ASSET_UUID": ["asset-001", "asset-002"]})
-        asset1_df = pd.DataFrame({"ASSET_UUID": "asset-001",
-                                  "TYPE": ["MockedType"]})
-        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
-                                  "TYPE": ["MockedType"]})
-        mock_async_run.side_effect = [test_df, asset1_df, asset2_df]
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
+        mock_async_run.return_value = test_df
 
         ofa = OpenFactory("http://fake-url")
-        result = ofa.supervisors()
+        result = ofa.supervisors_uuid()
 
         # Ensure the function returns the expected result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].asset_uuid, "asset-001")
-        self.assertEqual(result[1].asset_uuid, "asset-002")
+        self.assertEqual(result, ["uuid1", "uuid2"])
 
         # Verify the correct query was executed
         mock_ksql.query_to_dataframe.assert_called_once_with("SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Supervisor';")
+
+    @patch("openfactory.openfactory.Asset")
+    def test_supervisors(self, MockAsset, mock_async_run, MockKSQL):
+        """ Test supervisors() """
+
+        # Mock Asset instances
+        mock_asset_instances = [MagicMock(), MagicMock()]
+        MockAsset.side_effect = mock_asset_instances
+
+        ksqldb_url = "http://fake-url"
+        ofa = OpenFactory(ksqldb_url)
+        ofa.supervisors_uuid = MagicMock()
+        ofa.supervisors_uuid.return_value = ["asset-001", "asset-002"]
+
+        result = ofa.supervisors()
+
+        # Assert that Asset was called with the correct arguments
+        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+
+        # Assert that the return value matches the mock objects
+        self.assertEqual(result, mock_asset_instances)
