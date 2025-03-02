@@ -46,7 +46,23 @@ def deregister_asset(asset_uuid):
         "TAG": "Availability",
         "TYPE": "Events"
     }
-    prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
+    assets_stream_topic = ksql.get_kafka_topic('ASSETS_STREAM')
+    prod.produce(topic=assets_stream_topic,
+                 key=asset_uuid,
+                 value=json.dumps(msg))
+
+    # remove references
+    msg = {
+        "ID": "references_below",
+        "VALUE": "",
+        "TAG": "AssetsReferences",
+        "TYPE": "OpenFactory"
+    }
+    prod.produce(topic=assets_stream_topic,
+                 key=asset_uuid,
+                 value=json.dumps(msg))
+    msg["ID"] = "references_above"
+    prod.produce(topic=assets_stream_topic,
                  key=asset_uuid,
                  value=json.dumps(msg))
 
