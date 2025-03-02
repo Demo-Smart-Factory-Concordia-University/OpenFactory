@@ -375,3 +375,159 @@ class TestAsset(TestCase):
         self.assertIsInstance(refs[0], Asset)
         self.assertEqual(refs[0].asset_uuid, "asset-002")
         self.assertEqual(refs[1].asset_uuid, "asset-003")
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_add_reference_above_no_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
+        """ Test add_reference_above when no existing references are present """
+
+        # Mock Asset instance
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame(columns=['VALUE'])
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+
+        # mock ksql of the asset
+        asset.ksql = MagicMock()
+
+        # Call the method
+        asset.add_reference_above("new-ref")
+
+        # Ensure the correct query was executed
+        expected_query = "SELECT VALUE FROM assets WHERE key='asset-001|references_above';"
+        asset.ksql.query_to_dataframe.assert_called_once_with(expected_query)
+
+        # Expected Kafka message
+        expected_msg = {
+            "ID": "references_above",
+            "VALUE": "new-ref",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Verify Kafka producer was used correctly
+        mock_producer_instance = mock_producer.return_value
+        mock_producer_instance.produce.assert_called_once_with(
+            topic=asset.ksql.get_kafka_topic('ASSETS_STREAM'),
+            key="asset-001",
+            value=json.dumps(expected_msg)
+        )
+        mock_producer_instance.flush.assert_called_once()
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_add_reference_above_with_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
+        """ Test add_reference_above when existing references are present """
+
+        # Mock Asset instance
+        asset_df = pd.DataFrame({"ASSET_UUID": ["asset-001"],
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+
+        # Mock ksql of the asset
+        asset.ksql = MagicMock()
+
+        # Call the method
+        asset.add_reference_above("new-ref")
+
+        # Ensure the correct query was executed
+        expected_query = "SELECT VALUE FROM assets WHERE key='asset-001|references_above';"
+        asset.ksql.query_to_dataframe.assert_called_once_with(expected_query)
+
+        # Expected concatenated Kafka message
+        expected_msg = {
+            "ID": "references_above",
+            "VALUE": "new-ref, existing-ref1, existing-ref2",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Verify Kafka producer was used correctly
+        mock_producer_instance = mock_producer.return_value
+        mock_producer_instance.produce.assert_called_once_with(
+            topic=asset.ksql.get_kafka_topic('ASSETS_STREAM'),
+            key="asset-001",
+            value=json.dumps(expected_msg)
+        )
+        mock_producer_instance.flush.assert_called_once()
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_add_reference_below_no_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
+        """ Test add_reference_below when no existing references are present """
+
+        # Mock Asset instance
+        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame(columns=['VALUE'])
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+
+        # mock ksql of the asset
+        asset.ksql = MagicMock()
+
+        # Call the method
+        asset.add_reference_below("new-ref")
+
+        # Ensure the correct query was executed
+        expected_query = "SELECT VALUE FROM assets WHERE key='asset-001|references_below';"
+        asset.ksql.query_to_dataframe.assert_called_once_with(expected_query)
+
+        # Expected Kafka message
+        expected_msg = {
+            "ID": "references_below",
+            "VALUE": "new-ref",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Verify Kafka producer was used correctly
+        mock_producer_instance = mock_producer.return_value
+        mock_producer_instance.produce.assert_called_once_with(
+            topic=asset.ksql.get_kafka_topic('ASSETS_STREAM'),
+            key="asset-001",
+            value=json.dumps(expected_msg)
+        )
+        mock_producer_instance.flush.assert_called_once()
+
+    @patch("openfactory.assets.asset.Producer")
+    def test_add_reference_below_with_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
+        """ Test add_reference_below when existing references are present """
+
+        # Mock Asset instance
+        asset_df = pd.DataFrame({"ASSET_UUID": ["asset-001"],
+                                 "TYPE": ["MockedType"]})
+        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
+
+        mock_async_run.side_effect = [asset_df, query_df]
+        asset = Asset("asset-001")
+
+        # Mock ksql of the asset
+        asset.ksql = MagicMock()
+
+        # Call the method
+        asset.add_reference_below("new-ref")
+
+        # Ensure the correct query was executed
+        expected_query = "SELECT VALUE FROM assets WHERE key='asset-001|references_below';"
+        asset.ksql.query_to_dataframe.assert_called_once_with(expected_query)
+
+        # Expected concatenated Kafka message
+        expected_msg = {
+            "ID": "references_below",
+            "VALUE": "new-ref, existing-ref1, existing-ref2",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Verify Kafka producer was used correctly
+        mock_producer_instance = mock_producer.return_value
+        mock_producer_instance.produce.assert_called_once_with(
+            topic=asset.ksql.get_kafka_topic('ASSETS_STREAM'),
+            key="asset-001",
+            value=json.dumps(expected_msg)
+        )
+        mock_producer_instance.flush.assert_called_once()

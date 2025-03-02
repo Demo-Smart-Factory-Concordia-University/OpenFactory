@@ -87,15 +87,15 @@ class Asset():
 
     @property
     def references_above(self):
-        """ References to above (upstream) OpenFactory assets """
+        """ References to above OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        if df.empty:
+        if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
 
     def set_references_above(self, asset_references):
-        """ Set references to above (upstream) assets """
+        """ Set references to above assets """
         msg = {
             "ID": "references_above",
             "VALUE": asset_references,
@@ -110,18 +110,58 @@ class Asset():
 
     @property
     def references_below(self):
-        """ References to below (downstream) OpenFactory assets """
+        """ References to below OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        if df.empty:
+        if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
 
     def set_references_below(self, asset_references):
-        """ Set references to below (downstream) assets """
+        """ Set references to below assets """
         msg = {
             "ID": "references_below",
             "VALUE": asset_references,
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        prod.flush()
+
+    def add_reference_above(self, above_asset_reference):
+        """ Adds a above-reference to the asset """
+        query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_above';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty or df['VALUE'][0].strip() == "":
+            references = above_asset_reference
+        else:
+            references = above_asset_reference + ', ' + df['VALUE'][0]
+        msg = {
+            "ID": "references_above",
+            "VALUE": references,
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        prod.flush()
+
+    def add_reference_below(self, below_asset_reference):
+        """ Adds a below-reference to the asset """
+        query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_below';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        if df.empty or df['VALUE'][0].strip() == "":
+            references = below_asset_reference
+        else:
+            references = below_asset_reference + ', ' + df['VALUE'][0]
+        msg = {
+            "ID": "references_below",
+            "VALUE": references,
             "TAG": "AssetsReferences",
             "TYPE": "OpenFactory"
         }
