@@ -76,7 +76,7 @@ class ServicesTasksListView(DeviceServicesList):
 
         # Render the template with sorted services
         ofa = OpenFactoryManager()
-        asset_uuid = ofa.get_asset_uuid_from_docker_service(service_name)
+        asset_uuid = ofa.get_asset_uuid_from_docker_service(self.service_name)
         return render_template(self.template_name,
                                service_tasks=sorted(task_list, key=lambda x: x["name"]),
                                data=self.fetch_data(asset_uuid),
