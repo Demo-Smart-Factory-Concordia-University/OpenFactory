@@ -279,7 +279,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         self.assertEqual(kwargs['constraints'], expected_constraints)
 
         # Ensure register_asset was called
-        mock_register_asset.assert_called_once_with(device_uuid + '-SUPERVISOR', 'Supervisor')
+        mock_register_asset.assert_called_once_with(device_uuid + '-SUPERVISOR', 'Supervisor', device_uuid.lower() + '-supervisor')
 
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")

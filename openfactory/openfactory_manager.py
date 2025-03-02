@@ -240,7 +240,7 @@ class OpenFactoryManager(OpenFactory):
             user_notify.fail(f"Supervisor {device_uuid.lower()}-supervisor could not be deployed\n{err}")
             return
         supervisor_uuid = f"{device_uuid.upper()}-SUPERVISOR"
-        register_asset(supervisor_uuid, 'Supervisor')
+        register_asset(supervisor_uuid, 'Supervisor', device_uuid.lower() + '-supervisor')
         device = Asset(device_uuid, self.ksqldb_url)
         device.add_reference_below(supervisor_uuid)
         supervisor = Asset(supervisor_uuid, self.ksqldb_url)
