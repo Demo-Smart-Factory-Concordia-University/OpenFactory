@@ -22,10 +22,6 @@ class Asset():
         if df.empty:
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
         self.type = df['TYPE'][0]
-        self._samples_consumer_thread = None
-        self._samples_consumer_instance = None
-        self._events_consumer_thread = None
-        self._events_consumer_instance = None
 
     def attributes(self):
         """ returns all attributes of the asset """
@@ -184,10 +180,7 @@ class Asset():
 
             def filter_messages(self, msg_value):
                 """ Filters out Samples """
-                if msg_value['type'] == 'Samples':
-                    return msg_value
-                else:
-                    return None
+                return msg_value if msg_value['type'] == 'Samples' else None
 
         self._samples_consumer_instance = SamplesConsumer(
             consumer_group_id=kakfa_group_id,
@@ -208,9 +201,9 @@ class Asset():
 
     def stop_samples_subscription(self):
         """ Stop the Kafka consumer gracefully """
-        if self._samples_consumer_instance:
+        if hasattr(self, "_samples_consumer_instance"):
             self._samples_consumer_instance.stop()
-        if self._samples_consumer_thread:
+        if hasattr(self, "_samples_consumer_thread"):
             self._samples_consumer_thread.join()
 
     def __consume_events(self, topic, bootstrap_servers, kakfa_group_id, on_event):
@@ -220,10 +213,7 @@ class Asset():
 
             def filter_messages(self, msg_value):
                 """ Filters out Events """
-                if msg_value['type'] == 'Events':
-                    return msg_value
-                else:
-                    return None
+                return msg_value if msg_value['type'] == 'Events' else None
 
         self._events_consumer_instance = EventsConsumer(
             consumer_group_id=kakfa_group_id,
@@ -244,9 +234,9 @@ class Asset():
 
     def stop_events_subscription(self):
         """ Stop the Kafka consumer gracefully """
-        if self._events_consumer_instance:
+        if hasattr(self, "_events_consumer_instance"):
             self._events_consumer_instance.stop()
-        if self._events_consumer_thread:
+        if hasattr(self, "_events_consumer_thread"):
             self._events_consumer_thread.join()
 
 
