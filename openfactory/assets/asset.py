@@ -1,10 +1,12 @@
 import asyncio
 import json
 import re
+import threading
 from confluent_kafka import Producer
 from pyksql.ksql import KSQL
 import openfactory.config as config
 from openfactory.exceptions import OFAException
+from openfactory.kafka import KafkaAssetConsumer
 
 
 class Asset():
@@ -20,6 +22,8 @@ class Asset():
         if df.empty:
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
         self.type = df['TYPE'][0]
+        self._events_consumer_thread = None
+        self._events_consumer_instance = None
 
     def attributes(self):
         """ returns all attributes of the asset """
@@ -170,3 +174,66 @@ class Asset():
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         prod.flush()
+
+    def __consume_events(self, topic, bootstrap_servers, kakfa_group_id, on_event):
+        """ Kafka consumer that runs in a separate thread and calls `on_event` """
+
+        class EventsConsumer(KafkaAssetConsumer):
+
+            def filter_messages(self, msg_value):
+                """ Filters out Events """
+                if msg_value['type'] == 'Events':
+                    return msg_value
+                else:
+                    return None
+
+        self._events_consumer_instance = EventsConsumer(
+            consumer_group_id=kakfa_group_id,
+            asset_uuid=self.asset_uuid,
+            on_message=on_event,
+            bootstrap_servers=bootstrap_servers)
+        self._events_consumer_instance.consume()
+
+    def subscribe_to_events(self, on_event, kakfa_group_id):
+        """ Subscribots to events messages of the Asset """
+        self._events_consumer_thread = threading.Thread(
+            target=self.__consume_events,
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_event),
+            daemon=True
+        )
+        self._events_consumer_thread.start()
+        return self._events_consumer_thread
+
+    def stop_events_subscription(self):
+        """ Stop the Kafka consumer gracefully """
+        if self._events_consumer_instance:
+            self._events_consumer_instance.stop()
+        if self._events_consumer_thread:
+            self._events_consumer_thread.join()
+
+
+if __name__ == "__main__":
+
+    # Example usage of Asset
+    cnc = Asset('PROVER3018')
+
+    # list samples
+    print(cnc.samples())
+    print(cnc.Zact)
+
+    # subscribe to events
+    def on_event(msg_key, msg_value):
+        """ Callback to process received events """
+        print(f"[{msg_key}] {msg_value}")
+
+    cnc.subscribe_to_events(on_event, 'demo_group')
+
+    # run a main loop while subscription remains
+    import time
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping consumer thread...")
+        cnc.stop_events_subscription()
+        print("Consumer stopped.")

@@ -1,8 +1,20 @@
 import hashlib
 import json
+import threading
 from confluent_kafka import Consumer, KafkaError, TopicPartition
+from collections import UserDict
 from pyksql.ksql import KSQL
 import openfactory.config as config
+
+
+class CaseInsensitiveDict(UserDict):
+
+    def __getitem__(self, key):
+        key_lower = key.lower()
+        for k in self.data.keys():
+            if k.lower() == key_lower:
+                return self.data[k]
+        raise KeyError(key)
 
 
 def get_partition_for_key(key, num_partitions):
@@ -28,6 +40,8 @@ class KafkaAssetConsumer:
         self.group_id = consumer_group_id
         self.key = asset_uuid
         self.on_message = on_message
+        self.running = threading.Event()
+        self.running.set()
         self.consumer = Consumer({
             'bootstrap.servers': self.bootstrap_servers,
             'group.id': self.group_id,
@@ -53,14 +67,14 @@ class KafkaAssetConsumer:
 
     def __on_partitions_revoked(self, consumer, partitions):
         """ Callback when partitions are revoked from this consumer """
-        print(f"Partitions revoked: {partitions}. Need to reassign partitions.")
+        print(f"Partitions revoked: {partitions}")
 
         # TO-DO: need to implement logic for cleanup or offset commits if necessary
 
     def consume(self):
         """ Consume messages """
         try:
-            while True:
+            while self.running.is_set():
                 msg = self.consumer.poll(timeout=self.consumer_timeout)
                 if msg is None:
                     continue
@@ -75,6 +89,7 @@ class KafkaAssetConsumer:
                 # Decode the message
                 msg_key = msg.key().decode('utf-8') if msg.key() else None
                 msg_value = json.loads(msg.value().decode('utf-8'))
+                msg_value = CaseInsensitiveDict(msg_value)
 
                 # Filter desired key
                 if msg_key != self.key:
@@ -86,10 +101,15 @@ class KafkaAssetConsumer:
                 if msg_value:
                     self.on_message(msg_key, msg_value)
 
-        except KeyboardInterrupt:
-            print("Stopping consumer...")
+        except Exception as e:
+            print(f"Exception in KafkaAssetConsumer: {e}")
         finally:
+            print("Closing KafkaAssetConsumer ...")
             self.consumer.close()
+
+    def stop(self):
+        """ Signal the consumer to stop """
+        self.running.clear()
 
 
 if __name__ == "__main__":
@@ -104,6 +124,7 @@ if __name__ == "__main__":
 
         def filter_messages(self, msg_value):
             """ Filters out Events """
+            print(msg_value)
             if msg_value['type'] == 'Events':
                 return msg_value
             else:
