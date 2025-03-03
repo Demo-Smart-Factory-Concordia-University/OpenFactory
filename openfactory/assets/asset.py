@@ -15,6 +15,7 @@ class Asset():
     """
 
     def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB):
+        self.ksqldb_url = ksqldb_url
         self.ksql = KSQL(ksqldb_url)
         self.asset_uuid = asset_uuid
         query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{asset_uuid}';"
@@ -186,7 +187,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_sample,
-            bootstrap_servers=bootstrap_servers)
+            bootstrap_servers=bootstrap_servers,
+            ksqldb_url=self.ksqldb_url)
         self._samples_consumer_instance.consume()
 
     def subscribe_to_samples(self, on_sample, kakfa_group_id):
@@ -219,7 +221,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_event,
-            bootstrap_servers=bootstrap_servers)
+            bootstrap_servers=bootstrap_servers,
+            ksqldb_url=self.ksqldb_url)
         self._events_consumer_instance.consume()
 
     def subscribe_to_events(self, on_event, kakfa_group_id):
