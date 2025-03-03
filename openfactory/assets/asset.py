@@ -22,6 +22,8 @@ class Asset():
         if df.empty:
             raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
         self.type = df['TYPE'][0]
+        self._samples_consumer_thread = None
+        self._samples_consumer_instance = None
         self._events_consumer_thread = None
         self._events_consumer_instance = None
 
@@ -175,6 +177,42 @@ class Asset():
                      value=json.dumps(msg))
         prod.flush()
 
+    def __consume_samples(self, topic, bootstrap_servers, kakfa_group_id, on_sample):
+        """ Kafka consumer that runs in a separate thread and calls `on_sample` """
+
+        class SamplesConsumer(KafkaAssetConsumer):
+
+            def filter_messages(self, msg_value):
+                """ Filters out Samples """
+                if msg_value['type'] == 'Samples':
+                    return msg_value
+                else:
+                    return None
+
+        self._samples_consumer_instance = SamplesConsumer(
+            consumer_group_id=kakfa_group_id,
+            asset_uuid=self.asset_uuid,
+            on_message=on_sample,
+            bootstrap_servers=bootstrap_servers)
+        self._samples_consumer_instance.consume()
+
+    def subscribe_to_samples(self, on_sample, kakfa_group_id):
+        """ Subscribots to samples messages of the Asset """
+        self._samples_consumer_thread = threading.Thread(
+            target=self.__consume_samples,
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_sample),
+            daemon=True
+        )
+        self._samples_consumer_thread.start()
+        return self._samples_consumer_thread
+
+    def stop_samples_subscription(self):
+        """ Stop the Kafka consumer gracefully """
+        if self._samples_consumer_instance:
+            self._samples_consumer_instance.stop()
+        if self._samples_consumer_thread:
+            self._samples_consumer_thread.join()
+
     def __consume_events(self, topic, bootstrap_servers, kakfa_group_id, on_event):
         """ Kafka consumer that runs in a separate thread and calls `on_event` """
 
@@ -221,19 +259,25 @@ if __name__ == "__main__":
     print(cnc.samples())
     print(cnc.Zact)
 
-    # subscribe to events
+    # subscriptions
+    def on_sample(msg_key, msg_value):
+        """ Callback to process received samples """
+        print(f"[Sample] [{msg_key}] {msg_value}")
+
     def on_event(msg_key, msg_value):
         """ Callback to process received events """
-        print(f"[{msg_key}] {msg_value}")
+        print(f"[Event] [{msg_key}] {msg_value}")
 
-    cnc.subscribe_to_events(on_event, 'demo_group')
+    cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
+    cnc.subscribe_to_events(on_event, 'demo_events_group')
 
-    # run a main loop while subscription remains
+    # run a main loop while subscriptions remain
     import time
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Stopping consumer thread...")
+        print("Stopping consumer threads ...")
+        cnc.stop_samples_subscription()
         cnc.stop_events_subscription()
-        print("Consumer stopped.")
+        print("Consumers stopped")
