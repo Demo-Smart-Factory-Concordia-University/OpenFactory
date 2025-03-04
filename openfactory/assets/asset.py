@@ -77,7 +77,7 @@ class Asset():
         if df.empty:
             raise AttributeError(f"Asset {self.asset_uuid} has no attribute '{attribute_id}'")
 
-        if df['TYPE'][0] == 'Samples':
+        if df['TYPE'][0] == 'Samples' and df['VALUE'][0] != 'UNAVAILABLE':
             return float(df['VALUE'][0])
 
         if df['TYPE'][0] == 'Method':
