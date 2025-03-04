@@ -192,7 +192,7 @@ class Asset():
         self._samples_consumer_instance.consume()
 
     def subscribe_to_samples(self, on_sample, kakfa_group_id):
-        """ Subscribots to samples messages of the Asset """
+        """ Subscribe to samples messages of the Asset """
         self._samples_consumer_thread = threading.Thread(
             target=self.__consume_samples,
             args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_sample),
@@ -226,7 +226,7 @@ class Asset():
         self._events_consumer_instance.consume()
 
     def subscribe_to_events(self, on_event, kakfa_group_id):
-        """ Subscribots to events messages of the Asset """
+        """ Subscribe to events messages of the Asset """
         self._events_consumer_thread = threading.Thread(
             target=self.__consume_events,
             args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_event),
@@ -241,6 +241,40 @@ class Asset():
             self._events_consumer_instance.stop()
         if hasattr(self, "_events_consumer_thread"):
             self._events_consumer_thread.join()
+
+    def __consume_conditions(self, topic, bootstrap_servers, kakfa_group_id, on_condition):
+        """ Kafka consumer that runs in a separate thread and calls `on_condition` """
+
+        class ConditionsConsumer(KafkaAssetConsumer):
+
+            def filter_messages(self, msg_value):
+                """ Filters out Conditions """
+                return msg_value if msg_value['type'] == 'Condition' else None
+
+        self._conditions_consumer_instance = ConditionsConsumer(
+            consumer_group_id=kakfa_group_id,
+            asset_uuid=self.asset_uuid,
+            on_message=on_condition,
+            bootstrap_servers=bootstrap_servers,
+            ksqldb_url=self.ksqldb_url)
+        self._conditions_consumer_instance.consume()
+
+    def subscribe_to_conditions(self, on_condition, kakfa_group_id):
+        """ Subscribe to conditions messages of the Asset """
+        self._conditions_consumer_thread = threading.Thread(
+            target=self.__consume_conditions,
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_condition),
+            daemon=True
+        )
+        self._conditions_consumer_thread.start()
+        return self._conditions_consumer_thread
+
+    def stop_conditions_subscription(self):
+        """ Stop the Kafka consumer gracefully """
+        if hasattr(self, "_conditions_consumer_instance"):
+            self._conditions_consumer_instance.stop()
+        if hasattr(self, "_conditions_consumer_thread"):
+            self._conditions_consumer_thread.join()
 
 
 if __name__ == "__main__":
@@ -261,8 +295,13 @@ if __name__ == "__main__":
         """ Callback to process received events """
         print(f"[Event] [{msg_key}] {msg_value}")
 
+    def on_condition(msg_key, msg_value):
+        """ Callback to process received conditions """
+        print(f"[Condition] [{msg_key}] {msg_value}")
+
     cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
     cnc.subscribe_to_events(on_event, 'demo_events_group')
+    cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
 
     # run a main loop while subscriptions remain
     import time
@@ -273,4 +312,5 @@ if __name__ == "__main__":
         print("Stopping consumer threads ...")
         cnc.stop_samples_subscription()
         cnc.stop_events_subscription()
+        cnc.stop_conditions_subscription()
         print("Consumers stopped")
