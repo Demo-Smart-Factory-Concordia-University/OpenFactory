@@ -13,10 +13,10 @@ class Asset():
     """
     OpenFactory Asset
     """
-
-    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB):
+    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
         self.ksqldb_url = ksqldb_url
         self.ksql = KSQL(ksqldb_url)
+        self.bootstrap_servers = bootstrap_servers
         self.asset_uuid = asset_uuid
         query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{asset_uuid}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
@@ -174,7 +174,7 @@ class Asset():
                      value=json.dumps(msg))
         prod.flush()
 
-    def __consume_samples(self, topic, bootstrap_servers, kakfa_group_id, on_sample):
+    def __consume_samples(self, topic, kakfa_group_id, on_sample):
         """ Kafka consumer that runs in a separate thread and calls `on_sample` """
 
         class SamplesConsumer(KafkaAssetConsumer):
@@ -187,7 +187,7 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_sample,
-            bootstrap_servers=bootstrap_servers,
+            bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
         self._samples_consumer_instance.consume()
 
@@ -195,7 +195,7 @@ class Asset():
         """ Subscribe to samples messages of the Asset """
         self._samples_consumer_thread = threading.Thread(
             target=self.__consume_samples,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_sample),
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_sample),
             daemon=True
         )
         self._samples_consumer_thread.start()
@@ -208,7 +208,7 @@ class Asset():
         if hasattr(self, "_samples_consumer_thread"):
             self._samples_consumer_thread.join()
 
-    def __consume_events(self, topic, bootstrap_servers, kakfa_group_id, on_event):
+    def __consume_events(self, topic, kakfa_group_id, on_event):
         """ Kafka consumer that runs in a separate thread and calls `on_event` """
 
         class EventsConsumer(KafkaAssetConsumer):
@@ -221,7 +221,7 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_event,
-            bootstrap_servers=bootstrap_servers,
+            bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
         self._events_consumer_instance.consume()
 
@@ -229,7 +229,7 @@ class Asset():
         """ Subscribe to events messages of the Asset """
         self._events_consumer_thread = threading.Thread(
             target=self.__consume_events,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_event),
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_event),
             daemon=True
         )
         self._events_consumer_thread.start()
@@ -242,7 +242,7 @@ class Asset():
         if hasattr(self, "_events_consumer_thread"):
             self._events_consumer_thread.join()
 
-    def __consume_conditions(self, topic, bootstrap_servers, kakfa_group_id, on_condition):
+    def __consume_conditions(self, topic, kakfa_group_id, on_condition):
         """ Kafka consumer that runs in a separate thread and calls `on_condition` """
 
         class ConditionsConsumer(KafkaAssetConsumer):
@@ -255,7 +255,7 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_condition,
-            bootstrap_servers=bootstrap_servers,
+            bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
         self._conditions_consumer_instance.consume()
 
@@ -263,7 +263,7 @@ class Asset():
         """ Subscribe to conditions messages of the Asset """
         self._conditions_consumer_thread = threading.Thread(
             target=self.__consume_conditions,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), config.KAFKA_BROKER, kakfa_group_id, on_condition),
+            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_condition),
             daemon=True
         )
         self._conditions_consumer_thread.start()
