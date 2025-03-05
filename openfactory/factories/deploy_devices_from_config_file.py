@@ -20,7 +20,7 @@ def deploy_devices_from_config_file(yaml_config_file):
 
     for dev_name, device in devices.items():
         user_notify.info(f"{dev_name}:")
-        if device['uuid'] in ofa.devices():
+        if device['uuid'] in ofa.devices_uuid():
             user_notify.info(f"Device {device['uuid']} exists already and was not deployed")
             continue
 
