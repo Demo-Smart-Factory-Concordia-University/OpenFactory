@@ -6,7 +6,8 @@ CREATE STREAM assets_stream (
         id VARCHAR,
         value VARCHAR,
         tag VARCHAR,
-        type VARCHAR
+        type VARCHAR,
+        attributes MAP<VARCHAR, VARCHAR>
     ) WITH (
         KAFKA_TOPIC = 'ofa_assets',
         PARTITIONS = 1,
@@ -21,7 +22,8 @@ CREATE STREAM enriched_assets_stream AS
     concat(concat(CAST(asset_uuid AS STRING), '|'), CAST(id AS STRING)) AS key,
     value,
     type,
-    tag
+    tag,
+    COALESCE(attributes['timestamp'], 'UNAVAILABLE') AS timestamp
   FROM assets_stream
   PARTITION BY asset_uuid;
 
@@ -33,7 +35,8 @@ CREATE TABLE assets AS
     LATEST_BY_OFFSET(id) AS id,
     LATEST_BY_OFFSET(value) AS value,
     LATEST_BY_OFFSET(type) AS type,
-    LATEST_BY_OFFSET(tag) AS tag
+    LATEST_BY_OFFSET(tag) AS tag,
+    LATEST_BY_OFFSET(timestamp) AS timestamp
   FROM enriched_assets_stream
   GROUP BY key;
 
