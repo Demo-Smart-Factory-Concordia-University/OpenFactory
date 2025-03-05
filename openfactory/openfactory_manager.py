@@ -105,8 +105,8 @@ class OpenFactoryManager(OpenFactory):
         client = dal.docker_client
 
         # compute ressources
-        cpus_reservation = get_nested(adapter, ['deploy', 'resources', 'reservations', 'cpus'], '0.5')
-        cpus_limit = get_nested(adapter, ['deploy', 'resources', 'limits', 'cpus'], '1')
+        cpus_reservation = get_nested(adapter, ['deploy', 'resources', 'reservations', 'cpus'], 0.5)
+        cpus_limit = get_nested(adapter, ['deploy', 'resources', 'limits', 'cpus'], 1)
 
         # compute placement constraints
         placement_constraints = get_nested(adapter, ['deploy', 'placement', 'constraints'])
