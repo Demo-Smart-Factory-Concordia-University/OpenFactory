@@ -5,7 +5,6 @@ import threading
 from confluent_kafka import Producer
 from pyksql.ksql import KSQL
 import openfactory.config as config
-from openfactory.exceptions import OFAException
 from openfactory.kafka import KafkaAssetConsumer
 
 
@@ -18,11 +17,14 @@ class Asset():
         self.ksql = KSQL(ksqldb_url)
         self.bootstrap_servers = bootstrap_servers
         self.asset_uuid = asset_uuid
-        query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{asset_uuid}';"
+
+    @property
+    def type(self):
+        query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{self.asset_uuid}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
-            raise OFAException(f"Asset {asset_uuid} is not deployed in OpenFactory")
-        self.type = df['TYPE'][0]
+            return 'UNAVAILABLE'
+        return df['TYPE'][0]
 
     def attributes(self):
         """ returns all attributes of the asset """
@@ -75,7 +77,7 @@ class Asset():
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
         if df.empty:
-            raise AttributeError(f"Asset {self.asset_uuid} has no attribute '{attribute_id}'")
+            return 'UNAVAILABLE'
 
         if df['TYPE'][0] == 'Samples' and df['VALUE'][0] != 'UNAVAILABLE':
             return float(df['VALUE'][0])

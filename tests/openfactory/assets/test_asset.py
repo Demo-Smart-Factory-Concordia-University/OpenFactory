@@ -2,7 +2,6 @@ import json
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 import pandas as pd
-from openfactory.exceptions import OFAException
 from openfactory.assets.asset import Asset
 
 
@@ -15,39 +14,47 @@ class TestAsset(TestCase):
 
     def test_asset_initialization_success(self, mock_async_run, MockKSQL):
         """ Test Asset initialization when asset exists """
+        asset = Asset("uuid-123")
+
+        # Ensure correct attributes
+        self.assertEqual(asset.asset_uuid, "uuid-123")
+
+    def test_type(self, mock_async_run, MockKSQL):
+        """ Test type when asset exists """
         mock_ksql = MockKSQL.return_value
         test_df = pd.DataFrame({"TYPE": ["MockedType"]})
         mock_async_run.return_value = test_df
 
         asset = Asset("uuid-123")
 
-        # Ensure correct attributes
-        self.assertEqual(asset.asset_uuid, "uuid-123")
         self.assertEqual(asset.type, "MockedType")
 
         # Check if the correct query was executed
         expected_query = "SELECT TYPE FROM assets_type WHERE ASSET_UUID='uuid-123';"
         mock_ksql.query_to_dataframe.assert_called_once_with(expected_query)
 
-    def test_asset_initialization_failure(self, mock_async_run, MockKSQL):
-        """ Test Asset initialization when asset does not exist """
-        mock_async_run.return_value = pd.DataFrame()  # Empty DataFrame (asset not found)
+    def test_type_no_asset(self, mock_async_run, MockKSQL):
+        """ Test type when asset does not exists """
+        mock_ksql = MockKSQL.return_value
+        test_df = pd.DataFrame(columns=["ID"])
+        mock_async_run.return_value = test_df
 
-        with self.assertRaises(OFAException) as context:
-            Asset("uuid-456")
+        asset = Asset("uuid-123")
 
-        self.assertIn("Asset uuid-456 is not deployed in OpenFactory", str(context.exception))
+        self.assertEqual(asset.type, "UNAVAILABLE")
+
+        # Check if the correct query was executed
+        expected_query = "SELECT TYPE FROM assets_type WHERE ASSET_UUID='uuid-123';"
+        mock_ksql.query_to_dataframe.assert_called_once_with(expected_query)
 
     def test_attributes_success(self, mock_async_run, MockKSQL):
         """ Test attributes() returns correct attribute IDs """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         attributes_df = pd.DataFrame({"ID": [101, 102, 103]})
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, attributes_df]
+        mock_async_run.side_effect = [attributes_df]
 
         asset = Asset("uuid-123")
         attributes = asset.attributes()
@@ -61,12 +68,10 @@ class TestAsset(TestCase):
         """ Test attributes() returns an empty list when no attributes exist """
 
         # Mock DataFrames
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         empty_attributes_df = pd.DataFrame(columns=["ID"])
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, empty_attributes_df]
+        mock_async_run.side_effect = [empty_attributes_df]
 
         asset = Asset("uuid-456")
         attributes = asset.attributes()
@@ -77,13 +82,11 @@ class TestAsset(TestCase):
         """ Test samples() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         samples_df = pd.DataFrame({"ID": ["id1"],
                                    "VALUE": ["val1"]})
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, samples_df]
+        mock_async_run.side_effect = [samples_df]
 
         asset = Asset("uuid-123")
         samples = asset.samples()
@@ -97,13 +100,11 @@ class TestAsset(TestCase):
         """ Test events() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         events_df = pd.DataFrame({"ID": ["id2"],
                                   "VALUE": ["val2"]})
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, events_df]
+        mock_async_run.side_effect = [events_df]
 
         asset = Asset("uuid-123")
         events = asset.events()
@@ -117,8 +118,6 @@ class TestAsset(TestCase):
         """ Test conditions() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         cond_df = pd.DataFrame({
             "ID": ["id3"],
             "VALUE": ["val3"],
@@ -126,7 +125,7 @@ class TestAsset(TestCase):
         })
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, cond_df]
+        mock_async_run.side_effect = [cond_df]
 
         asset = Asset("uuid-123")
         conditions = asset.conditions()
@@ -147,13 +146,11 @@ class TestAsset(TestCase):
         """ Test methods() """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         meth_df = pd.DataFrame({"ID": ["id4"],
                                 "VALUE": ["val4"]})
 
         # Mock return values of asyncio.run
-        mock_async_run.side_effect = [asset_df, meth_df]
+        mock_async_run.side_effect = [meth_df]
 
         asset = Asset("uuid-123")
         methods = asset.methods()
@@ -203,13 +200,11 @@ class TestAsset(TestCase):
         """ Test __getattr__ returns float for 'Samples' type """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["id1"],
                                  "VALUE": ["42.5"],
                                  "TYPE": ["Samples"]})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
 
         asset = Asset("uuid-123")
         sample_value = asset.id1
@@ -223,13 +218,11 @@ class TestAsset(TestCase):
         """ Test __getattr__ returns raw VALUE for non-'Samples' and non-'Method' types """
         mock_ksql = MockKSQL.return_value
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["id2"],
                                  "VALUE": ["val2"],
                                  "TYPE": ["Events"]})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
 
         asset = Asset("uuid-123")
         sample_value = asset.id2
@@ -245,13 +238,11 @@ class TestAsset(TestCase):
         mock_ksql = MockKSQL.return_value
         mock_method.return_value = "Mocked method called successfully"
 
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"ID": ["a_method"],
                                  "VALUE": ["val4"],
                                  "TYPE": ["Method"]})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
 
         asset = Asset("uuid-123")
         ret = asset.a_method('arg1', 'arg2')
@@ -287,11 +278,9 @@ class TestAsset(TestCase):
 
     def test_references_above_no_references(self, mock_async_run, MockKSQL):
         """ Test references_above when there are no linked assets """
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
         MockKSQL.query_to_dataframe.return_value = MagicMock(empty=True)
 
@@ -302,14 +291,8 @@ class TestAsset(TestCase):
         """ Test references_above when assets are linked """
 
         # Mock the various assets/queries
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"VALUE": ["asset-002, asset-003"]})
-        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
-                                  "TYPE": ["MockedType"]})
-        asset3_df = pd.DataFrame({"ASSET_UUID": "asset-003",
-                                  "TYPE": ["MockedType"]})
-        mock_async_run.side_effect = [asset_df, query_df, asset2_df, asset3_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # Expect references to return a list of Asset objects
@@ -344,11 +327,9 @@ class TestAsset(TestCase):
 
     def test_references_below_no_references(self, mock_async_run, MockKSQL):
         """ Test references_below when there are no linked assets """
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
         MockKSQL.query_to_dataframe.return_value = MagicMock(empty=True)
 
@@ -359,14 +340,8 @@ class TestAsset(TestCase):
         """ Test references_below when assets are linked """
 
         # Mock the various assets/queries
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({"VALUE": ["asset-002, asset-003"]})
-        asset2_df = pd.DataFrame({"ASSET_UUID": "asset-002",
-                                  "TYPE": ["MockedType"]})
-        asset3_df = pd.DataFrame({"ASSET_UUID": "asset-003",
-                                  "TYPE": ["MockedType"]})
-        mock_async_run.side_effect = [asset_df, query_df, asset2_df, asset3_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # Expect references to return a list of Asset objects
@@ -381,11 +356,9 @@ class TestAsset(TestCase):
         """ Test add_reference_above when no existing references are present """
 
         # Mock Asset instance
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame(columns=['VALUE'])
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # mock ksql of the asset
@@ -420,11 +393,9 @@ class TestAsset(TestCase):
         """ Test add_reference_above when existing references are present """
 
         # Mock Asset instance
-        asset_df = pd.DataFrame({"ASSET_UUID": ["asset-001"],
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # Mock ksql of the asset
@@ -459,11 +430,9 @@ class TestAsset(TestCase):
         """ Test add_reference_below when no existing references are present """
 
         # Mock Asset instance
-        asset_df = pd.DataFrame({"ASSET_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame(columns=['VALUE'])
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # mock ksql of the asset
@@ -498,11 +467,9 @@ class TestAsset(TestCase):
         """ Test add_reference_below when existing references are present """
 
         # Mock Asset instance
-        asset_df = pd.DataFrame({"ASSET_UUID": ["asset-001"],
-                                 "TYPE": ["MockedType"]})
         query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
 
-        mock_async_run.side_effect = [asset_df, query_df]
+        mock_async_run.side_effect = [query_df]
         asset = Asset("asset-001")
 
         # Mock ksql of the asset
