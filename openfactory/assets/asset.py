@@ -3,9 +3,18 @@ import json
 import re
 import threading
 from confluent_kafka import Producer
+from dataclasses import dataclass
 from pyksql.ksql import KSQL
+from typing import Union
 import openfactory.config as config
 from openfactory.kafka import KafkaAssetConsumer
+
+
+@dataclass
+class AssetAttribute:
+    value: Union[str, int]
+    type: str
+    timestamp: str
 
 
 class Asset():
@@ -74,13 +83,11 @@ class Asset():
 
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
+        query = f"SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
-        if df.empty:
-            return 'UNAVAILABLE'
 
-        if df['TYPE'][0] == 'Samples' and df['VALUE'][0] != 'UNAVAILABLE':
-            return float(df['VALUE'][0])
+        if df.empty:
+            return AssetAttribute(value='UNAVAILABLE', type='UNAVAILABLE', timestamp='UNAVAILABLE')
 
         if df['TYPE'][0] == 'Method':
             def method_caller(*args, **kwargs):
@@ -88,7 +95,13 @@ class Asset():
                 return self.method(attribute_id, args_str)
             return method_caller
 
-        return df['VALUE'][0]
+        ret = AssetAttribute(
+            value=float(df['VALUE'][0]) if df['TYPE'][0] == 'Samples' and df['VALUE'][0] != 'UNAVAILABLE' else df['VALUE'][0],
+            type=df['TYPE'][0],
+            timestamp=df['TIMESTAMP'][0]
+        )
+
+        return ret
 
     @property
     def references_above(self):
@@ -286,7 +299,9 @@ if __name__ == "__main__":
 
     # list samples
     print(cnc.samples())
-    print(cnc.Zact)
+    print(cnc.Zact.value)
+    print(cnc.Zact.type)
+    print(cnc.Zact.timestamp)
 
     # subscriptions
     def on_sample(msg_key, msg_value):

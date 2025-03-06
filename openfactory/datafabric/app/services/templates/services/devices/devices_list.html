@@ -21,17 +21,17 @@
         {% for device in devices %}
         <tr>
           <th><a href="{{ url_for('services.device_services_list', device_uuid=device.asset_uuid) }}">{{ device.asset_uuid }}</th>
-            <td style="background-color: {{ device.avail | availability_color }};">
-              {{ device.avail }}
+            <td style="background-color: {{ device.avail.value | availability_color }};">
+              {{ device.avail.value }}
             </td>
-            <td style="background-color: {{ device.agent_avail | availability_color }};">
-              {{ device.agent_avail }}
+            <td style="background-color: {{ device.agent_avail.value | availability_color }};">
+              {{ device.agent_avail.value }}
             </td>
-            <td style="background-color: {{ device.producer_avail | availability_color }};">
-              {{ device.producer_avail }}
+            <td style="background-color: {{ device.producer_avail.value | availability_color }};">
+              {{ device.producer_avail.value }}
             </td>
-            <td style="background-color: {{ device.supervisor_avail | availability_color }};">
-              {{ device.supervisor_avail }}
+            <td style="background-color: {{ device.supervisor_avail.value | availability_color }};">
+              {{ device.supervisor_avail.value }}
             </td>
           <td><button onclick=location.href="{{ url_for('services.device_remove', agent_id=1) }}" type="button" class="btn btn-success"><i class="fa fa-remove"></i> Remove</button></td>
         </tr>   

@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 import pandas as pd
-from openfactory.assets.asset import Asset
+from openfactory.assets.asset import Asset, AssetAttribute
 
 
 @patch("openfactory.assets.asset.KSQL")
@@ -202,16 +202,17 @@ class TestAsset(TestCase):
 
         query_df = pd.DataFrame({"ID": ["id1"],
                                  "VALUE": ["42.5"],
-                                 "TYPE": ["Samples"]})
+                                 "TYPE": ["Samples"],
+                                 "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
 
         asset = Asset("uuid-123")
-        sample_value = asset.id1
+        attribute = asset.id1
 
-        self.assertEqual(sample_value, 42.5)
+        self.assertEqual(attribute, AssetAttribute(value=42.5, type='Samples', timestamp='MockedTimeStamp'))
 
-        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|id1';"
+        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|id1';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     def test_getattr_string_value(self, mock_async_run, MockKSQL):
@@ -220,16 +221,17 @@ class TestAsset(TestCase):
 
         query_df = pd.DataFrame({"ID": ["id2"],
                                  "VALUE": ["val2"],
-                                 "TYPE": ["Events"]})
+                                 "TYPE": ["Events"],
+                                 "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
 
         asset = Asset("uuid-123")
-        sample_value = asset.id2
+        attribute = asset.id2
 
-        self.assertEqual(sample_value, "val2")
+        self.assertEqual(attribute, AssetAttribute(value="val2", type='Events', timestamp='MockedTimeStamp'))
 
-        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|id2';"
+        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|id2';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Asset.method")
@@ -240,7 +242,8 @@ class TestAsset(TestCase):
 
         query_df = pd.DataFrame({"ID": ["a_method"],
                                  "VALUE": ["val4"],
-                                 "TYPE": ["Method"]})
+                                 "TYPE": ["Method"],
+                                 "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
 
@@ -250,7 +253,7 @@ class TestAsset(TestCase):
         self.assertEqual(ret, "Mocked method called successfully")
         mock_method.assert_called_once_with("a_method", "arg1 arg2")
 
-        expected_query = "SELECT VALUE, TYPE FROM assets WHERE key='uuid-123|a_method';"
+        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Producer")
