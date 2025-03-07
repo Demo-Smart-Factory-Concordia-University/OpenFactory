@@ -1,1 +1,1 @@
-from .asset_consumer import KafkaAssetConsumer
+from .asset_consumer import KafkaAssetConsumer, CaseInsensitiveDict

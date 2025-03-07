@@ -2,12 +2,13 @@ import asyncio
 import json
 import re
 import threading
-from confluent_kafka import Producer
+import uuid
+from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass
 from pyksql.ksql import KSQL
 from typing import Union
 import openfactory.config as config
-from openfactory.kafka import KafkaAssetConsumer
+from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict
 
 
 @dataclass
@@ -188,6 +189,53 @@ class Asset():
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         prod.flush()
+
+    def wait_until(self, attribute, value, kafka_group_id=None):
+        """ Waits until the asset attribute has a specific value """
+
+        if self.__getattr__(attribute).value == value:
+            return
+
+        if kafka_group_id is None:
+            kafka_group_id = f"{self.asset_uuid}_{uuid.uuid4()}"
+
+        consumer = KafkaAssetConsumer(
+            consumer_group_id=kafka_group_id,
+            asset_uuid=self.asset_uuid,
+            on_message=None,
+            bootstrap_servers=self.bootstrap_servers,
+            ksqldb_url=self.ksqldb_url)
+
+        while True:
+            msg = consumer.consumer.poll(timeout=0.1)
+            if msg is None:
+                continue
+
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    continue
+                else:
+                    print(f"Error: {msg.error()}")
+                    break
+
+            # Decode the message
+            msg_key = msg.key().decode('utf-8') if msg.key() else None
+            msg_value = json.loads(msg.value().decode('utf-8'))
+            msg_value = CaseInsensitiveDict(msg_value)
+
+            # Filter desired key
+            if msg_key != self.asset_uuid:
+                continue
+
+            if msg_value['id'] == attribute:
+                if msg_value['type'] == 'Samples' and msg_value['value'] != 'UNAVAILABLE':
+                    if float(msg_value['value']) == value:
+                        break
+                else:
+                    if msg_value['value'] == value:
+                        break
+
+        consumer.consumer.close()
 
     def __consume_samples(self, topic, kakfa_group_id, on_sample):
         """ Kafka consumer that runs in a separate thread and calls `on_sample` """
