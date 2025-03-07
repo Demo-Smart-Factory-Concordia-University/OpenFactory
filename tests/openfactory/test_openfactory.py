@@ -16,7 +16,9 @@ class TestOpenFactory(TestCase):
         mock_ksql = MockKSQL.return_value
         mock_ksql.info.return_value = {"status": "OK"}  # Simulate successful connection
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         self.assertEqual(ofa.ksql, mock_ksql)
 
     def test_init_failure(self, mock_async_run, MockKSQL):
@@ -25,7 +27,7 @@ class TestOpenFactory(TestCase):
         mock_ksql.info.side_effect = RequestError("Connection failed")
 
         with self.assertRaises(OFAException) as context:
-            OpenFactory("http://fake-url")
+            OpenFactory("http://fake-url", "MockedBroker")
 
         self.assertIn("Could not connect", str(context.exception))
 
@@ -33,7 +35,9 @@ class TestOpenFactory(TestCase):
         """ Test assets() when no assets exist """
         mock_async_run.return_value = pd.DataFrame()  # Simulate empty DataFrame
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         assets = ofa.assets()
 
         self.assertEqual(assets, [])  # Expect an empty list
@@ -44,7 +48,9 @@ class TestOpenFactory(TestCase):
                                   "TYPE": ["type1", "type2"]})
         mock_async_run.return_value = test_data  # Simulate DataFrame with data
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         assets = ofa.assets()
 
         self.assertEqual(len(assets), 2)
@@ -59,7 +65,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"ASSET_UUID": [1, 2], "available": ["AVAILABLE", "UNAVAILABLE"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.assets_availability()
 
         # Ensure the function returns the expected DataFrame
@@ -75,7 +83,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"service_id": [1, 2], "status": ["running", "stopped"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.assets_docker_services()
 
         # Ensure the function returns the expected DataFrame
@@ -91,7 +101,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.devices_uuid()
 
         # Ensure the function returns the expected result
@@ -109,15 +121,16 @@ class TestOpenFactory(TestCase):
         MockAsset.side_effect = mock_asset_instances
 
         ksqldb_url = "http://fake-url"
-        ofa = OpenFactory(ksqldb_url)
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         ofa.devices_uuid = MagicMock()
         ofa.devices_uuid.return_value = ["asset-001", "asset-002"]
 
         result = ofa.devices()
 
         # Assert that Asset was called with the correct arguments
-        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
-        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call("asset-001", ksqldb_url, bootstrap_servers)
+        MockAsset.assert_any_call("asset-002", ksqldb_url, bootstrap_servers)
 
         # Assert that the return value matches the mock objects
         self.assertEqual(result, mock_asset_instances)
@@ -129,7 +142,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.agents_uuid()
 
         # Ensure the function returns the expected result
@@ -147,15 +162,16 @@ class TestOpenFactory(TestCase):
         MockAsset.side_effect = mock_asset_instances
 
         ksqldb_url = "http://fake-url"
-        ofa = OpenFactory(ksqldb_url)
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         ofa.agents_uuid = MagicMock()
         ofa.agents_uuid.return_value = ["asset-001", "asset-002"]
 
         result = ofa.agents()
 
         # Assert that Asset was called with the correct arguments
-        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
-        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call("asset-001", ksqldb_url, bootstrap_servers)
+        MockAsset.assert_any_call("asset-002", ksqldb_url, bootstrap_servers)
 
         # Assert that the return value matches the mock objects
         self.assertEqual(result, mock_asset_instances)
@@ -167,7 +183,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.producers_uuid()
 
         # Ensure the function returns the expected result
@@ -185,15 +203,16 @@ class TestOpenFactory(TestCase):
         MockAsset.side_effect = mock_asset_instances
 
         ksqldb_url = "http://fake-url"
-        ofa = OpenFactory(ksqldb_url)
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         ofa.producers_uuid = MagicMock()
         ofa.producers_uuid.return_value = ["asset-001", "asset-002"]
 
         result = ofa.producers()
 
         # Assert that Asset was called with the correct arguments
-        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
-        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call("asset-001", ksqldb_url, bootstrap_servers)
+        MockAsset.assert_any_call("asset-002", ksqldb_url, bootstrap_servers)
 
         # Assert that the return value matches the mock objects
         self.assertEqual(result, mock_asset_instances)
@@ -205,7 +224,9 @@ class TestOpenFactory(TestCase):
         test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
         mock_async_run.return_value = test_df
 
-        ofa = OpenFactory("http://fake-url")
+        ksqldb_url = "http://fake-url"
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         result = ofa.supervisors_uuid()
 
         # Ensure the function returns the expected result
@@ -223,15 +244,16 @@ class TestOpenFactory(TestCase):
         MockAsset.side_effect = mock_asset_instances
 
         ksqldb_url = "http://fake-url"
-        ofa = OpenFactory(ksqldb_url)
+        bootstrap_servers = "MockedBroker"
+        ofa = OpenFactory(ksqldb_url, bootstrap_servers)
         ofa.supervisors_uuid = MagicMock()
         ofa.supervisors_uuid.return_value = ["asset-001", "asset-002"]
 
         result = ofa.supervisors()
 
         # Assert that Asset was called with the correct arguments
-        MockAsset.assert_any_call(asset_uuid="asset-001", ksqldb_url=ksqldb_url)
-        MockAsset.assert_any_call(asset_uuid="asset-002", ksqldb_url=ksqldb_url)
+        MockAsset.assert_any_call("asset-001", ksqldb_url, bootstrap_servers)
+        MockAsset.assert_any_call("asset-002", ksqldb_url, bootstrap_servers)
 
         # Assert that the return value matches the mock objects
         self.assertEqual(result, mock_asset_instances)

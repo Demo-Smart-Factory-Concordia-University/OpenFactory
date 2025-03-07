@@ -11,7 +11,8 @@ class OpenFactory:
     Main API to OpenFactory
     """
 
-    def __init__(self, ksqldb_url=config.KSQLDB):
+    def __init__(self, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+        self.bootstrap_servers = bootstrap_servers
         self.ksqldb_url = ksqldb_url
         self.ksql = KSQL(ksqldb_url)
         try:
@@ -47,7 +48,7 @@ class OpenFactory:
 
     def devices(self):
         """ Return devices deployed on OpenFactory """
-        return [Asset(asset_uuid=uuid, ksqldb_url=self.ksqldb_url) for uuid in self.devices_uuid()]
+        return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.devices_uuid()]
 
     def agents_uuid(self):
         """ Return list of asset_uuid of MTConnect agents deployed on OpenFactory """
@@ -57,7 +58,7 @@ class OpenFactory:
 
     def agents(self):
         """ Return MTConnect agents deployed on OpenFactory """
-        return [Asset(asset_uuid=uuid, ksqldb_url=self.ksqldb_url) for uuid in self.agents_uuid()]
+        return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.agents_uuid()]
 
     def producers_uuid(self):
         """ Return list of asset_uuid of Kafka producers deployed on OpenFactory """
@@ -67,7 +68,7 @@ class OpenFactory:
 
     def producers(self):
         """ Return Kafka producers deployed on OpenFactory """
-        return [Asset(asset_uuid=uuid, ksqldb_url=self.ksqldb_url) for uuid in self.producers_uuid()]
+        return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.producers_uuid()]
 
     def supervisors_uuid(self):
         """ Return list of asset_uuid of Supervisors deployed on OpenFactory """
@@ -77,4 +78,4 @@ class OpenFactory:
 
     def supervisors(self):
         """ Return Supervisors deployed on OpenFactory """
-        return [Asset(asset_uuid=uuid, ksqldb_url=self.ksqldb_url) for uuid in self.supervisors_uuid()]
+        return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.supervisors_uuid()]
