@@ -203,6 +203,7 @@ class TestAsset(TestCase):
         query_df = pd.DataFrame({"ID": ["id1"],
                                  "VALUE": ["42.5"],
                                  "TYPE": ["Samples"],
+                                 "TAG": ["MockedTag"],
                                  "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
@@ -210,9 +211,9 @@ class TestAsset(TestCase):
         asset = Asset("uuid-123")
         attribute = asset.id1
 
-        self.assertEqual(attribute, AssetAttribute(value=42.5, type='Samples', timestamp='MockedTimeStamp'))
+        self.assertEqual(attribute, AssetAttribute(value=42.5, type='Samples', tag='MockedTag', timestamp='MockedTimeStamp'))
 
-        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|id1';"
+        expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|id1';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     def test_getattr_string_value(self, mock_async_run, MockKSQL):
@@ -222,6 +223,7 @@ class TestAsset(TestCase):
         query_df = pd.DataFrame({"ID": ["id2"],
                                  "VALUE": ["val2"],
                                  "TYPE": ["Events"],
+                                 "TAG": ["MockedTag"],
                                  "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
@@ -229,9 +231,9 @@ class TestAsset(TestCase):
         asset = Asset("uuid-123")
         attribute = asset.id2
 
-        self.assertEqual(attribute, AssetAttribute(value="val2", type='Events', timestamp='MockedTimeStamp'))
+        self.assertEqual(attribute, AssetAttribute(value="val2", type='Events', tag='MockedTag', timestamp='MockedTimeStamp'))
 
-        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|id2';"
+        expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|id2';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Asset.method")
@@ -243,6 +245,7 @@ class TestAsset(TestCase):
         query_df = pd.DataFrame({"ID": ["a_method"],
                                  "VALUE": ["val4"],
                                  "TYPE": ["Method"],
+                                 "TAG": ["MockedTag"],
                                  "TIMESTAMP": ["MockedTimeStamp"]})
 
         mock_async_run.side_effect = [query_df]
@@ -253,7 +256,7 @@ class TestAsset(TestCase):
         self.assertEqual(ret, "Mocked method called successfully")
         mock_method.assert_called_once_with("a_method", "arg1 arg2")
 
-        expected_query = "SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='uuid-123|a_method';"
+        expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset.Producer")
@@ -359,9 +362,9 @@ class TestAsset(TestCase):
         """ Test add_reference_above when no existing references are present """
 
         # Mock Asset instance
-        query_df = pd.DataFrame(columns=['VALUE'])
+        query_df = pd.DataFrame(columns=['VALUE', 'ID'])
 
-        mock_async_run.side_effect = [query_df]
+        mock_async_run.side_effect = [query_df, query_df]
         asset = Asset("asset-001")
 
         # mock ksql of the asset
@@ -396,9 +399,10 @@ class TestAsset(TestCase):
         """ Test add_reference_above when existing references are present """
 
         # Mock Asset instance
-        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
+        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"],
+                                 'ID': ["ID1"]})
 
-        mock_async_run.side_effect = [query_df]
+        mock_async_run.side_effect = [query_df, query_df]
         asset = Asset("asset-001")
 
         # Mock ksql of the asset
@@ -433,9 +437,9 @@ class TestAsset(TestCase):
         """ Test add_reference_below when no existing references are present """
 
         # Mock Asset instance
-        query_df = pd.DataFrame(columns=['VALUE'])
+        query_df = pd.DataFrame(columns=['VALUE', 'ID'])
 
-        mock_async_run.side_effect = [query_df]
+        mock_async_run.side_effect = [query_df, query_df]
         asset = Asset("asset-001")
 
         # mock ksql of the asset
@@ -470,9 +474,10 @@ class TestAsset(TestCase):
         """ Test add_reference_below when existing references are present """
 
         # Mock Asset instance
-        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"]})
+        query_df = pd.DataFrame({'VALUE': ["existing-ref1, existing-ref2"],
+                                 'ID': 'ID1'})
 
-        mock_async_run.side_effect = [query_df]
+        mock_async_run.side_effect = [query_df, query_df]
         asset = Asset("asset-001")
 
         # Mock ksql of the asset

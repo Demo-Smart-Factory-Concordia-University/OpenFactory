@@ -5,6 +5,7 @@ import threading
 import uuid
 from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pyksql.ksql import KSQL
 from typing import Union
 import openfactory.config as config
@@ -15,6 +16,7 @@ from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict
 class AssetAttribute:
     value: Union[str, int]
     type: str
+    tag: str
     timestamp: str
 
 
@@ -23,10 +25,10 @@ class Asset():
     OpenFactory Asset
     """
     def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
-        self.ksqldb_url = ksqldb_url
-        self.ksql = KSQL(ksqldb_url)
-        self.bootstrap_servers = bootstrap_servers
-        self.asset_uuid = asset_uuid
+        super().__setattr__('asset_uuid', asset_uuid)
+        super().__setattr__('ksqldb_url', ksqldb_url)
+        super().__setattr__('ksql', KSQL(ksqldb_url))
+        super().__setattr__('bootstrap_servers', KSQL(bootstrap_servers))
 
     @property
     def type(self):
@@ -84,11 +86,14 @@ class Asset():
 
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
-        query = f"SELECT VALUE, TYPE, TIMESTAMP FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
+        query = f"SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
         df = asyncio.run(self.ksql.query_to_dataframe(query))
 
         if df.empty:
-            return AssetAttribute(value='UNAVAILABLE', type='UNAVAILABLE', timestamp='UNAVAILABLE')
+            return AssetAttribute(value='UNAVAILABLE',
+                                  type='UNAVAILABLE',
+                                  tag='UNAVAILABLE',
+                                  timestamp='UNAVAILABLE')
 
         if df['TYPE'][0] == 'Method':
             def method_caller(*args, **kwargs):
@@ -99,10 +104,38 @@ class Asset():
         ret = AssetAttribute(
             value=float(df['VALUE'][0]) if df['TYPE'][0] == 'Samples' and df['VALUE'][0] != 'UNAVAILABLE' else df['VALUE'][0],
             type=df['TYPE'][0],
+            tag=df['TAG'][0],
             timestamp=df['TIMESTAMP'][0]
         )
 
         return ret
+
+    def __setattr__(self, name, value):
+        """ Set Asset attributes """
+
+        # if not an Asset attributes, handle it as a class attribute
+        if name not in self.attributes():
+            super().__setattr__(name, value)
+            return
+
+        # setup kafka message
+        attr = self.__getattr__(name)
+        msg = {
+            "ID": name,
+            "VALUE": value,
+            "TAG": attr.tag,
+            "TYPE": attr.type,
+            "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
+        }
+
+        # send kafka message
+        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        prod.flush()
 
     @property
     def references_above(self):
