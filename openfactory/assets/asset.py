@@ -152,7 +152,10 @@ class Asset():
             "ID": "references_above",
             "VALUE": asset_references,
             "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory"
+            "TYPE": "OpenFactory",
+            "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
         }
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
         prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
@@ -175,7 +178,10 @@ class Asset():
             "ID": "references_below",
             "VALUE": asset_references,
             "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory"
+            "TYPE": "OpenFactory",
+            "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
         }
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
         prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
@@ -195,7 +201,10 @@ class Asset():
             "ID": "references_above",
             "VALUE": references,
             "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory"
+            "TYPE": "OpenFactory",
+            "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
         }
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
         prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
@@ -215,7 +224,10 @@ class Asset():
             "ID": "references_below",
             "VALUE": references,
             "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory"
+            "TYPE": "OpenFactory",
+            "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
         }
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
         prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
