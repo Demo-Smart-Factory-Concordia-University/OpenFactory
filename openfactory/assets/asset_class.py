@@ -13,7 +13,6 @@ from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict
 
 
 def current_timestamp():
-    print("\n\ncurrent_timestamp() called")
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
@@ -151,32 +150,14 @@ class Asset():
             super().__setattr__(name, value)
             return
 
-        # setup kafka message
-        attr = self.__getattr__(name)
-        msg = {
-            "ID": name,
-            "VALUE": value,
-            "TAG": attr.tag,
-            "TYPE": attr.type,
-            "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                }
-        }
-
         # send kafka message
+        attr = self.__getattr__(name)
         self.producer.send_asset_attribute(name,
                                            AssetAttribute(
                                                value=value,
                                                tag=attr.tag,
                                                type=attr.type
                                                ))
-        return
-
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
 
     @property
     def references_above(self):
@@ -187,23 +168,6 @@ class Asset():
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
 
-    def set_references_above(self, asset_references):
-        """ Set references to above assets """
-        msg = {
-            "ID": "references_above",
-            "VALUE": asset_references,
-            "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory",
-            "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                }
-        }
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
-
     @property
     def references_below(self):
         """ References to below OpenFactory assets """
@@ -212,23 +176,6 @@ class Asset():
         if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
-
-    def set_references_below(self, asset_references):
-        """ Set references to below assets """
-        msg = {
-            "ID": "references_below",
-            "VALUE": asset_references,
-            "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory",
-            "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                }
-        }
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
 
     def add_reference_above(self, above_asset_reference):
         """ Adds a above-reference to the asset """
@@ -436,6 +383,10 @@ if __name__ == "__main__":
     print(cnc.Zact.value)
     print(cnc.Zact.type)
     print(cnc.Zact.timestamp)
+
+    # redfine some values
+    cnc.Zact = 10.0
+    print(cnc.Zact.value)
 
     # subscriptions
     def on_sample(msg_key, msg_value):

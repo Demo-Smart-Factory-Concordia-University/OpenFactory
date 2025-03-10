@@ -12,7 +12,7 @@ class TestCurrentTimestamp(unittest.TestCase):
         # Example expected format: '2025-03-10T12:00:00.123Z'
         try:
             # Attempt to parse the timestamp — this checks the format
-            parsed_time = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+            datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
         except ValueError:
             self.fail(f"Timestamp '{timestamp}' is not in the expected format")
 

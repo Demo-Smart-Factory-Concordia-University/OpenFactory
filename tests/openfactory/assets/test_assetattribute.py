@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import patch
 from datetime import datetime, timezone
 from openfactory.assets.asset_class import AssetAttribute
 
@@ -16,7 +15,7 @@ class TestAssetAttribute(unittest.TestCase):
 
         # Check that the timestamp was set and matches the expected format
         try:
-            parsed_time = datetime.strptime(attr.timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+            datetime.strptime(attr.timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
         except ValueError:
             self.fail(f"Timestamp '{attr.timestamp}' is not in the expected format")
 
