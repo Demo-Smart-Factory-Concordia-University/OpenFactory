@@ -1,1 +1,1 @@
-from .asset import Asset
+from .asset_class import Asset, AssetAttribute

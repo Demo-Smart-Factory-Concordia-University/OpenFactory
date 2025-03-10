@@ -2,11 +2,11 @@ import json
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 import pandas as pd
-from openfactory.assets.asset import Asset, AssetAttribute
+from openfactory.assets import Asset, AssetAttribute
 
 
-@patch("openfactory.assets.asset.KSQL")
-@patch("openfactory.assets.asset.asyncio.run")
+@patch("openfactory.assets.asset_class.KSQL")
+@patch("openfactory.assets.asset_class.asyncio.run")
 class TestAsset(TestCase):
     """
     Test class Asset
@@ -160,7 +160,7 @@ class TestAsset(TestCase):
         # Ensure correct query was exectued
         mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Method';")
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_method_execution(self, MockProducer, mock_async_run, MockKSQL):
         """ Test method() sends the correct Kafka message """
         mock_ksql = MockKSQL.return_value
@@ -236,7 +236,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|id2';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
-    @patch("openfactory.assets.asset.Asset.method")
+    @patch("openfactory.assets.asset_class.Asset.method")
     def test_getattr_method(self, mock_method, mock_async_run, MockKSQL):
         """ Test __getattr__ returns a callable for 'Method' type """
         mock_ksql = MockKSQL.return_value
@@ -259,7 +259,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|a_method';"
         mock_ksql.query_to_dataframe.assert_any_call(expected_query)
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_set_references_above(self, MockProducer, mock_async_run, MockKSQL):
         """ Test setting asset references_above """
         test_df = pd.DataFrame({"TYPE": ["MockedType"]})
@@ -277,7 +277,20 @@ class TestAsset(TestCase):
         mock_producer.produce.assert_called_once()
         args, kwargs = mock_producer.produce.call_args
         self.assertEqual(kwargs['key'], "asset-001")
-        self.assertEqual('{"ID": "references_above", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
+
+        # Parse the JSON so we can check fields separately
+        produced_value = json.loads(kwargs['value'])
+
+        expected_value = {
+            "ID": "references_above",
+            "VALUE": "asset-002, asset-003",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Check all fields except the timestamp
+        for key, val in expected_value.items():
+            self.assertEqual(produced_value[key], val)
 
         # Ensure flush was called
         mock_producer.flush.assert_called_once()
@@ -308,7 +321,7 @@ class TestAsset(TestCase):
         self.assertEqual(refs[0].asset_uuid, "asset-002")
         self.assertEqual(refs[1].asset_uuid, "asset-003")
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_set_references_below(self, MockProducer, mock_async_run, MockKSQL):
         """ Test setting asset references_below """
         test_df = pd.DataFrame({"TYPE": ["MockedType"]})
@@ -326,7 +339,20 @@ class TestAsset(TestCase):
         mock_producer.produce.assert_called_once()
         args, kwargs = mock_producer.produce.call_args
         self.assertEqual(kwargs['key'], "asset-001")
-        self.assertEqual('{"ID": "references_below", "VALUE": "asset-002, asset-003", "TAG": "AssetsReferences", "TYPE": "OpenFactory"}', kwargs['value'])
+        
+        # Parse the JSON so we can check fields separately
+        produced_value = json.loads(kwargs['value'])
+
+        expected_value = {
+            "ID": "references_below",
+            "VALUE": "asset-002, asset-003",
+            "TAG": "AssetsReferences",
+            "TYPE": "OpenFactory"
+        }
+
+        # Check all fields except the timestamp
+        for key, val in expected_value.items():
+            self.assertEqual(produced_value[key], val)
 
         # Ensure flush was called
         mock_producer.flush.assert_called_once()
@@ -357,7 +383,7 @@ class TestAsset(TestCase):
         self.assertEqual(refs[0].asset_uuid, "asset-002")
         self.assertEqual(refs[1].asset_uuid, "asset-003")
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_add_reference_above_no_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
         """ Test add_reference_above when no existing references are present """
 
@@ -394,7 +420,7 @@ class TestAsset(TestCase):
         )
         mock_producer_instance.flush.assert_called_once()
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_add_reference_above_with_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
         """ Test add_reference_above when existing references are present """
 
@@ -432,7 +458,7 @@ class TestAsset(TestCase):
         )
         mock_producer_instance.flush.assert_called_once()
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_add_reference_below_no_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
         """ Test add_reference_below when no existing references are present """
 
@@ -469,7 +495,7 @@ class TestAsset(TestCase):
         )
         mock_producer_instance.flush.assert_called_once()
 
-    @patch("openfactory.assets.asset.Producer")
+    @patch("openfactory.assets.asset_class.Producer")
     def test_add_reference_below_with_existing_reference(self, mock_producer, mock_async_run, MockKSQL):
         """ Test add_reference_below when existing references are present """
 

@@ -4,7 +4,7 @@ import re
 import threading
 import uuid
 from confluent_kafka import Producer, KafkaError
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pyksql.ksql import KSQL
 from typing import Union
@@ -12,12 +12,44 @@ import openfactory.config as config
 from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict
 
 
+def current_timestamp():
+    print("\n\ncurrent_timestamp() called")
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+
 @dataclass
 class AssetAttribute:
     value: Union[str, int]
     type: str
     tag: str
-    timestamp: str
+    timestamp: str = field(default_factory=current_timestamp)
+
+
+class AssetProducer(Producer):
+    """
+    Kafka producer for an OpenFactory asset
+    """
+    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB):
+        super().__init__({'bootstrap.servers': config.KAFKA_BROKER})
+        self.ksql = KSQL(ksqldb_url)
+        self.topic = self.ksql.get_kafka_topic('ASSETS_STREAM')
+        self.asset_uuid = asset_uuid
+
+    def send_asset_attribute(self, assetID, assetAttribute):
+        """ Send Kafka messgage for an Asset attribute """
+        msg = {
+            "ID": assetID,
+            "VALUE": assetAttribute.value,
+            "TAG": assetAttribute.tag,
+            "TYPE": assetAttribute.type,
+            "attributes": {
+                "timestamp": assetAttribute.timestamp
+                }
+        }
+        self.produce(topic=self.topic,
+                     key=self.asset_uuid,
+                     value=json.dumps(msg))
+        self.flush()
 
 
 class Asset():
@@ -28,7 +60,8 @@ class Asset():
         super().__setattr__('asset_uuid', asset_uuid)
         super().__setattr__('ksqldb_url', ksqldb_url)
         super().__setattr__('ksql', KSQL(ksqldb_url))
-        super().__setattr__('bootstrap_servers', KSQL(bootstrap_servers))
+        super().__setattr__('bootstrap_servers', bootstrap_servers)
+        super().__setattr__('producer', AssetProducer(asset_uuid))
 
     @property
     def type(self):
@@ -131,6 +164,14 @@ class Asset():
         }
 
         # send kafka message
+        self.producer.send_asset_attribute(name,
+                                           AssetAttribute(
+                                               value=value,
+                                               tag=attr.tag,
+                                               type=attr.type
+                                               ))
+        return
+
         prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
         prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
                      key=self.asset_uuid,

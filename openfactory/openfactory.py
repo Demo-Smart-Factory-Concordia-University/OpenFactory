@@ -3,7 +3,7 @@ from httpx import RequestError
 from pyksql.ksql import KSQL
 import openfactory.config as config
 from openfactory.exceptions import OFAException
-from openfactory.assets.asset import Asset
+from openfactory.assets import Asset
 
 
 class OpenFactory:
