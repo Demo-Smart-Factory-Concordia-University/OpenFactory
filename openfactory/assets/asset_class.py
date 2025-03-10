@@ -203,7 +203,7 @@ class Asset():
         else:
             references = below_asset_reference + ', ' + df['VALUE'][0]
 
-        # set the new references_above attribute
+        # set the new references_below attribute
         self.producer.send_asset_attribute('references_below',
                                            AssetAttribute(
                                                value=references,
