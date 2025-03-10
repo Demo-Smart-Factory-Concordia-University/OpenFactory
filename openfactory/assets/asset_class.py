@@ -185,20 +185,14 @@ class Asset():
             references = above_asset_reference
         else:
             references = above_asset_reference + ', ' + df['VALUE'][0]
-        msg = {
-            "ID": "references_above",
-            "VALUE": references,
-            "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory",
-            "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                }
-        }
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
+
+        # set the new references_above attribute
+        self.producer.send_asset_attribute('references_above',
+                                           AssetAttribute(
+                                               value=references,
+                                               tag='AssetsReferences',
+                                               type='OpenFactory'
+                                               ))
 
     def add_reference_below(self, below_asset_reference):
         """ Adds a below-reference to the asset """
@@ -208,20 +202,14 @@ class Asset():
             references = below_asset_reference
         else:
             references = below_asset_reference + ', ' + df['VALUE'][0]
-        msg = {
-            "ID": "references_below",
-            "VALUE": references,
-            "TAG": "AssetsReferences",
-            "TYPE": "OpenFactory",
-            "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-                }
-        }
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
-        prod.produce(topic=self.ksql.get_kafka_topic('ASSETS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
+
+        # set the new references_above attribute
+        self.producer.send_asset_attribute('references_below',
+                                           AssetAttribute(
+                                               value=references,
+                                               tag='AssetsReferences',
+                                               type='OpenFactory'
+                                               ))
 
     def wait_until(self, attribute, value, kafka_group_id=None):
         """ Waits until the asset attribute has a specific value """
