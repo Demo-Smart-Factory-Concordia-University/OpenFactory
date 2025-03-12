@@ -159,6 +159,10 @@ class Asset():
                                                type=attr.type
                                                ))
 
+    def add_attribute(self, attribute_id, asset_attribute):
+        """ Adds a new attribute to the asset """
+        self.producer.send_asset_attribute(attribute_id, asset_attribute)
+
     @property
     def references_above(self):
         """ References to above OpenFactory assets """
