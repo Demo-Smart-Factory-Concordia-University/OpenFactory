@@ -4,10 +4,10 @@ from confluent_kafka import Producer
 import openfactory.config as config
 
 
-def register_asset(asset_uuid, asset_type, docker_service=""):
+def register_asset(asset_uuid, asset_type, docker_service="", bootstrap_servers=config.KAFKA_BROKER):
     """ Register an asset in OpenFactory """
     ksql = KSQL(config.KSQLDB)
-    prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+    prod = Producer({'bootstrap.servers': bootstrap_servers})
 
     # Asset Type
     msg1 = {
@@ -34,10 +34,10 @@ def register_asset(asset_uuid, asset_type, docker_service=""):
     prod.flush()
 
 
-def deregister_asset(asset_uuid):
+def deregister_asset(asset_uuid, bootstrap_servers=config.KAFKA_BROKER):
     """ Deregister an asset from OpenFactory """
     ksql = KSQL(config.KSQLDB)
-    prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+    prod = Producer({'bootstrap.servers': bootstrap_servers})
 
     # UNAVAILABLE message
     msg = {
