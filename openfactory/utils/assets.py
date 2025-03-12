@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pyksql.ksql import KSQL
 from confluent_kafka import Producer
 import openfactory.config as config
@@ -14,7 +15,10 @@ def register_asset(asset_uuid, asset_type, docker_service="", bootstrap_servers=
         "ID": "AssetType",
         "VALUE": asset_type,
         "TAG": "AssetType",
-        "TYPE": "OpenFactory"
+        "TYPE": "OpenFactory",
+        "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
     }
     prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
                  key=asset_uuid,
@@ -25,7 +29,10 @@ def register_asset(asset_uuid, asset_type, docker_service="", bootstrap_servers=
         "ID": "DockerService",
         "VALUE": docker_service,
         "TAG": "DockerService",
-        "TYPE": "OpenFactory"
+        "TYPE": "OpenFactory",
+        "attributes": {
+                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                }
     }
     prod.produce(topic=ksql.get_kafka_topic('ASSETS_STREAM'),
                  key=asset_uuid,
