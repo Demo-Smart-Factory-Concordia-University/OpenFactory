@@ -110,7 +110,7 @@ class Asset():
             "CMD": method,
             "ARGS": args
         }
-        prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
+        prod = Producer({'bootstrap.servers': self.bootstrap_servers})
         prod.produce(topic=self.ksql.get_kafka_topic('CMDS_STREAM'),
                      key=self.asset_uuid,
                      value=json.dumps(msg))
