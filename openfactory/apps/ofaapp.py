@@ -13,7 +13,7 @@ class OpenFactoryApp(Asset):
         """
         Initialize the OpenFactory App
         """
-        register_asset(app_uuid, "OpenFactoryApp", bootstrap_servers=bootstrap_servers)
+        register_asset(app_uuid, "OpenFactoryApp", ksqldb_url=ksqldb_url, bootstrap_servers=bootstrap_servers)
         super().__init__(app_uuid, ksqldb_url, bootstrap_servers)
 
     def welcome_banner(self):
@@ -51,7 +51,7 @@ class OpenFactoryApp(Asset):
         except KeyboardInterrupt:
             print("Stopping app ...")
             self.app_event_loop_stopped()
-            deregister_asset(self.asset_uuid, bootstrap_servers=self.bootstrap_servers)
+            deregister_asset(self.asset_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
 
 
 if __name__ == "__main__":
