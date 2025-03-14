@@ -28,8 +28,8 @@ class AssetProducer(Producer):
     """
     Kafka producer for an OpenFactory asset
     """
-    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB):
-        super().__init__({'bootstrap.servers': config.KAFKA_BROKER})
+    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+        super().__init__({'bootstrap.servers': bootstrap_servers})
         self.ksql = KSQL(ksqldb_url)
         self.topic = self.ksql.get_kafka_topic('ASSETS_STREAM')
         self.asset_uuid = asset_uuid
@@ -60,7 +60,7 @@ class Asset():
         super().__setattr__('ksqldb_url', ksqldb_url)
         super().__setattr__('ksql', KSQL(ksqldb_url))
         super().__setattr__('bootstrap_servers', bootstrap_servers)
-        super().__setattr__('producer', AssetProducer(asset_uuid))
+        super().__setattr__('producer', AssetProducer(asset_uuid, bootstrap_servers=bootstrap_servers, ksqldb_url=ksqldb_url))
 
     @property
     def type(self):
