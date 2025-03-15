@@ -79,3 +79,13 @@ class OpenFactory:
     def supervisors(self):
         """ Return Supervisors deployed on OpenFactory """
         return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.supervisors_uuid()]
+
+    def applications_uuid(self):
+        """ Return list of asset_uuid of Applications deployed on OpenFactory """
+        query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'OpenFactoryApp';"
+        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        return df['ASSET_UUID'].to_list()
+
+    def applications(self):
+        """ Return Applications deployed on OpenFactory """
+        return [Asset(uuid, self.ksqldb_url, self.bootstrap_servers) for uuid in self.applications_uuid()]
