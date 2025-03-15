@@ -23,24 +23,26 @@ class ServicesListView(View):
         """
         Returns the sorted (by name) service list
         """
-        services = dal.docker_client.services.list()
-        filtered_services = self.filter_services(services)
-
         service_list = []
 
-        for service in filtered_services:
-            service_name = service.name
+        for service in self.filter_services():
+
+            # Discard services not deployed as Docker Services
+            if service == '':
+                continue
+
             # Fetch tasks associated with the service
-            tasks = dal.docker_client.api.tasks(filters={"service": service_name})
+            tasks = dal.docker_client.api.tasks(filters={"service": service})
 
             # Determine the service status based on task states
             is_online = any(task["Status"]["State"] == "running" for task in tasks)
             status = "online" if is_online else "offline"
 
             service_list.append({
-                "name": service_name,
+                "name": service,
                 "status": status
             })
+
         return sorted(service_list, key=lambda x: x["name"])
 
     def dispatch_request(self):

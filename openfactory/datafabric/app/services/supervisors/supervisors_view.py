@@ -1,6 +1,7 @@
 """
 DataFabric Supervisors list view
 """
+from openfactory import OpenFactory
 from openfactory.datafabric.app.services.core.services_list_view import ServicesListView
 
 
@@ -11,8 +12,9 @@ class SupervisorsList(ServicesListView):
 
     service_name = "Supervisors"
 
-    def filter_services(self, services):
+    def filter_services(self):
         """
         Filter services
         """
-        return [service for service in services if service.name.endswith('-supervisor')]
+        ofa = OpenFactory()
+        return [app.DockerService.value for app in ofa.supervisors()]
