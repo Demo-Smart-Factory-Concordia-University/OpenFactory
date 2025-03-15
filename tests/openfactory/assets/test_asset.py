@@ -160,19 +160,17 @@ class TestAsset(TestCase):
         # Ensure correct query was exectued
         mock_ksql.query_to_dataframe.assert_any_call("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Method';")
 
-    @patch("openfactory.assets.asset_class.Producer")
-    def test_method_execution(self, MockProducer, mock_async_run, MockKSQL):
+    def test_method_execution(self, mock_async_run, MockKSQL):
         """ Test method() sends the correct Kafka message """
         mock_ksql = MockKSQL.return_value
-        mock_producer = MockProducer.return_value
-        asset_df = pd.DataFrame({"DEVICE_UUID": "uuid-123",
-                                 "TYPE": ["MockedType"]})
+        asset_df = pd.DataFrame({'ID': ["ID1"]})
         mock_async_run.side_effect = [asset_df]
 
         # Mock the Kafka topic resolution
         mock_ksql.get_kafka_topic.return_value = "test_topic"
 
         asset = Asset("uuid-123")
+        asset.producer = MagicMock()
         mock_ksql.get_kafka_topic.reset_mock()
 
         # Call the method
@@ -188,14 +186,14 @@ class TestAsset(TestCase):
         }
 
         # Ensure produce() was called with correct values
-        mock_producer.produce.assert_called_once_with(
+        asset.producer.produce.assert_called_once_with(
             topic="test_topic",
             key="uuid-123",
             value=json.dumps(expected_msg)
         )
 
         # Ensure flush() was called
-        mock_producer.flush.assert_called_once()
+        asset.producer.flush.assert_called_once()
 
     def test_getattr_samples(self, mock_async_run, MockKSQL):
         """ Test __getattr__ returns float for 'Samples' type """

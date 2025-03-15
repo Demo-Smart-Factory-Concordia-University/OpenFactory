@@ -110,11 +110,10 @@ class Asset():
             "CMD": method,
             "ARGS": args
         }
-        prod = Producer({'bootstrap.servers': self.bootstrap_servers})
-        prod.produce(topic=self.ksql.get_kafka_topic('CMDS_STREAM'),
-                     key=self.asset_uuid,
-                     value=json.dumps(msg))
-        prod.flush()
+        self.producer.produce(topic=self.ksql.get_kafka_topic('CMDS_STREAM'),
+                              key=self.asset_uuid,
+                              value=json.dumps(msg))
+        self.producer.flush()
 
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
