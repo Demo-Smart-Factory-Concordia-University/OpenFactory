@@ -9,7 +9,7 @@ import openfactory.ofa as ofa
 @patch("openfactory.ofa.device.down.shut_down_devices_from_config_file")
 class TestDeviceDown(TestCase):
     """
-    Unit tests for ofa.stack.click_down
+    Unit tests for ofa.device.click_down
     """
 
     def test_device_down(self, mock_shut_down_devices_from_config_file):

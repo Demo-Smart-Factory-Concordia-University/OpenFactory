@@ -2,29 +2,14 @@ import os
 from unittest import TestCase
 from unittest.mock import patch
 from click.testing import CliRunner
-
 import openfactory.ofa as ofa
-from openfactory.ofa.db import db
-from openfactory.models.base import Base
 
 
 @patch("openfactory.ofa.device.up.deploy_devices_from_config_file")
 class TestDeviceUp(TestCase):
     """
-    Unit tests for ofa.stack.click_up
+    Unit tests for ofa.device.click_up
     """
-
-    @classmethod
-    def setUpClass(cls):
-        """ Setup in memory sqlite db """
-        db.conn_uri = 'sqlite:///:memory:'
-        db.connect()
-        Base.metadata.create_all(db.engine)
-
-    @classmethod
-    def tearDownClass(cls):
-        Base.metadata.drop_all(db.engine)
-        db.session.close()
 
     def test_device_up(self, mock_deploy_devices_from_config_file):
         """
@@ -34,10 +19,10 @@ class TestDeviceUp(TestCase):
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_agents.yml')
         result = runner.invoke(ofa.device.click_up, [config_file])
-        mock_deploy_devices_from_config_file.called_once_with(db.session, config_file, run=True, attach=True)
+        mock_deploy_devices_from_config_file.assert_called_once_with(config_file)
         self.assertEqual(result.exit_code, 0)
 
-    def test_stack_up_none_existent_file(self, *args):
+    def test_device_up_none_existent_file(self, *args):
         """
         Test ofa.device.click_up with none exisitng config file
         """
