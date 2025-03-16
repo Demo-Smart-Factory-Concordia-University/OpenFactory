@@ -46,6 +46,12 @@ def device():
     pass
 
 
+@click.group()
+def apps():
+    """ Manage OpenFactory applications """
+    pass
+
+
 cli.add_command(ofa.config)
 
 cli.add_command(nodes)
@@ -60,6 +66,9 @@ cli.add_command(device)
 device.add_command(ofa.device.click_up)
 device.add_command(ofa.device.click_down)
 device.add_command(ofa.device.click_connect_influxdb)
+
+cli.add_command(apps)
+apps.add_command(ofa.app.click_up)
 
 # setup user notifications
 user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{config.OFA_END}"),

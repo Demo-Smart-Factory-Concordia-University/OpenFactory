@@ -248,6 +248,33 @@ class OpenFactoryManager(OpenFactory):
 
         user_notify.success(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
+    def deploy_openfactory_application(self, application):
+        """
+        Deploy an OpenFactory application
+        """
+
+        # build environment variables
+        env = [f"APP_UUID={application['uuid']}",
+               f"DOCKER_SERVICE={application['uuid'].lower()}"]
+        if application['environment'] is not None:
+            for item in application['environment']:
+                var, val = item.split('=')
+                env.append(f"{var.strip()}={val.strip()}")
+
+        try:
+            dal.docker_client.services.create(
+                image=application['image'],
+                name=application['uuid'].lower(),
+                mode={"Replicated": {"Replicas": 1}},
+                env=env,
+                networks=[config.OPENFACTORY_NETWORK]
+            )
+        except docker.errors.APIError as err:
+            user_notify.fail(f"Application {application['uuid']} could not be deployed\n{err}")
+            return
+
+        user_notify.success(f"Application {application['uuid']} deployed successfully")
+
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
         """
         Create ksqlDB tables of an OpenFactory device
