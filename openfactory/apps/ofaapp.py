@@ -1,3 +1,4 @@
+import os
 import time
 from openfactory.utils.assets import register_asset, deregister_asset
 from openfactory.assets import Asset, AssetAttribute
@@ -13,7 +14,15 @@ class OpenFactoryApp(Asset):
         """
         Initialize the OpenFactory App
         """
-        register_asset(app_uuid, "OpenFactoryApp", ksqldb_url=ksqldb_url, bootstrap_servers=bootstrap_servers)
+        # get paramters from environment (set if deployed by ofa deployment tool)
+        app_uuid = os.getenv('APP_UUID', app_uuid)
+        docker_service = os.getenv('DOCKER_SERVICE', '')
+
+        # register application
+        register_asset(app_uuid, "OpenFactoryApp",
+                       docker_service=docker_service,
+                       ksqldb_url=ksqldb_url,
+                       bootstrap_servers=bootstrap_servers)
         super().__init__(app_uuid, ksqldb_url, bootstrap_servers)
 
     def welcome_banner(self):
