@@ -377,6 +377,23 @@ class OpenFactoryManager(OpenFactory):
         deregister_asset(device_uuid)
         user_notify.success(f"{device_uuid} shut down successfully")
 
+    def tear_down_application(self, app_uuid):
+        """
+        Tear down a deployed OpenFactory application
+        """
+        try:
+            app = Asset(app_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
+            service = dal.docker_client.services.get(app.DockerService.value)
+            service.remove()
+        except docker.errors.NotFound:
+            # the application was not running as a Docker swarm service
+            deregister_asset(app_uuid)
+            pass
+        except docker.errors.APIError as err:
+            raise OFAException(err)
+        deregister_asset(app_uuid)
+        user_notify.success(f"OpenFactory application {app_uuid} shut down successfully")
+
     def get_asset_uuid_from_docker_service(self, docker_service_name):
         """
         Return ASSET_UUID of the asset running on the Docker service docker_service_name

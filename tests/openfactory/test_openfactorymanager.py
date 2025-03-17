@@ -359,3 +359,132 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Check if the exception was raised for the service removal
         mock_service.remove.assert_called()
+
+    @patch("openfactory.openfactory_manager.Asset")
+    @patch("openfactory.openfactory.KSQL")
+    @patch("openfactory.openfactory_manager.dal")
+    @patch("openfactory.openfactory_manager.user_notify")
+    @patch("openfactory.openfactory_manager.deregister_asset")
+    def test_tear_down_application(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+        """
+        Test tear_down_application to verify that applications are removed and correct notifications are sent
+        """
+
+        # Mock Asset instance and its DockerService value
+        mock_app_instance = MagicMock()
+        mock_app_instance.DockerService.value = "mock-service-name"
+        MockAsset.return_value = mock_app_instance
+
+        # Set up mocks for Docker services
+        mock_client = MagicMock()
+        mock_service = MagicMock()
+        mock_dal.docker_client = mock_client
+
+        # Mock Docker service get method
+        mock_client.services.get.side_effect = lambda name: mock_service if name == 'mock-service-name' else None
+
+        # Mock the service remove method to simulate successful service removal
+        mock_service.remove = MagicMock()
+
+        # Test device_uuid
+        app_uuid = 'app-uuid-123'
+
+        # Call the method to test
+        manager = OpenFactoryManager('mocked_url')
+        manager.tear_down_application(app_uuid)
+
+        # Check that the correct services were removed
+        mock_service.remove.assert_called()
+
+        # Check that the correct notifications were sent
+        mock_user_notify.success.assert_any_call(f"OpenFactory application {app_uuid} shut down successfully")
+
+        # Ensure deregister_asset was called
+        mock_deregister_asset.assert_any_call(app_uuid)
+
+    @patch("openfactory.openfactory_manager.Asset")
+    @patch("openfactory.openfactory.KSQL")
+    @patch("openfactory.openfactory_manager.dal")
+    @patch("openfactory.openfactory_manager.user_notify")
+    @patch("openfactory.openfactory_manager.deregister_asset")
+    def test_tear_down_application_no_docker_service(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+        """
+        Test tear_down_application when application is not deployed as a Docker service
+        """
+
+        # Mock Asset instance and its DockerService value
+        mock_app_instance = MagicMock()
+        mock_app_instance.DockerService.value = "mock-service-name"
+        MockAsset.return_value = mock_app_instance
+
+        # Set up mocks for Docker services
+        mock_client = MagicMock()
+        mock_service = MagicMock()
+        mock_dal.docker_client = mock_client
+
+        # Mock Docker service get method
+        def mock_get_service(name):
+            if name == "mock-service-name":
+                raise docker.errors.NotFound("Service not found")
+            return mock_service  # Return the mock service for other names
+        mock_client.services.get.side_effect = mock_get_service
+
+        # Mock the service remove method to simulate successful service removal
+        mock_service.remove = MagicMock()
+
+        # Test device_uuid
+        app_uuid = 'app-uuid-123'
+
+        # Call the method to test
+        manager = OpenFactoryManager('mocked_url')
+        manager.tear_down_application(app_uuid)
+
+        # Ensure deregister_asset was called
+        mock_deregister_asset.assert_any_call(app_uuid)
+
+        # No success message
+        mock_user_notify.assert_not_called()
+
+    @patch("openfactory.openfactory_manager.Asset")
+    @patch("openfactory.openfactory.KSQL")
+    @patch("openfactory.openfactory_manager.dal")
+    @patch("openfactory.openfactory_manager.user_notify")
+    @patch("openfactory.openfactory_manager.deregister_asset")
+    def test_tear_down_application_docker_api_error(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+        """
+        Test tear_down_application handels Docker API errors
+        """
+
+        # Mock Asset instance and its DockerService value
+        mock_app_instance = MagicMock()
+        mock_app_instance.DockerService.value = "mock-service-name"
+        MockAsset.return_value = mock_app_instance
+
+        # Set up mocks for Docker services
+        mock_client = MagicMock()
+        mock_service = MagicMock()
+        mock_dal.docker_client = mock_client
+
+        # Mock Docker service get method
+        def mock_get_service(name):
+            if name == "mock-service-name":
+                raise docker.errors.APIError("Docker error")
+            return mock_service  # Return the mock service for other names
+        mock_client.services.get.side_effect = mock_get_service
+
+        # Mock the service remove method to simulate successful service removal
+        mock_service.remove = MagicMock()
+
+        # Test device_uuid
+        app_uuid = 'app-uuid-123'
+
+        # Call the method to test
+        manager = OpenFactoryManager('mocked_url')
+        with self.assertRaises(OFAException):
+            manager.tear_down_application(app_uuid)
+
+        # Ensure deregister_asset was not called
+        mock_deregister_asset.assert_not_called()
+
+        # No success message
+        mock_user_notify.assert_not_called()

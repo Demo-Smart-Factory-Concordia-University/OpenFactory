@@ -69,6 +69,7 @@ device.add_command(ofa.device.click_connect_influxdb)
 
 cli.add_command(apps)
 apps.add_command(ofa.app.click_up)
+apps.add_command(ofa.app.click_down)
 
 # setup user notifications
 user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{config.OFA_END}"),
