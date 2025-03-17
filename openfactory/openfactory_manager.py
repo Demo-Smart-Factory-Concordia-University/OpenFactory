@@ -148,6 +148,10 @@ class OpenFactoryManager(OpenFactory):
         Deploy a Kafka producer
         """
 
+        # compute ressources
+        cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], 0.5)
+        cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], 1)
+
         # compute placement constraints
         placement_constraints = get_nested(device, ['agent', 'deploy', 'placement', 'constraints'])
         if placement_constraints:
@@ -177,8 +181,8 @@ class OpenFactoryManager(OpenFactory):
                      f'MTC_AGENT={MTC_AGENT}'],
                 constraints=constraints,
                 resources={
-                    "Limits": {"NanoCPUs": int(1000000000*0.5)},
-                    "Reservations": {"NanoCPUs": int(1000000000*1.0)}
+                    "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},
+                    "Reservations": {"NanoCPUs": int(1000000000*cpus_reservation)}
                     },
                 networks=[config.OPENFACTORY_NETWORK]
             )
