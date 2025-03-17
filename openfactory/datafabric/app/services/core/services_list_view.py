@@ -12,7 +12,7 @@ class ServicesListView(View):
     decorators = [login_required]
     template_name = "services/generic/services_list.html"
 
-    def filter_services(self, services):
+    def filter_services(self):
         """
         Abstract method to filter specific services
         Must be implemented in derived classes

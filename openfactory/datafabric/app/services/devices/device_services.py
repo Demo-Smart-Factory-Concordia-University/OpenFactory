@@ -14,11 +14,12 @@ class DeviceServicesList(ServicesListView):
 
     template_name = "services/devices/device_services.html"
 
-    def filter_services(self, services):
+    def filter_services(self):
         """
-        Filter services
+        Get services from all assets linked below the device
         """
-        return [service for service in services if service.name.startswith(self.device_uuid.lower())]
+        device = Asset(self.device_uuid)
+        return [asset.DockerService.value for asset in device.references_below]
 
     def fetch_data(self, device_uuid):
         """ Fetch data from devices table `"""
