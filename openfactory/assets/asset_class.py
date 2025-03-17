@@ -35,7 +35,7 @@ class AssetProducer(Producer):
         self.asset_uuid = asset_uuid
 
     def send_asset_attribute(self, assetID, assetAttribute):
-        """ Send Kafka messgage for an Asset attribute """
+        """ Send Kafka message for an Asset attribute """
         msg = {
             "ID": assetID,
             "VALUE": assetAttribute.value,
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     print(cnc.Zact.type)
     print(cnc.Zact.timestamp)
 
-    # redfine some values
+    # redefine some values
     cnc.Zact = 10.0
     print(cnc.Zact.value)
 
