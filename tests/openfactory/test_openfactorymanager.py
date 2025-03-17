@@ -177,8 +177,8 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Check that the correct resources were passed
         expected_resources = {
-            "Limits": {"NanoCPUs": int(1000000000 * 0.5)},
-            "Reservations": {"NanoCPUs": int(1000000000 * 1.0)}
+            "Limits": {"NanoCPUs": int(1000000000 * 1.0)},
+            "Reservations": {"NanoCPUs": int(1000000000 * 0.5)}
         }
         self.assertIn('resources', kwargs)
         self.assertEqual(kwargs['resources'], expected_resources)
