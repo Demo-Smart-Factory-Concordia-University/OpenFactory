@@ -35,13 +35,26 @@ def print_services(node_id):
               help='Increase verbosity')
 def click_ls(verbose):
     """ List OpenFactory nodes """
+    if not verbose:
+        print(f"{'Hostname':<12} {'IP Address':<15} {'CPUs':>6} {'RAM (GB)':>8}   {'Role':<10} {'Availability':<15} {'State':<10}")
+        print("-" * 80)
     nodes = dal.docker_client.nodes.list()
     for node in nodes:
         cpus = node.attrs['Description']['Resources']['NanoCPUs'] / 1E9
         ram = node.attrs['Description']['Resources']['MemoryBytes'] / (1024 ** 3)
         node_type = 'Manager' if 'ManagerStatus' in node.attrs else 'Worker'
-        print(f"{node.attrs['Description']['Hostname']} {node.attrs['Status']['Addr']} ({cpus} CPUs {ram:.1f} GB) {node_type:8} {node.attrs['Spec']['Availability']:8} {node.attrs['Status']['State']}")
         if verbose:
+            print(f"{node.attrs['Description']['Hostname']} "
+                  f"({node.attrs['Status']['Addr']}) "
+                  f"{node.attrs['Status']['State']}")
             print("  SERVICE                      CURRENT STATE                 PUBLIC PORTS")
             print_services(node.id)
             print()
+        else:
+            print(f"{node.attrs['Description']['Hostname']:<12} "
+                  f"{node.attrs['Status']['Addr']:<15} "
+                  f"{cpus:>6.1f} "
+                  f"{ram:>8.1f}   "
+                  f"{node_type:<10} "
+                  f"{node.attrs['Spec']['Availability']:<15} "
+                  f"{node.attrs['Status']['State']:<10}")
