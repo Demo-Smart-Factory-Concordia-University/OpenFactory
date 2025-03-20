@@ -264,21 +264,23 @@ class Asset():
     def __consume_messages(self, kakfa_group_id, on_message):
         """ Kafka consumer that runs in a separate thread and calls `on_message` """
 
-        self._messages_consumer_instance = KafkaAssetConsumer(
+        messages_consumer_instance = KafkaAssetConsumer(
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_message,
             bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
+        super().__setattr__('_messages_consumer_instance', messages_consumer_instance)
         self._messages_consumer_instance.consume()
 
     def subscribe_to_messages(self, on_sample, kakfa_group_id):
         """ Subscribe to messages of the Asset """
-        self._messages_consumer_thread = threading.Thread(
+        messages_consumer_thread = threading.Thread(
             target=self.__consume_messages,
             args=(kakfa_group_id, on_sample),
             daemon=True
         )
+        super().__setattr__('_messages_consumer_thread', messages_consumer_thread)
         self._messages_consumer_thread.start()
         return self._messages_consumer_thread
 
@@ -298,21 +300,23 @@ class Asset():
                 """ Filters out Samples """
                 return msg_value if msg_value['type'] == 'Samples' else None
 
-        self._samples_consumer_instance = SamplesConsumer(
+        samples_consumer_instance = SamplesConsumer(
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_sample,
             bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
+        super().__setattr__('_samples_consumer_instance', samples_consumer_instance)
         self._samples_consumer_instance.consume()
 
     def subscribe_to_samples(self, on_sample, kakfa_group_id):
         """ Subscribe to samples messages of the Asset """
-        self._samples_consumer_thread = threading.Thread(
+        samples_consumer_thread = threading.Thread(
             target=self.__consume_samples,
             args=(kakfa_group_id, on_sample),
             daemon=True
         )
+        super().__setattr__('_samples_consumer_thread', samples_consumer_thread)
         self._samples_consumer_thread.start()
         return self._samples_consumer_thread
 
@@ -332,21 +336,23 @@ class Asset():
                 """ Filters out Events """
                 return msg_value if msg_value['type'] == 'Events' else None
 
-        self._events_consumer_instance = EventsConsumer(
+        events_consumer_instance = EventsConsumer(
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_event,
             bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
+        super().__setattr__('_events_consumer_instance', events_consumer_instance)
         self._events_consumer_instance.consume()
 
     def subscribe_to_events(self, on_event, kakfa_group_id):
         """ Subscribe to events messages of the Asset """
-        self._events_consumer_thread = threading.Thread(
+        events_consumer_thread = threading.Thread(
             target=self.__consume_events,
             args=(kakfa_group_id, on_event),
             daemon=True
         )
+        super().__setattr__('_events_consumer_thread', events_consumer_thread)
         self._events_consumer_thread.start()
         return self._events_consumer_thread
 
@@ -366,21 +372,23 @@ class Asset():
                 """ Filters out Conditions """
                 return msg_value if msg_value['type'] == 'Condition' else None
 
-        self._conditions_consumer_instance = ConditionsConsumer(
+        conditions_consumer_instance = ConditionsConsumer(
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_condition,
             bootstrap_servers=self.bootstrap_servers,
             ksqldb_url=self.ksqldb_url)
+        super().__setattr__('_conditions_consumer_instance', conditions_consumer_instance)
         self._conditions_consumer_instance.consume()
 
     def subscribe_to_conditions(self, on_condition, kakfa_group_id):
         """ Subscribe to conditions messages of the Asset """
-        self._conditions_consumer_thread = threading.Thread(
+        conditions_consumer_thread = threading.Thread(
             target=self.__consume_conditions,
             args=(kakfa_group_id, on_condition),
             daemon=True
         )
+        super().__setattr__('_conditions_consumer_thread', conditions_consumer_thread)
         self._conditions_consumer_thread.start()
         return self._conditions_consumer_thread
 
