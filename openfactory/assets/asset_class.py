@@ -289,7 +289,7 @@ class Asset():
         if hasattr(self, "_messages_consumer_instance"):
             self._messages_consumer_thread.join()
 
-    def __consume_samples(self, topic, kakfa_group_id, on_sample):
+    def __consume_samples(self, kakfa_group_id, on_sample):
         """ Kafka consumer that runs in a separate thread and calls `on_sample` """
 
         class SamplesConsumer(KafkaAssetConsumer):
@@ -310,7 +310,7 @@ class Asset():
         """ Subscribe to samples messages of the Asset """
         self._samples_consumer_thread = threading.Thread(
             target=self.__consume_samples,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_sample),
+            args=(kakfa_group_id, on_sample),
             daemon=True
         )
         self._samples_consumer_thread.start()
@@ -323,7 +323,7 @@ class Asset():
         if hasattr(self, "_samples_consumer_thread"):
             self._samples_consumer_thread.join()
 
-    def __consume_events(self, topic, kakfa_group_id, on_event):
+    def __consume_events(self, kakfa_group_id, on_event):
         """ Kafka consumer that runs in a separate thread and calls `on_event` """
 
         class EventsConsumer(KafkaAssetConsumer):
@@ -344,7 +344,7 @@ class Asset():
         """ Subscribe to events messages of the Asset """
         self._events_consumer_thread = threading.Thread(
             target=self.__consume_events,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_event),
+            args=(kakfa_group_id, on_event),
             daemon=True
         )
         self._events_consumer_thread.start()
@@ -357,7 +357,7 @@ class Asset():
         if hasattr(self, "_events_consumer_thread"):
             self._events_consumer_thread.join()
 
-    def __consume_conditions(self, topic, kakfa_group_id, on_condition):
+    def __consume_conditions(self, kakfa_group_id, on_condition):
         """ Kafka consumer that runs in a separate thread and calls `on_condition` """
 
         class ConditionsConsumer(KafkaAssetConsumer):
@@ -378,7 +378,7 @@ class Asset():
         """ Subscribe to conditions messages of the Asset """
         self._conditions_consumer_thread = threading.Thread(
             target=self.__consume_conditions,
-            args=(self.ksql.get_kafka_topic('ASSETS_STREAM'), kakfa_group_id, on_condition),
+            args=(kakfa_group_id, on_condition),
             daemon=True
         )
         self._conditions_consumer_thread.start()
