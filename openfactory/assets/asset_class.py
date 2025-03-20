@@ -261,6 +261,34 @@ class Asset():
 
         consumer.consumer.close()
 
+    def __consume_messages(self, kakfa_group_id, on_message):
+        """ Kafka consumer that runs in a separate thread and calls `on_message` """
+
+        self._messages_consumer_instance = KafkaAssetConsumer(
+            consumer_group_id=kakfa_group_id,
+            asset_uuid=self.asset_uuid,
+            on_message=on_message,
+            bootstrap_servers=self.bootstrap_servers,
+            ksqldb_url=self.ksqldb_url)
+        self._messages_consumer_instance.consume()
+
+    def subscribe_to_messages(self, on_sample, kakfa_group_id):
+        """ Subscribe to messages of the Asset """
+        self._messages_consumer_thread = threading.Thread(
+            target=self.__consume_messages,
+            args=(kakfa_group_id, on_sample),
+            daemon=True
+        )
+        self._messages_consumer_thread.start()
+        return self._messages_consumer_thread
+
+    def stop_messages_subscription(self):
+        """ Stop the Kafka consumer gracefully """
+        if hasattr(self, "_messages_consumer_instance"):
+            self._messages_consumer_instance.stop()
+        if hasattr(self, "_messages_consumer_instance"):
+            self._messages_consumer_thread.join()
+
     def __consume_samples(self, topic, kakfa_group_id, on_sample):
         """ Kafka consumer that runs in a separate thread and calls `on_sample` """
 
@@ -380,6 +408,10 @@ if __name__ == "__main__":
     print(cnc.Zact.value)
 
     # subscriptions
+    def on_messages(msg_key, msg_value):
+        """ Callback to process received messages """
+        print(f"[Message] [{msg_key}] {msg_value}")
+
     def on_sample(msg_key, msg_value):
         """ Callback to process received samples """
         print(f"[Sample] [{msg_key}] {msg_value}")
@@ -392,6 +424,7 @@ if __name__ == "__main__":
         """ Callback to process received conditions """
         print(f"[Condition] [{msg_key}] {msg_value}")
 
+    cnc.subscribe_to_messages(on_messages, 'demo_messages_group')
     cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
     cnc.subscribe_to_events(on_event, 'demo_events_group')
     cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
@@ -403,6 +436,7 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         print("Stopping consumer threads ...")
+        cnc.stop_messages_subscription()
         cnc.stop_samples_subscription()
         cnc.stop_events_subscription()
         cnc.stop_conditions_subscription()
