@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pyksql.ksql import KSQL
 from typing import Union
 import openfactory.config as config
-from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict
+from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group
 
 
 def current_timestamp():
@@ -280,6 +280,7 @@ class Asset():
             args=(kakfa_group_id, on_sample),
             daemon=True
         )
+        self.__messages_kakfa_group_id = kakfa_group_id
         super().__setattr__('_messages_consumer_thread', messages_consumer_thread)
         self._messages_consumer_thread.start()
         return self._messages_consumer_thread
@@ -288,8 +289,9 @@ class Asset():
         """ Stop the Kafka consumer gracefully """
         if hasattr(self, "_messages_consumer_instance"):
             self._messages_consumer_instance.stop()
-        if hasattr(self, "_messages_consumer_instance"):
+        if hasattr(self, "_messages_consumer_thread"):
             self._messages_consumer_thread.join()
+            delete_consumer_group(self.__messages_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
 
     def __consume_samples(self, kakfa_group_id, on_sample):
         """ Kafka consumer that runs in a separate thread and calls `on_sample` """
@@ -316,6 +318,7 @@ class Asset():
             args=(kakfa_group_id, on_sample),
             daemon=True
         )
+        self.__samples_kakfa_group_id = kakfa_group_id
         super().__setattr__('_samples_consumer_thread', samples_consumer_thread)
         self._samples_consumer_thread.start()
         return self._samples_consumer_thread
@@ -326,6 +329,7 @@ class Asset():
             self._samples_consumer_instance.stop()
         if hasattr(self, "_samples_consumer_thread"):
             self._samples_consumer_thread.join()
+            delete_consumer_group(self.__samples_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
 
     def __consume_events(self, kakfa_group_id, on_event):
         """ Kafka consumer that runs in a separate thread and calls `on_event` """
@@ -352,6 +356,7 @@ class Asset():
             args=(kakfa_group_id, on_event),
             daemon=True
         )
+        self.__events_kakfa_group_id = kakfa_group_id
         super().__setattr__('_events_consumer_thread', events_consumer_thread)
         self._events_consumer_thread.start()
         return self._events_consumer_thread
@@ -362,6 +367,7 @@ class Asset():
             self._events_consumer_instance.stop()
         if hasattr(self, "_events_consumer_thread"):
             self._events_consumer_thread.join()
+            delete_consumer_group(self.__events_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
 
     def __consume_conditions(self, kakfa_group_id, on_condition):
         """ Kafka consumer that runs in a separate thread and calls `on_condition` """
@@ -388,6 +394,7 @@ class Asset():
             args=(kakfa_group_id, on_condition),
             daemon=True
         )
+        self.__conditions_kakfa_group_id = kakfa_group_id
         super().__setattr__('_conditions_consumer_thread', conditions_consumer_thread)
         self._conditions_consumer_thread.start()
         return self._conditions_consumer_thread
@@ -398,6 +405,7 @@ class Asset():
             self._conditions_consumer_instance.stop()
         if hasattr(self, "_conditions_consumer_thread"):
             self._conditions_consumer_thread.join()
+            delete_consumer_group(self.__conditions_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
 
 
 if __name__ == "__main__":
