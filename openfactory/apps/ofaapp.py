@@ -1,4 +1,5 @@
 import os
+import signal
 import time
 from openfactory.utils.assets import register_asset, deregister_asset
 from openfactory.assets import Asset, AssetAttribute
@@ -25,6 +26,10 @@ class OpenFactoryApp(Asset):
                        bootstrap_servers=bootstrap_servers)
         super().__init__(app_uuid, ksqldb_url, bootstrap_servers)
 
+        # Setup signal handlers
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+
     def welcome_banner(self):
         """
         Welcome banner printed to stdout
@@ -37,6 +42,14 @@ class OpenFactoryApp(Asset):
     def app_event_loop_stopped(self):
         """ Called when main loop is stopped """
         pass
+
+    def signal_handler(self, signum, frame):
+        """ Handle SIGINT and SIGTERM signals """
+        signal_name = signal.Signals(signum).name
+        print(f"Received signal {signal_name}, stopping app gracefully ...")
+        self.app_event_loop_stopped()
+        deregister_asset(self.asset_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
+        exit(0)
 
     def main_loop(self):
         """"
@@ -57,8 +70,8 @@ class OpenFactoryApp(Asset):
         try:
             self.main_loop()
 
-        except KeyboardInterrupt:
-            print("Stopping app ...")
+        except Exception as e:
+            print(f"An error occurred in the main_loop of the app: {e}")
             self.app_event_loop_stopped()
             deregister_asset(self.asset_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
 
