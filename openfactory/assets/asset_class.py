@@ -18,7 +18,7 @@ def current_timestamp():
 
 @dataclass
 class AssetAttribute:
-    value: Union[str, int]
+    value: Union[str, float]
     type: str
     tag: str
     timestamp: str = field(default_factory=current_timestamp)
