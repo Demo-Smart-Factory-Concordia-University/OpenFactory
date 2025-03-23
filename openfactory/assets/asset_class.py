@@ -7,7 +7,7 @@ from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pyksql.ksql import KSQL
-from typing import Union
+from typing import Union, Literal
 import openfactory.config as config
 from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group
 
@@ -19,9 +19,14 @@ def current_timestamp():
 @dataclass
 class AssetAttribute:
     value: Union[str, float]
-    type: str
+    type: Literal['Samples', 'Condition', 'Events', 'Method', 'OpenFactory']
     tag: str
     timestamp: str = field(default_factory=current_timestamp)
+
+    def __post_init__(self):
+        ALLOWED_TYPES = {'Samples', 'Condition', 'Events', 'Method', 'OpenFactory'}
+        if self.type not in ALLOWED_TYPES:
+            raise ValueError(f"Invalid type '{self.type}'. Allowed values are: {', '.join(ALLOWED_TYPES)}")
 
 
 class AssetProducer(Producer):
