@@ -21,7 +21,7 @@ class TestAssetAttribute(unittest.TestCase):
 
     def test_valid_types(self):
         """ Test AssetAttribute instantiation with valid type values """
-        valid_types = ['Samples', 'Condition', 'Events', 'Method', 'OpenFactory']
+        valid_types = ['Samples', 'Condition', 'Events', 'Method', 'OpenFactory', 'UNAVAILABLE']
         for t in valid_types:
             with self.subTest(type=t):
                 obj = AssetAttribute(value=42.0, type=t, tag="MockTag")
