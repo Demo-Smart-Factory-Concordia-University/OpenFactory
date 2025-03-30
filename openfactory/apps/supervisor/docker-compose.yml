@@ -1,0 +1,25 @@
+# Docker compose project for development and debugging of OPCUA Supervisor
+
+services:
+  opcua-supervisor:
+    build:
+      context: .
+      dockerfile: Dockerfile.opcuasupervisor
+    image: ofa/opcuasupervisor
+    environment:
+      - SUPERVISOR_UUID=${SUPERVISOR_UUID:-DEMO-SUPERVISOR}
+      - DEVICE_UUID=${DEVICE_UUID:-PROVER3018}
+      - NAMESPACE_URI=${NAMESPACE_URI:-demofactory}
+      - BROWSE_NAME=${BROWSE_NAME:-PROVER3018}
+      - ADAPTER_IP=${ADAPTER_IP:-192.168.0.201}
+      - ADAPTER_PORT=${ADAPTER_PORT:-4840}
+      - KSQL_HOST=${KSQL_HOST:-http://ksqldb-server:8088}
+      - KAFKA_BROKER=${KAFKA_BROKER:-broker:29092}
+    networks:
+      - factory-net
+
+networks:
+
+  factory-net:
+    name: factory-net
+    external: true
