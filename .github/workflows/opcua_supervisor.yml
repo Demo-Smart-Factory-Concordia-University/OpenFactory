@@ -20,9 +20,11 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "TAGS=${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_ENV
+            echo "VERSION=latest" >> $GITHUB_ENV
           else
             echo "TAGS=${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}" >> $GITHUB_ENV
             echo "TAGS_LATEST=${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_ENV
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
           fi
 
       - name: Check out repository code
@@ -48,3 +50,4 @@ jobs:
               UNAME=${{ vars.FACTORY_USER }}
               UID=${{ vars.FACTORY_USER_UID }}
               GID=${{ vars.FACTORY_USER_GID }}
+              VERSION=${{ env.VERSION }}

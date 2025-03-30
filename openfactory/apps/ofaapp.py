@@ -11,6 +11,11 @@ class OpenFactoryApp(Asset):
     Generic OpenFactory App
     """
 
+    # Application version number
+    APPLICATION_VERSION = os.getenv('APPLICATION_VERSION', 'latest')
+    APPLICATION_MANUFACTURER = os.getenv('APPLICATION_MANUFACTURER', 'OpenFactory')
+    APPLICATION_LICENSE = os.getenv('APPLICATION_LICENSE', 'BSD-3-Clause license')
+
     def __init__(self, app_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
         """
         Initialize the OpenFactory App
@@ -18,6 +23,32 @@ class OpenFactoryApp(Asset):
         # get paramters from environment (set if deployed by ofa deployment tool)
         app_uuid = os.getenv('APP_UUID', app_uuid)
         super().__init__(app_uuid, ksqldb_url, bootstrap_servers)
+
+        # attributes of the application
+        self.add_attribute(
+            attribute_id='application_version',
+            asset_attribute=AssetAttribute(
+                value=self.APPLICATION_VERSION,
+                type='Events',
+                tag='Application.Version'
+            )
+        )
+        self.add_attribute(
+            attribute_id='application_manufacturer',
+            asset_attribute=AssetAttribute(
+                value=self.APPLICATION_MANUFACTURER,
+                type='Events',
+                tag='Application.Manufacturer'
+            )
+        )
+        self.add_attribute(
+            attribute_id='application_license',
+            asset_attribute=AssetAttribute(
+                value=self.APPLICATION_LICENSE,
+                type='Events',
+                tag='Application.License'
+            )
+        )
 
         # Setup signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)
