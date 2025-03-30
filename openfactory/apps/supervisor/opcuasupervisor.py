@@ -81,7 +81,24 @@ class OPCUASupervisor(BaseSupervisor):
         asyncio.run_coroutine_threadsafe(self._connect_to_adapter(), self._event_loop)
         asyncio.run_coroutine_threadsafe(self._monitor_adapter(), self._event_loop)
 
+    def welcome_banner(self):
+        """ Welcome banner """
+        print("--------------------------------------------------")
+        print("OpenFactory OPC-UA Device Supervisor")
+        print("(c) Rolf Wuthrich, Concordia Univerity")
+        print("--------------------------------------------------")
+        print(f"SUPERVISOR_UUID: {self.asset_uuid}")
+        print(f"DEVICE_UUID:     {self._device_uuid}")
+        print(f"NAMESPACE_URI:   {self.namespace_uri}")
+        print(f"BROWSE_NAME:     {self.browseName}")
+        print(f"ADAPTER_IP:      {self.adapter_ip}")
+        print(f"ADAPTER_PORT:    {self.adapter_port}")
+        print(f"KSQL_HOST:       {self.ksqldb_url}")
+        print(f"KAFKA_BROKER:    {self.bootstrap_servers}")
+        print("--------------------------------------------------")
+
     def _start_event_loop(self, loop):
+        """ Start event loop to run the OPC UA client """
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
@@ -201,15 +218,13 @@ class OPCUASupervisor(BaseSupervisor):
 
 if __name__ == "__main__":
 
-    # Example usage of OPCUASupervisor class
-
     supervisor = OPCUASupervisor(
-        supervisor_uuid='DEMO-SUPERVISOR',
-        device_uuid='PROVER3018',
-        adapter_ip='192.168.0.201',
-        adapter_port=4840,
-        ksqldb_url="http://localhost:8088",
-        bootstrap_servers="localhost:9092"
+        supervisor_uuid=os.getenv('SUPERVISOR_UUID', 'DEMO-SUPERVISOR'),
+        device_uuid=os.getenv('DEVICE_UUID', 'PROVER3018'),
+        adapter_ip=os.getenv('ADAPTER_IP', '192.168.0.201'),
+        adapter_port=os.getenv('ADAPTER_PORT', 4840),
+        ksqldb_url=os.getenv('KSQL_HOST', 'http://localhost:8088'),
+        bootstrap_servers=os.getenv('KAFKA_BROKER', 'localhost:9092')
     )
 
     supervisor.run()
