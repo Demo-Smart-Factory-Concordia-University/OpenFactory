@@ -1,6 +1,13 @@
 name: Create OPCUA-Supervisor Docker image on GitHub Container Registry
 
-on: [workflow_dispatch]
+on:
+  release:
+    types:
+      - created
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
 
 jobs:
   push_to_registry:
@@ -8,7 +15,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
+
+      - name: Set tags dynamically
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAGS=${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_ENV
+          else
+            echo "TAGS=${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "TAGS_LATEST=${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_ENV
+          fi
+
       - name: Check out repository code
         uses: actions/checkout@v4
 
@@ -22,10 +38,12 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./openfactory/cmds/supervisor
-          file: ./openfactory/cmds/supervisor/Dockerfile.opcuasupervisor
+          context: ./openfactory/apps/supervisor
+          file: ./openfactory/apps/supervisor/Dockerfile.opcuasupervisor
           push: true
-          tags: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor:latest
+          tags: |
+            ${{ env.TAGS }}
+            ${{ env.TAGS_LATEST }}
           build-args: |
               UNAME=${{ vars.FACTORY_USER }}
               UID=${{ vars.FACTORY_USER_UID }}

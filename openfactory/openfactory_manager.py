@@ -217,8 +217,11 @@ class OpenFactoryManager(OpenFactory):
             constraints = None
 
         # build environment variables
-        env = [f"DEVICE_UUID={device_uuid}",
-               f"KSQL_URL={config.KSQLDB}",
+        supervisor_uuid = f"{device_uuid.upper()}-SUPERVISOR"
+        env = [f"SUPERVISOR_UUID={supervisor_uuid}",
+               f"DEVICE_UUID={device_uuid}",
+               f"KSQL_HOST={config.KSQLDB}",
+               f"KAFKA_BROKER={config.KAFKA_BROKER}",
                f"ADAPTER_IP={supervisor['adapter']['ip']}",
                f"ADAPTER_PORT={supervisor['adapter']['port']}"]
 
@@ -243,7 +246,6 @@ class OpenFactoryManager(OpenFactory):
         except docker.errors.APIError as err:
             user_notify.fail(f"Supervisor {device_uuid.lower()}-supervisor could not be deployed\n{err}")
             return
-        supervisor_uuid = f"{device_uuid.upper()}-SUPERVISOR"
         register_asset(supervisor_uuid, 'Supervisor', device_uuid.lower() + '-supervisor')
         device = Asset(device_uuid, self.ksqldb_url)
         device.add_reference_below(supervisor_uuid)
