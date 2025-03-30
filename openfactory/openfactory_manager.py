@@ -279,7 +279,7 @@ class OpenFactoryManager(OpenFactory):
             user_notify.fail(f"Application {application['uuid']} could not be deployed\n{err}")
             return
 
-        register_asset(application['uuid'], 'OpenFactoryApp', application['image'])
+        register_asset(application['uuid'], 'OpenFactoryApp', application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
