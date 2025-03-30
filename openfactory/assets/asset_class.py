@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 import threading
@@ -9,7 +8,7 @@ from datetime import datetime, timezone
 from pyksql.ksql import KSQL
 from typing import Union, Literal
 import openfactory.config as config
-from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group
+from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group, ksql_query_to_dataframe
 
 
 def current_timestamp():
@@ -70,7 +69,7 @@ class Asset():
     @property
     def type(self):
         query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{self.asset_uuid}';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         if df.empty:
             return 'UNAVAILABLE'
         return df['TYPE'][0]
@@ -78,25 +77,25 @@ class Asset():
     def attributes(self):
         """ returns all attributes of the asset """
         query = f"SELECT ID FROM assets WHERE asset_uuid='{self.asset_uuid}' AND TYPE != 'Method';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         return df.ID.tolist()
 
     def samples(self):
         """ return samples of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def events(self):
         """ return events of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def conditions(self):
         """ return conditions of asset """
         query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         return [{
             "ID": row.ID,
             "VALUE": row.VALUE,
@@ -106,7 +105,7 @@ class Asset():
     def methods(self):
         """ return methods of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Method';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def method(self, method, args=""):
@@ -123,7 +122,7 @@ class Asset():
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
         query = f"SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
 
         if df.empty:
             return AssetAttribute(value='UNAVAILABLE',
@@ -171,7 +170,7 @@ class Asset():
     def references_above(self):
         """ References to above OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
@@ -180,7 +179,7 @@ class Asset():
     def references_below(self):
         """ References to below OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
@@ -188,7 +187,7 @@ class Asset():
     def add_reference_above(self, above_asset_reference):
         """ Adds a above-reference to the asset """
         query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         if df.empty or df['VALUE'][0].strip() == "":
             references = above_asset_reference
         else:
@@ -205,7 +204,7 @@ class Asset():
     def add_reference_below(self, below_asset_reference):
         """ Adds a below-reference to the asset """
         query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = ksql_query_to_dataframe(self.ksqldb_url, query)
         if df.empty or df['VALUE'][0].strip() == "":
             references = below_asset_reference
         else:
