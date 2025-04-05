@@ -7,7 +7,7 @@ from pathlib import Path
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
-from pyksql.ksql import KSQL
+from openfactory.kafka import KSQLDBClient
 from openfactory.models.base import Base
 from openfactory.docker.docker_access_layer import dal
 from openfactory.datafabric.config import Config
@@ -15,12 +15,14 @@ import openfactory.datafabric.filters as filters
 
 db = SQLAlchemy(model_class=Base)
 admin_app = Admin(name='DataFabric', template_mode='bootstrap3')
-ksql = KSQL(Config.KSQL_HOST)
 
 def create_app():
     app = Flask(__name__,
                 instance_path=Config.INSTANCE_PATH)
     app.config.from_object(Config)
+
+    # ksqlDBClient
+    app.ksql = KSQLDBClient(Config.KSQL_HOST)
 
     # jinja filters
     app.jinja_env.filters['availability_color'] = filters.availability_color

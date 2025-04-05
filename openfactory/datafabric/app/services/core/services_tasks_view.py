@@ -1,5 +1,5 @@
 from dateutil.parser import parse as parse_datetime
-from flask import render_template
+from flask import render_template, current_app
 from flask_login import login_required
 from datetime import datetime, timezone
 from openfactory import OpenFactoryManager
@@ -75,7 +75,7 @@ class ServicesTasksListView(DeviceServicesList):
         task_list = sorted(task_list, key=lambda x: parse_datetime(x["timestamp"]) if x["timestamp"] else datetime.min, reverse=True)
 
         # Render the template with sorted services
-        ofa = OpenFactoryManager()
+        ofa = OpenFactoryManager(ksqlClient=current_app.ksql)
         asset_uuid = ofa.get_asset_uuid_from_docker_service(self.service_name)
         return render_template(self.template_name,
                                service_tasks=sorted(task_list, key=lambda x: x["name"]),
