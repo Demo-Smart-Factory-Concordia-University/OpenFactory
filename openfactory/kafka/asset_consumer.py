@@ -3,7 +3,6 @@ import json
 import threading
 from confluent_kafka import Consumer, KafkaError, TopicPartition
 from collections import UserDict
-from pyksql.ksql import KSQL
 import openfactory.config as config
 
 
@@ -33,8 +32,8 @@ class KafkaAssetConsumer:
 
     consumer_timeout = 0.1
 
-    def __init__(self, consumer_group_id, asset_uuid, on_message, bootstrap_servers=config.KAFKA_BROKER, ksqldb_url=config.KSQLDB):
-        self.ksql = KSQL(ksqldb_url)
+    def __init__(self, consumer_group_id, asset_uuid, on_message, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+        self.ksql = ksqlClient
         self.topic = self.ksql.get_kafka_topic('ASSETS_STREAM')
         self.bootstrap_servers = bootstrap_servers
         self.group_id = consumer_group_id
@@ -115,6 +114,8 @@ class KafkaAssetConsumer:
 if __name__ == "__main__":
 
     # Example usage of the KafkaAssetConsumer
+    from openfactory.kafka import KSQLDBClient
+    ksql = KSQLDBClient(config.KSQLDB)
 
     def on_message(msg_key, msg_value):
         """ Callback to process received messages """
@@ -134,6 +135,7 @@ if __name__ == "__main__":
         consumer_group_id="demo_ofa_assets_consumer_group",
         asset_uuid="PROVER3018",
         on_message=on_message,
+        ksqlClient=ksql,
         bootstrap_servers="localhost:9092"
     )
 

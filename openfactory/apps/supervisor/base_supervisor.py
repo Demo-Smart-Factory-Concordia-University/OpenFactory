@@ -10,16 +10,16 @@ class BaseSupervisor(OpenFactoryApp):
     """
 
     def __init__(self, supervisor_uuid: str, device_uuid: str,
-                 ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+                 ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
         """
         Initialize the BaseSupervisor
 
         :param supervisor_uuid: UUID of the supervisor
         :param device_uuid: UUID of the device to listen for commands
-        :param ksql_url: URL of the ksqlDB server
+        :param ksqlClient: ksqlDB server client
         :param bootstrap_servers: kafka broker of Kaka cluster
         """
-        super().__init__(app_uuid=supervisor_uuid, ksqldb_url=ksqldb_url, bootstrap_servers=bootstrap_servers)
+        super().__init__(app_uuid=supervisor_uuid, ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers)
 
         self._device_uuid = device_uuid
 
@@ -39,7 +39,7 @@ class BaseSupervisor(OpenFactoryApp):
 
     def _send_available_commands(self):
         """ Send available commands to asset device_uuid """
-        dev = Asset(asset_uuid=self._device_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
+        dev = Asset(asset_uuid=self._device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         for cmd in self.available_commands():
             dev.add_attribute(
                 attribute_id=cmd['command'],
@@ -67,8 +67,8 @@ class BaseSupervisor(OpenFactoryApp):
             consumer_group_id=kakfa_group_id,
             asset_uuid=self._device_uuid,
             on_command=self.on_command,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
 
         cmd_consumer.consume()
 
@@ -76,6 +76,8 @@ class BaseSupervisor(OpenFactoryApp):
 if __name__ == "__main__":
 
     # Example usage of BaseSupervisor class
+    from openfactory.kafka import KSQLDBClient
+    ksql = KSQLDBClient("http://localhost:8088")
 
     class DemoSupervisor(BaseSupervisor):
 
@@ -90,10 +92,17 @@ if __name__ == "__main__":
             """ Callback to process received commands """
             print(f"[{msg_key}] {msg_value}")
 
+        def app_event_loop_stopped(self):
+            """
+            Close connection to ksqlDB server
+            Not absolutely required as it is already done by KSQLDBClient class
+            """
+            self.ksql.close()
+
     supervisor = DemoSupervisor(
         supervisor_uuid='DEMO-SUPERVISOR',
         device_uuid='PROVER3018',
-        ksqldb_url="http://localhost:8088",
+        ksqlClient=ksql,
         bootstrap_servers="localhost:9092"
     )
 

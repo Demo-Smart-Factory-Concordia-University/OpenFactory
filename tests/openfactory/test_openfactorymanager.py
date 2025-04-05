@@ -10,7 +10,6 @@ class TestOpenFactoryManager(unittest.TestCase):
     Tests for class OpenFactoryManager
     """
 
-    @patch("openfactory.openfactory.KSQL")
     @patch("builtins.open", new_callable=MagicMock)
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.dal")
@@ -18,7 +17,7 @@ class TestOpenFactoryManager(unittest.TestCase):
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_mtconnect_agent(self, MockAsset, mock_register_asset, mock_user_notify, mock_open_ofa, mock_dal, mock_config, mock_open, MockKSQL):
+    def test_deploy_mtconnect_agent(self, MockAsset, mock_register_asset, mock_user_notify, mock_open_ofa, mock_dal, mock_config, mock_open):
         """
         Test deploy_mtconnect_agent
         """
@@ -62,7 +61,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_xml_uri = "http://example.com/device.xml"
 
         # Call the method to test
-        manager = OpenFactoryManager('http://mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
         manager.deploy_mtconnect_agent(device_uuid, device_xml_uri, agent)
 
         # Check that the services.create method was called on the Docker client
@@ -110,18 +110,19 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Ensure register_asset was called
         mock_register_asset.assert_called_once_with(device_uuid + '-AGENT',
                                                     "MTConnectAgent",
-                                                    device_uuid.lower() + '-agent')
+                                                    ksqlClient=ksqlMock,
+                                                    bootstrap_servers='mokded_bootstrap_servers',
+                                                    docker_service=device_uuid.lower() + '-agent')
 
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with("Agent device-uuid-123-agent deployed successfully")
 
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_kafka_producer(self, MockAsset, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
+    def test_deploy_kafka_producer(self, MockAsset, mock_register_asset, mock_user_notify, mock_config, mock_dal):
         """
         Test deploy_kafka_producer
         """
@@ -150,7 +151,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         }
 
         # Call the method to test
-        manager = OpenFactoryManager('http://mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
         manager.deploy_kafka_producer(device)
 
         # Check that the services.create method was called on the Docker client
@@ -191,18 +193,19 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Ensure register_asset was called
         mock_register_asset.assert_called_once_with(device['uuid'] + '-PRODUCER',
                                                     'KafkaProducer',
-                                                    device['uuid'].lower() + '-producer')
+                                                    ksqlClient=ksqlMock,
+                                                    bootstrap_servers='mokded_bootstrap_servers',
+                                                    docker_service=device['uuid'].lower() + '-producer')
 
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with(f"Kafka producer {device['uuid'].lower()}-producer deployed successfully")
 
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_device_supervisor(self, mock_Asset, mock_register_asset, mock_user_notify, mock_config, mock_dal, MockKSQL):
+    def test_deploy_device_supervisor(self, mock_Asset, mock_register_asset, mock_user_notify, mock_config, mock_dal):
         """
         Test deploy_device_supervisor
         """
@@ -238,7 +241,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_uuid = 'DEVICE-UUID-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('http://mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
         manager.deploy_device_supervisor(device_uuid, supervisor)
 
         # Check that the services.create method was called on the Docker client
@@ -282,16 +286,18 @@ class TestOpenFactoryManager(unittest.TestCase):
         self.assertEqual(kwargs['constraints'], expected_constraints)
 
         # Ensure register_asset was called
-        mock_register_asset.assert_called_once_with(device_uuid + '-SUPERVISOR', 'Supervisor', device_uuid.lower() + '-supervisor')
+        mock_register_asset.assert_called_once_with(device_uuid + '-SUPERVISOR', 'Supervisor',
+                                                    ksqlClient=ksqlMock,
+                                                    bootstrap_servers='mokded_bootstrap_servers',
+                                                    docker_service=device_uuid.lower() + '-supervisor')
 
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
-    def test_tear_down_device(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL):
+    def test_tear_down_device(self, mock_deregister_asset, mock_user_notify, mock_dal):
         """
         Test tear_down_device to verify that services are removed and correct notifications are sent
         """
@@ -316,7 +322,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_uuid = 'device-uuid-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
         manager.tear_down_device(device_uuid)
 
         # Check that the correct services were removed
@@ -330,15 +337,14 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_user_notify.success.assert_any_call(f"{device_uuid} shut down successfully")
 
         # Ensure deregister_asset was called for all services
-        mock_deregister_asset.assert_any_call(device_uuid + '-PRODUCER')
-        mock_deregister_asset.assert_any_call(device_uuid + '-AGENT')
-        mock_deregister_asset.assert_any_call(f"{device_uuid.upper()}-SUPERVISOR")
-        mock_deregister_asset.assert_any_call(device_uuid)
+        mock_deregister_asset.assert_any_call(device_uuid + '-PRODUCER', ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        mock_deregister_asset.assert_any_call(device_uuid + '-AGENT', ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        mock_deregister_asset.assert_any_call(f"{device_uuid.upper()}-SUPERVISOR", ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        mock_deregister_asset.assert_any_call(device_uuid, ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
 
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
-    def test_tear_down_device_api_error(self, mock_user_notify, mock_dal, MockKSQL):
+    def test_tear_down_device_api_error(self, mock_user_notify, mock_dal):
         """
         Test tear_down_device when an APIError is raised
         """
@@ -356,7 +362,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         device_uuid = 'device-uuid-123'
 
         # Call the method to test and assert it raises an OFAException
-        manager = OpenFactoryManager('mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
         with self.assertRaises(OFAException):
             manager.tear_down_device(device_uuid)
 
@@ -364,11 +371,10 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_service.remove.assert_called()
 
     @patch("openfactory.openfactory_manager.Asset")
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
-    def test_tear_down_application(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+    def test_tear_down_application(self, mock_deregister_asset, mock_user_notify, mock_dal, MockAsset):
         """
         Test tear_down_application to verify that applications are removed and correct notifications are sent
         """
@@ -393,7 +399,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         app_uuid = 'app-uuid-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
         manager.tear_down_application(app_uuid)
 
         # Check that the correct services were removed
@@ -403,14 +410,13 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_user_notify.success.assert_any_call(f"OpenFactory application {app_uuid} shut down successfully")
 
         # Ensure deregister_asset was called
-        mock_deregister_asset.assert_any_call(app_uuid)
+        mock_deregister_asset.assert_any_call(app_uuid, ksqlClient=ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
 
     @patch("openfactory.openfactory_manager.Asset")
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
-    def test_tear_down_application_no_docker_service(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+    def test_tear_down_application_no_docker_service(self, mock_deregister_asset, mock_user_notify, mock_dal, MockAsset):
         """
         Test tear_down_application when application is not deployed as a Docker service
         """
@@ -439,21 +445,21 @@ class TestOpenFactoryManager(unittest.TestCase):
         app_uuid = 'app-uuid-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
         manager.tear_down_application(app_uuid)
 
         # Ensure deregister_asset was called
-        mock_deregister_asset.assert_any_call(app_uuid)
+        mock_deregister_asset.assert_any_call(app_uuid, ksqlClient=ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
 
         # No success message
         mock_user_notify.assert_not_called()
 
     @patch("openfactory.openfactory_manager.Asset")
-    @patch("openfactory.openfactory.KSQL")
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
-    def test_tear_down_application_docker_api_error(self, mock_deregister_asset, mock_user_notify, mock_dal, MockKSQL, MockAsset):
+    def test_tear_down_application_docker_api_error(self, mock_deregister_asset, mock_user_notify, mock_dal, MockAsset):
         """
         Test tear_down_application handels Docker API errors
         """
@@ -482,7 +488,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         app_uuid = 'app-uuid-123'
 
         # Call the method to test
-        manager = OpenFactoryManager('mocked_url')
+        ksqlMock = MagicMock()
+        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mocked_bootstrap_servers')
         with self.assertRaises(OFAException):
             manager.tear_down_application(app_uuid)
 

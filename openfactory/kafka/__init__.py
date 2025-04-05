@@ -1,4 +1,4 @@
 from .asset_consumer import KafkaAssetConsumer, CaseInsensitiveDict
 from .delete_consumer_group import delete_consumer_group
 from .commands_consumer import KafkaCommandsConsumer
-from .ksql_query_to_dataframe import ksql_query_to_dataframe
+from .ksql import KSQLDBClient

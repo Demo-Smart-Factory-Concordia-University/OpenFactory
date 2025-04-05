@@ -3,7 +3,6 @@ import json
 import threading
 from confluent_kafka import Consumer, KafkaError, TopicPartition
 from collections import UserDict
-from pyksql.ksql import KSQL
 import openfactory.config as config
 
 
@@ -33,8 +32,8 @@ class KafkaCommandsConsumer:
 
     consumer_timeout = 0.1
 
-    def __init__(self, consumer_group_id, asset_uuid, on_command, bootstrap_servers=config.KAFKA_BROKER, ksqldb_url=config.KSQLDB):
-        self.ksql = KSQL(ksqldb_url)
+    def __init__(self, consumer_group_id, asset_uuid, on_command, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+        self.ksql = ksqlClient
         self.topic = self.ksql.get_kafka_topic('CMDS_STREAM')
         self.bootstrap_servers = bootstrap_servers
         self.group_id = consumer_group_id
@@ -115,6 +114,8 @@ class KafkaCommandsConsumer:
 if __name__ == "__main__":
 
     # Example usage of KafkaCommandsConsumer class
+    from openfactory.kafka import KSQLDBClient
+    ksql = KSQLDBClient(config.KSQLDB)
 
     def on_command(msg_key, msg_value):
         """ Callback to process received messages """
@@ -124,6 +125,7 @@ if __name__ == "__main__":
         consumer_group_id="demo_ofa_commands_consumer_group",
         asset_uuid="CONV-001",
         on_command=on_command,
+        ksqlClient=ksql,
         bootstrap_servers="localhost:9092"
     )
 

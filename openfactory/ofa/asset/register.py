@@ -1,5 +1,6 @@
 import click
 from openfactory.utils import register_asset
+from openfactory.ofa.ksqldb import ksql
 
 
 @click.command(name='register')
@@ -11,4 +12,5 @@ def register(asset_uuid, asset_type, docker_service):
     print(f"Registering {asset_uuid}")
     register_asset(asset_uuid=asset_uuid,
                    asset_type=asset_type,
+                   ksqlClient=ksql.client,
                    docker_service=docker_service)

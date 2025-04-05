@@ -1,4 +1,3 @@
-import asyncio
 import docker
 import openfactory.config as config
 from openfactory import OpenFactory
@@ -90,10 +89,11 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(err)
 
         # register agent in OpenFactory
-        register_asset(agent_uuid, "MTConnectAgent", service_name)
-        device = Asset(device_uuid, self.ksqldb_url)
+        register_asset(agent_uuid, "MTConnectAgent",
+                       ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=service_name)
+        device = Asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         device.add_reference_below(agent_uuid)
-        agent = Asset(agent_uuid, self.ksqldb_url)
+        agent = Asset(agent_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         agent.add_reference_above(device_uuid)
 
         user_notify.success(f"Agent {device_uuid.lower()}-agent deployed successfully")
@@ -190,10 +190,11 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(f"Producer {service_name} could not be created\n{err}")
 
         # register producer in OpenFactory
-        register_asset(producer_uuid, "KafkaProducer", service_name)
-        dev = Asset(device['uuid'], self.ksqldb_url)
+        register_asset(producer_uuid, "KafkaProducer",
+                       ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=service_name)
+        dev = Asset(device['uuid'], ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         dev.add_reference_below(producer_uuid)
-        producer = Asset(producer_uuid, self.ksqldb_url)
+        producer = Asset(producer_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         producer.add_reference_above(device['uuid'])
 
         user_notify.success(f"Kafka producer {service_name} deployed successfully")
@@ -246,10 +247,11 @@ class OpenFactoryManager(OpenFactory):
         except docker.errors.APIError as err:
             user_notify.fail(f"Supervisor {device_uuid.lower()}-supervisor could not be deployed\n{err}")
             return
-        register_asset(supervisor_uuid, 'Supervisor', device_uuid.lower() + '-supervisor')
-        device = Asset(device_uuid, self.ksqldb_url)
+        register_asset(supervisor_uuid, 'Supervisor',
+                       ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=device_uuid.lower() + '-supervisor')
+        device = Asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         device.add_reference_below(supervisor_uuid)
-        supervisor = Asset(supervisor_uuid, self.ksqldb_url)
+        supervisor = Asset(supervisor_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         supervisor.add_reference_above(device_uuid)
 
         user_notify.success(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
@@ -279,7 +281,8 @@ class OpenFactoryManager(OpenFactory):
             user_notify.fail(f"Application {application['uuid']} could not be deployed\n{err}")
             return
 
-        register_asset(application['uuid'], 'OpenFactoryApp', application['uuid'].lower())
+        register_asset(application['uuid'], 'OpenFactoryApp',
+                       ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
@@ -349,7 +352,7 @@ class OpenFactoryManager(OpenFactory):
         try:
             service = dal.docker_client.services.get(device_uuid.lower() + '-producer')
             service.remove()
-            deregister_asset(device_uuid+'-PRODUCER')
+            deregister_asset(device_uuid + '-PRODUCER', ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"Kafka producer for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
             user_notify.info(f"Kafka producer for device {device_uuid} was not running")
@@ -361,7 +364,7 @@ class OpenFactoryManager(OpenFactory):
             service = dal.docker_client.services.get(device_uuid.lower() + '-agent')
             service.remove()
             # self.send_unavailable()
-            deregister_asset(device_uuid + '-AGENT')
+            deregister_asset(device_uuid + '-AGENT', ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"MTConnect Agent for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
             # no agent running as a Docker swarm service
@@ -373,7 +376,7 @@ class OpenFactoryManager(OpenFactory):
         try:
             supervisor_service = dal.docker_client.services.get(device_uuid.lower() + '-supervisor')
             supervisor_service.remove()
-            deregister_asset(f"{device_uuid.upper()}-SUPERVISOR")
+            deregister_asset(f"{device_uuid.upper()}-SUPERVISOR", ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"Supervisor {device_uuid.upper()}-SUPERVISOR removed successfully")
         except docker.errors.NotFound:
             # no supervisor
@@ -381,7 +384,7 @@ class OpenFactoryManager(OpenFactory):
         except docker.errors.APIError as err:
             raise OFAException(err)
 
-        deregister_asset(device_uuid)
+        deregister_asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"{device_uuid} shut down successfully")
 
     def tear_down_application(self, app_uuid):
@@ -389,16 +392,16 @@ class OpenFactoryManager(OpenFactory):
         Tear down a deployed OpenFactory application
         """
         try:
-            app = Asset(app_uuid, ksqldb_url=self.ksqldb_url, bootstrap_servers=self.bootstrap_servers)
+            app = Asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             service = dal.docker_client.services.get(app.DockerService.value)
             service.remove()
         except docker.errors.NotFound:
             # the application was not running as a Docker swarm service
-            deregister_asset(app_uuid)
+            deregister_asset(app_uuid, ksqlClient=self.ksql)
             pass
         except docker.errors.APIError as err:
             raise OFAException(err)
-        deregister_asset(app_uuid)
+        deregister_asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"OpenFactory application {app_uuid} shut down successfully")
 
     def get_asset_uuid_from_docker_service(self, docker_service_name):
@@ -406,7 +409,7 @@ class OpenFactoryManager(OpenFactory):
         Return ASSET_UUID of the asset running on the Docker service docker_service_name
         """
         query = f"select ASSET_UUID from DOCKER_SERVICES where DOCKER_SERVICE='{docker_service_name}';"
-        df = asyncio.run(self.ksql.query_to_dataframe(query))
+        df = self.ksql.query(query)
         if df.empty:
             return ""
         return df['ASSET_UUID'][0]

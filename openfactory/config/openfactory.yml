@@ -15,7 +15,7 @@ SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
 # Kafka-Cluster
 KAFKA_BROKER: ${KAFKA_BROKER}
 
-# ksqlDB server
+# ksqlDB server URL
 KSQLDB: ${KSQLDB}
 
 # Docker Images

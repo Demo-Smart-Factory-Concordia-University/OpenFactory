@@ -5,10 +5,9 @@ import uuid
 from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pyksql.ksql import KSQL
 from typing import Union, Literal
 import openfactory.config as config
-from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group, ksql_query_to_dataframe
+from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group, KSQLDBClient
 
 
 def current_timestamp():
@@ -32,9 +31,9 @@ class AssetProducer(Producer):
     """
     Kafka producer for an OpenFactory asset
     """
-    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
         super().__init__({'bootstrap.servers': bootstrap_servers})
-        self.ksql = KSQL(ksqldb_url)
+        self.ksql = ksqlClient
         self.topic = self.ksql.get_kafka_topic('ASSETS_STREAM')
         self.asset_uuid = asset_uuid
 
@@ -59,17 +58,16 @@ class Asset():
     """
     OpenFactory Asset
     """
-    def __init__(self, asset_uuid, ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
         super().__setattr__('asset_uuid', asset_uuid)
-        super().__setattr__('ksqldb_url', ksqldb_url)
-        super().__setattr__('ksql', KSQL(ksqldb_url))
+        super().__setattr__('ksql', ksqlClient)
         super().__setattr__('bootstrap_servers', bootstrap_servers)
-        super().__setattr__('producer', AssetProducer(asset_uuid, bootstrap_servers=bootstrap_servers, ksqldb_url=ksqldb_url))
+        super().__setattr__('producer', AssetProducer(asset_uuid, ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers))
 
     @property
     def type(self):
         query = f"SELECT TYPE FROM assets_type WHERE ASSET_UUID='{self.asset_uuid}';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         if df.empty:
             return 'UNAVAILABLE'
         return df['TYPE'][0]
@@ -77,25 +75,25 @@ class Asset():
     def attributes(self):
         """ returns all attributes of the asset """
         query = f"SELECT ID FROM assets WHERE asset_uuid='{self.asset_uuid}' AND TYPE != 'Method';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         return df.ID.tolist()
 
     def samples(self):
         """ return samples of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def events(self):
         """ return events of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def conditions(self):
         """ return conditions of asset """
         query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         return [{
             "ID": row.ID,
             "VALUE": row.VALUE,
@@ -105,7 +103,7 @@ class Asset():
     def methods(self):
         """ return methods of asset """
         query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Method';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         return {row.ID: row.VALUE for row in df.itertuples()}
 
     def method(self, method, args=""):
@@ -122,7 +120,7 @@ class Asset():
     def __getattr__(self, attribute_id):
         """ Allow accessing samples, events, conditions and methods as attributes """
         query = f"SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='{self.asset_uuid}|{attribute_id}';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
 
         if df.empty:
             return AssetAttribute(value='UNAVAILABLE',
@@ -170,24 +168,24 @@ class Asset():
     def references_above(self):
         """ References to above OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         if df.empty or df['VALUE'][0].strip() == "":
             return []
-        return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
+        return [Asset(asset_uuid=asset_uuid.strip(), ksqlClient=self.ksql) for asset_uuid in df['VALUE'][0].split(",")]
 
     @property
     def references_below(self):
         """ References to below OpenFactory assets """
         query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         if df.empty or df['VALUE'][0].strip() == "":
             return []
-        return [Asset(asset_uuid=asset_uuid.strip()) for asset_uuid in df['VALUE'][0].split(",")]
+        return [Asset(asset_uuid=asset_uuid.strip(), ksqlClient=self.ksql) for asset_uuid in df['VALUE'][0].split(",")]
 
     def add_reference_above(self, above_asset_reference):
         """ Adds a above-reference to the asset """
         query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         if df.empty or df['VALUE'][0].strip() == "":
             references = above_asset_reference
         else:
@@ -204,7 +202,7 @@ class Asset():
     def add_reference_below(self, below_asset_reference):
         """ Adds a below-reference to the asset """
         query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = ksql_query_to_dataframe(self.ksqldb_url, query)
+        df = self.ksql.query(query)
         if df.empty or df['VALUE'][0].strip() == "":
             references = below_asset_reference
         else:
@@ -272,8 +270,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_message,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
         super().__setattr__('_messages_consumer_instance', messages_consumer_instance)
         self._messages_consumer_instance.consume()
 
@@ -310,8 +308,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_sample,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
         super().__setattr__('_samples_consumer_instance', samples_consumer_instance)
         self._samples_consumer_instance.consume()
 
@@ -348,8 +346,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_event,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
         super().__setattr__('_events_consumer_instance', events_consumer_instance)
         self._events_consumer_instance.consume()
 
@@ -386,8 +384,8 @@ class Asset():
             consumer_group_id=kakfa_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_condition,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
         super().__setattr__('_conditions_consumer_instance', conditions_consumer_instance)
         self._conditions_consumer_instance.consume()
 
@@ -415,7 +413,8 @@ class Asset():
 if __name__ == "__main__":
 
     # Example usage of Asset
-    cnc = Asset('PROVER3018')
+    ksql = KSQLDBClient(config.KSQLDB)
+    cnc = Asset('PROVER3018', ksqlClient=ksql)
 
     # list samples
     print(cnc.samples())
@@ -461,3 +460,5 @@ if __name__ == "__main__":
         cnc.stop_events_subscription()
         cnc.stop_conditions_subscription()
         print("Consumers stopped")
+        ksql.close()
+        print("Closed conection to ksqlDB server")

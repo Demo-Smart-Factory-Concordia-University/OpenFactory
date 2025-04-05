@@ -17,8 +17,8 @@ class OPCUASupervisor(BaseSupervisor):
 
     RECONNECT_INTERVAL = 10  # Time in seconds to wait before trying to reconnect
 
-    def __init__(self, supervisor_uuid: str, device_uuid: str, adapter_ip: str, adapter_port: int = 4840,
-                 ksqldb_url=config.KSQLDB, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, supervisor_uuid: str, device_uuid: str, adapter_ip: str, adapter_port: int,
+                 ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
         """
         Initialize the OPCUASupervisor
 
@@ -26,11 +26,11 @@ class OPCUASupervisor(BaseSupervisor):
         :param device_uuid: UUID of the device to listen for commands
         :param adapter_ip: IP address of the adapter
         :param adapter_port: port of the adapter
-        :param ksql_url: URL of the ksqlDB server
+        :param ksqlClient: ksqlDB server client
         :param bootstrap_servers: kafka broker of Kaka cluster
         """
         super().__init__(supervisor_uuid=supervisor_uuid, device_uuid=device_uuid,
-                         ksqldb_url=ksqldb_url, bootstrap_servers=bootstrap_servers)
+                         ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers)
 
         self.adapter_ip = adapter_ip
         self.adapter_port = adapter_port
@@ -93,7 +93,7 @@ class OPCUASupervisor(BaseSupervisor):
         print(f"BROWSE_NAME:     {self.browseName}")
         print(f"ADAPTER_IP:      {self.adapter_ip}")
         print(f"ADAPTER_PORT:    {self.adapter_port}")
-        print(f"KSQL_HOST:       {self.ksqldb_url}")
+        print(f"KSQL_HOST:       {self.ksql.ksqldb_url}")
         print(f"KAFKA_BROKER:    {self.bootstrap_servers}")
         print("--------------------------------------------------")
 
@@ -218,12 +218,15 @@ class OPCUASupervisor(BaseSupervisor):
 
 if __name__ == "__main__":
 
+    # Example usage of the OPCUASupervisor
+    from openfactory.kafka import KSQLDBClient
+
     supervisor = OPCUASupervisor(
         supervisor_uuid=os.getenv('SUPERVISOR_UUID', 'DEMO-SUPERVISOR'),
         device_uuid=os.getenv('DEVICE_UUID', 'PROVER3018'),
         adapter_ip=os.getenv('ADAPTER_IP', '192.168.0.201'),
         adapter_port=os.getenv('ADAPTER_PORT', 4840),
-        ksqldb_url=os.getenv('KSQL_HOST', 'http://localhost:8088'),
+        ksqlClient=KSQLDBClient("http://localhost:8088"),
         bootstrap_servers=os.getenv('KAFKA_BROKER', 'localhost:9092')
     )
 
