@@ -93,9 +93,10 @@ class TestOpenFactoryApp(unittest.TestCase):
             else:
                 self.fail(f"Unexpected attribute_id: {attr_id}")
 
-    def test_signal_handler(self):
+    def test_signal_sigint(self):
         """ Test signal SIGINT """
         app = OpenFactoryApp(app_uuid='init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap')
+        app.app_event_loop_stopped = MagicMock()
 
         with patch('openfactory.apps.ofaapp.signal.Signals') as mock_signals:
             mock_signals.return_value.name = 'SIGINT'
@@ -105,8 +106,28 @@ class TestOpenFactoryApp(unittest.TestCase):
 
         # Check that deregister_asset was called with the expected arguments
         self.mock_deregister.assert_called_once_with(
-            app.asset_uuid, ksqlClient=app.ksql, bootstrap_servers=app.bootstrap_servers
+            'init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap'
         )
+        # Check app_event_loop_stopped was called
+        app.app_event_loop_stopped.assert_called_once()
+
+    def test_signal_sigterm(self):
+        """ Test signal SIGTERM """
+        app = OpenFactoryApp(app_uuid='init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap')
+        app.app_event_loop_stopped = MagicMock()
+
+        with patch('openfactory.apps.ofaapp.signal.Signals') as mock_signals:
+            mock_signals.return_value.name = 'SIGTERM'
+            # Assert that SystemExit is raised
+            with self.assertRaises(SystemExit):
+                app.signal_handler(signal.SIGINT, None)
+
+        # Check that deregister_asset was called with the expected arguments
+        self.mock_deregister.assert_called_once_with(
+            'init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap'
+        )
+        # Check app_event_loop_stopped was called
+        app.app_event_loop_stopped.assert_called_once()
 
     def test_main_loop_not_implemented(self):
         """ Test call to main_loop raise NotImplementedError """
