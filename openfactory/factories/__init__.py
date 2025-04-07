@@ -1,6 +1,6 @@
 from .deploy_devices_from_config_file import deploy_devices_from_config_file
 from .shut_down_devices_from_config_file import shut_down_devices_from_config_file
-from .deploy_apps_from_config_file import deploy_apps_from_config_file
+from .deploy_apps import deploy_apps_from_config_file
 from .shut_down_apps_form_config_file import shut_down_apps_from_config_file
 from .create_infra import create_infrastack
 from .remove_infra import remove_infrastack
