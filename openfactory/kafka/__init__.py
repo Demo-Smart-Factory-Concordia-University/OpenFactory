@@ -1,4 +1,5 @@
 from .case_insensitive_dict import CaseInsensitiveDict
+from .get_partition_for_key import get_partition_for_key
 from .asset_consumer import KafkaAssetConsumer
 from .delete_consumer_group import delete_consumer_group
 from .commands_consumer import KafkaCommandsConsumer
