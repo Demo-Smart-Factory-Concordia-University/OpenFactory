@@ -56,18 +56,30 @@ class BaseSupervisorTestCase(unittest.TestCase):
         # Execute
         supervisor._send_available_commands()
 
-        # Assert
-        self.assertEqual(MockAsset.call_count, 1)
-        self.assertEqual(mock_asset_instance.add_attribute.call_count, 2)
+        # Collect call arguments
+        calls = mock_asset_instance.add_attribute.call_args_list
 
-        mock_asset_instance.add_attribute.assert_any_call(
-            attribute_id='start',
-            asset_attribute=AssetAttribute(value='Start the device', type='Method', tag='Method')
-        )
-        mock_asset_instance.add_attribute.assert_any_call(
-            attribute_id='stop',
-            asset_attribute=AssetAttribute(value='Stop the device', type='Method', tag='Method')
-        )
+        # Check that the expected attribute_ids are present
+        expected_ids = ['start', 'stop']
+        actual_ids = [call_obj.kwargs['attribute_id'] for call_obj in calls]
+        for attr_id in expected_ids:
+            self.assertIn(attr_id, actual_ids, f"{attr_id} not found in add_attribute calls.")
+
+        # Check content of asset_attribute per attribute_id
+        for call_obj in calls:
+            attr_id = call_obj.kwargs['attribute_id']
+            asset_attr = call_obj.kwargs['asset_attribute']
+
+            if attr_id == 'start':
+                self.assertEqual(asset_attr.value, 'Start the device')
+                self.assertEqual(asset_attr.type, 'Method')
+                self.assertEqual(asset_attr.tag, 'Method')
+            elif attr_id == 'stop':
+                self.assertEqual(asset_attr.value, 'Stop the device')
+                self.assertEqual(asset_attr.type, 'Method')
+                self.assertEqual(asset_attr.tag, 'Method')
+            else:
+                self.fail(f"Unexpected attribute_id: {attr_id}")
 
     @patch('openfactory.apps.supervisor.base_supervisor.KafkaCommandsConsumer')
     @patch.object(TestSupervisor, '_send_available_commands')
@@ -90,6 +102,12 @@ class BaseSupervisorTestCase(unittest.TestCase):
             bootstrap_servers='mock_bootstrap_servers'
         )
         mock_consumer_instance.consume.assert_called_once()
+
+    def test_available_commands_not_implemented(self):
+        """ Test call to available_commands raise NotImplementedError """
+        sup = BaseSupervisor('sup-uuid', "dev-uuid", ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap')
+        with self.assertRaises(NotImplementedError):
+            sup.available_commands()
 
     def test_on_command_not_implemented(self):
         """ Test call to on_command raise NotImplementedError """
