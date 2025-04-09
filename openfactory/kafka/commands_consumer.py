@@ -1,24 +1,8 @@
-import hashlib
 import json
 import threading
-from confluent_kafka import Consumer, KafkaError, TopicPartition
-from collections import UserDict
+from confluent_kafka import Consumer, KafkaError
 import openfactory.config as config
-
-
-class CaseInsensitiveDict(UserDict):
-
-    def __getitem__(self, key):
-        key_lower = key.lower()
-        for k in self.data.keys():
-            if k.lower() == key_lower:
-                return self.data[k]
-        raise KeyError(key)
-
-
-def get_partition_for_key(key, num_partitions):
-    """ Calculate the partition number for a given key """
-    return int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16) % num_partitions
+from openfactory.kafka import CaseInsensitiveDict
 
 
 class KafkaCommandsConsumer:
@@ -46,29 +30,11 @@ class KafkaCommandsConsumer:
             'group.id': self.group_id,
             'auto.offset.reset': 'latest',
         })
-        self.consumer.subscribe([self.topic],
-                                on_assign=self.__on_partitions_assigned,
-                                on_revoke=self.__on_partitions_revoked)
+        self.consumer.subscribe([self.topic])
 
     def filter_messages(self, msg_value):
         """ Can be redefined as needed to further filter commands """
         return msg_value
-
-    def __on_partitions_assigned(self, consumer, partitions):
-        """ Callback when partitions are assigned to this consumer """
-        # When partitions are assigned, manually calculate partition for the key
-        num_partitions = len(partitions)
-        partition = get_partition_for_key(self.key, num_partitions)
-        print(f"Partitions assigned: {partitions}. Consuming from partition {partition}.")
-
-        # Assign the consumer to the calculated partition
-        consumer.assign([TopicPartition(self.topic, partition)])
-
-    def __on_partitions_revoked(self, consumer, partitions):
-        """ Callback when partitions are revoked from this consumer """
-        print(f"Partitions revoked: {partitions}")
-
-        # TO-DO: need to implement logic for cleanup or offset commits if necessary
 
     def consume(self):
         """ Consume messages """
@@ -123,7 +89,7 @@ if __name__ == "__main__":
 
     consumer = KafkaCommandsConsumer(
         consumer_group_id="demo_ofa_commands_consumer_group",
-        asset_uuid="CONV-001",
+        asset_uuid="PROVER3018",
         on_command=on_command,
         ksqlClient=ksql,
         bootstrap_servers="localhost:9092"
