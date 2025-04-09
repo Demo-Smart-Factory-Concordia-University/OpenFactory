@@ -1,5 +1,4 @@
 import json
-import threading
 from confluent_kafka import Consumer, KafkaError
 from openfactory.kafka import CaseInsensitiveDict
 import openfactory.config as config
@@ -23,8 +22,6 @@ class KafkaAssetConsumer:
         self.group_id = consumer_group_id
         self.key = asset_uuid
         self.on_message = on_message
-        self.running = threading.Event()
-        self.running.set()
 
         self.consumer = Consumer({
             'bootstrap.servers': self.bootstrap_servers,
@@ -40,7 +37,7 @@ class KafkaAssetConsumer:
     def consume(self):
         """ Consume messages """
         try:
-            while self.running.is_set():
+            while True:
                 msg = self.consumer.poll(timeout=self.consumer_timeout)
                 if msg is None:
                     continue
@@ -61,6 +58,8 @@ class KafkaAssetConsumer:
 
                 # Apply additional filter
                 msg_value = self.filter_messages(msg_value)
+
+                print(msg_key, msg_value)
 
                 if msg_value:
                     self.on_message(msg_key, msg_value)
