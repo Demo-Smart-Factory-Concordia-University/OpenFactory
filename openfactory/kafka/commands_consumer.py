@@ -66,6 +66,8 @@ class KafkaCommandsConsumer:
                 if msg_value:
                     self.on_command(msg_key, msg_value)
 
+        except json.JSONDecodeError as e:
+            print(f"Commands topic contained a none JSON value: {e} - raw: {msg.value().decode('utf-8')}")
         except Exception as e:
             print(f"Exception in KafkaCommandsConsumer: {e}")
         finally:
