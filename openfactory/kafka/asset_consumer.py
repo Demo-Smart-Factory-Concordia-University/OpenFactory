@@ -1,24 +1,8 @@
-import hashlib
 import json
 import threading
-from confluent_kafka import Consumer, KafkaError, TopicPartition
-from collections import UserDict
+from confluent_kafka import Consumer, KafkaError
+from openfactory.kafka import CaseInsensitiveDict
 import openfactory.config as config
-
-
-class CaseInsensitiveDict(UserDict):
-
-    def __getitem__(self, key):
-        key_lower = key.lower()
-        for k in self.data.keys():
-            if k.lower() == key_lower:
-                return self.data[k]
-        raise KeyError(key)
-
-
-def get_partition_for_key(key, num_partitions):
-    """ Calculate the partition number for a given key """
-    return int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16) % num_partitions
 
 
 class KafkaAssetConsumer:
@@ -41,34 +25,17 @@ class KafkaAssetConsumer:
         self.on_message = on_message
         self.running = threading.Event()
         self.running.set()
+
         self.consumer = Consumer({
             'bootstrap.servers': self.bootstrap_servers,
             'group.id': self.group_id,
             'auto.offset.reset': 'latest',
         })
-        self.consumer.subscribe([self.topic],
-                                on_assign=self.__on_partitions_assigned,
-                                on_revoke=self.__on_partitions_revoked)
+        self.consumer.subscribe([self.topic])
 
     def filter_messages(self, msg_value):
         """ Can be redefined as needed to further filter messages """
         return msg_value
-
-    def __on_partitions_assigned(self, consumer, partitions):
-        """ Callback when partitions are assigned to this consumer """
-        # When partitions are assigned, manually calculate partition for the key
-        num_partitions = len(partitions)
-        partition = get_partition_for_key(self.key, num_partitions)
-        print(f"Partitions assigned: {partitions}. Consuming from partition {partition}.")
-
-        # Assign the consumer to the calculated partition
-        consumer.assign([TopicPartition(self.topic, partition)])
-
-    def __on_partitions_revoked(self, consumer, partitions):
-        """ Callback when partitions are revoked from this consumer """
-        print(f"Partitions revoked: {partitions}")
-
-        # TO-DO: need to implement logic for cleanup or offset commits if necessary
 
     def consume(self):
         """ Consume messages """
@@ -85,14 +52,12 @@ class KafkaAssetConsumer:
                         print(f"Error: {msg.error()}")
                         break
 
-                # Decode the message
+                # Decode the message and filter key
                 msg_key = msg.key().decode('utf-8') if msg.key() else None
-                msg_value = json.loads(msg.value().decode('utf-8'))
-                msg_value = CaseInsensitiveDict(msg_value)
-
-                # Filter desired key
                 if msg_key != self.key:
                     continue
+                msg_value = json.loads(msg.value().decode('utf-8'))
+                msg_value = CaseInsensitiveDict(msg_value)
 
                 # Apply additional filter
                 msg_value = self.filter_messages(msg_value)
@@ -100,6 +65,8 @@ class KafkaAssetConsumer:
                 if msg_value:
                     self.on_message(msg_key, msg_value)
 
+        except json.JSONDecodeError as e:
+            print(f"Topic contained a none JSON value: {e} - raw: {msg.value().decode('utf-8')}")
         except Exception as e:
             print(f"Exception in KafkaAssetConsumer: {e}")
         finally:
