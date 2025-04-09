@@ -1,4 +1,6 @@
 import json
+import threading
+import traceback
 from confluent_kafka import Consumer, KafkaError
 from openfactory.kafka import CaseInsensitiveDict
 import openfactory.config as config
@@ -22,6 +24,8 @@ class KafkaAssetConsumer:
         self.group_id = consumer_group_id
         self.key = asset_uuid
         self.on_message = on_message
+        self.running = threading.Event()
+        self.running.set()
 
         self.consumer = Consumer({
             'bootstrap.servers': self.bootstrap_servers,
@@ -37,7 +41,7 @@ class KafkaAssetConsumer:
     def consume(self):
         """ Consume messages """
         try:
-            while True:
+            while self.running.is_set():
                 msg = self.consumer.poll(timeout=self.consumer_timeout)
                 if msg is None:
                     continue
@@ -59,8 +63,6 @@ class KafkaAssetConsumer:
                 # Apply additional filter
                 msg_value = self.filter_messages(msg_value)
 
-                print(msg_key, msg_value)
-
                 if msg_value:
                     self.on_message(msg_key, msg_value)
 
@@ -68,6 +70,7 @@ class KafkaAssetConsumer:
             print(f"Topic contained a none JSON value: {e} - raw: {msg.value().decode('utf-8')}")
         except Exception as e:
             print(f"Exception in KafkaAssetConsumer: {e}")
+            traceback.print_exc()
         finally:
             print("Closing KafkaAssetConsumer ...")
             self.consumer.close()
