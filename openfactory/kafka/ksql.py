@@ -50,7 +50,9 @@ class KSQLDBClient:
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
-                self.session = self._create_session()  # Reset session before retrying
+                self.session = self._create_session()
+
+        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def get_kafka_topic(self, stream_name) -> str:
         """
