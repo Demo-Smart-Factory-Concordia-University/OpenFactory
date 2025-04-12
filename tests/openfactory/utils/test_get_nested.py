@@ -1,5 +1,5 @@
 from unittest import TestCase
-from openfactory.factories.agents import get_nested
+from openfactory.utils import get_nested
 
 
 class Test_get_nested(TestCase):
