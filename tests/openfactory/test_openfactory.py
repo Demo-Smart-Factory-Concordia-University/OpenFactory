@@ -13,6 +13,11 @@ class TestOpenFactory(TestCase):
     def setUp(self):
         self.ksql_mock = MagicMock()
 
+        # Patch AssetProducer
+        self.asset_producer_patcher = patch("openfactory.assets.asset_class.AssetProducer")
+        self.MockAssetProducer = self.asset_producer_patcher.start()
+        self.addCleanup(self.asset_producer_patcher.stop)
+
     def test_init_success(self):
         """ Test OpenFactory initialization when KSQL connection succeeds """
         ofa = OpenFactory(ksqlClient=self.ksql_mock, bootstrap_servers="MockedBroker")
