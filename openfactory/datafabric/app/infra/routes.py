@@ -3,11 +3,11 @@ Routes for DataFabric Infrastructure Blueprint
 """
 from flask_login import login_required
 from flask import render_template
-from . import infra_blueprint
-from .nodes.nodes_view import NodesList
-from .nodes.node_add import NodeAdd
-from .nodes.node_remove import NodeRemove
-from .nodes.node_view import NodeView
+from openfactory.datafabric.app.infra import infra_blueprint
+from openfactory.datafabric.app.infra.nodes.nodes_view import NodesList
+from openfactory.datafabric.app.infra.nodes.node_add import NodeAdd
+from openfactory.datafabric.app.infra.nodes.node_remove import NodeRemove
+from openfactory.datafabric.app.infra.nodes.node_view import NodeView
 
 
 @infra_blueprint.route('/')

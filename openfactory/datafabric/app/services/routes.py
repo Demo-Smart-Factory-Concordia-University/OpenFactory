@@ -3,19 +3,19 @@ Routes for DataFabric Services Blueprint
 """
 from flask_login import login_required
 from flask import render_template
-from . import serv_blueprint
-from .devices.devices_view import DevicesList
-from .devices.device_services import DeviceServicesList
-from .devices.device_add import DeviceAdd
-from .devices.device_remove import DeviceRemove
-from .devices.devices_load import DeviceStackLoad
-from .applications.apps_view import ApplicationsList
-from .agents.agents_view import AgentsList
-from .supervisors.supervisors_view import SupervisorsList
-from .producers.producers_view import ProducersList
-from .influxdb_connectors.influxdb_connectors_view import InfluxdbConnectorsList
-from .core.services_tasks_view import ServicesTasksListView
-from .core.service_task_logs import ServiceTaskLogs
+from openfactory.datafabric.app.services import serv_blueprint
+from openfactory.datafabric.app.services.devices.devices_view import DevicesList
+from openfactory.datafabric.app.services.devices.device_services import DeviceServicesList
+from openfactory.datafabric.app.services.devices.device_add import DeviceAdd
+from openfactory.datafabric.app.services.devices.device_remove import DeviceRemove
+from openfactory.datafabric.app.services.devices.devices_load import DeviceStackLoad
+from openfactory.datafabric.app.services.applications.apps_view import ApplicationsList
+from openfactory.datafabric.app.services.agents.agents_view import AgentsList
+from openfactory.datafabric.app.services.supervisors.supervisors_view import SupervisorsList
+from openfactory.datafabric.app.services.producers.producers_view import ProducersList
+from openfactory.datafabric.app.services.influxdb_connectors.influxdb_connectors_view import InfluxdbConnectorsList
+from openfactory.datafabric.app.services.core.services_tasks_view import ServicesTasksListView
+from openfactory.datafabric.app.services.core.service_task_logs import ServiceTaskLogs
 
 
 @serv_blueprint.route('/')

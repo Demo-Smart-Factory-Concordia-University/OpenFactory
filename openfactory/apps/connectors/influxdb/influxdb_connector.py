@@ -1,6 +1,6 @@
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
-from ..sinkconnector import SinkConnector
+from openfactory.apps.connectors.sinkconnector import SinkConnector
 
 
 class InfluxDBConnector(SinkConnector):

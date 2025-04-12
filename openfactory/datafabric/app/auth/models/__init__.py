@@ -1,1 +1,1 @@
-from .users import User
+from openfactory.datafabric.app.auth.models.users import User

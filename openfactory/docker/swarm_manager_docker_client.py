@@ -1,6 +1,6 @@
 import docker
 import openfactory.config as config
-from .swarm_manager import swarm_manager
+from openfactory.docker.swarm_manager import swarm_manager
 
 
 def swarm_manager_docker_client():

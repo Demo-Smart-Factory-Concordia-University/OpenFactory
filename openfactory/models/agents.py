@@ -21,8 +21,8 @@ import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.utils import open_ofa
 from openfactory.utils.assets import register_asset, deregister_asset
-from .user_notifications import user_notify
-from .base import Base
+from openfactory.models.user_notifications import user_notify
+from openfactory.models.base import Base
 
 
 class AgentKafkaProducer(MTCSourceConnector):

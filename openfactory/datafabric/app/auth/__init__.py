@@ -5,8 +5,8 @@ from flask import Blueprint
 from flask_login import LoginManager
 from openfactory.datafabric.app import admin_app
 from openfactory.datafabric.app import db
-from .models.users import User
-from .views.useradmin import UserModelView
+from openfactory.datafabric.app.auth.models.users import User
+from openfactory.datafabric.app.auth.views.useradmin import UserModelView
 
 
 # Login manager
@@ -33,4 +33,4 @@ def create_bp(app):
     # register blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
-from . import routes
+from openfactory.datafabric.app.auth import routes

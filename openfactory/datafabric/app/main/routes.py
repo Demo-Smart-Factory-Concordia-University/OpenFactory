@@ -4,8 +4,8 @@ Routes for DataFabric Main Blueprint
 from flask_login import login_required, current_user
 from flask import render_template
 from openfactory.datafabric.app import db
-from . import main_blueprint
-from .models.notifications import Notification
+from openfactory.datafabric.app.main import main_blueprint
+from openfactory.datafabric.app.main.models.notifications import Notification
 
 
 @main_blueprint.route('/')

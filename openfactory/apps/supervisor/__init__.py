@@ -1,2 +1,2 @@
-from .base_supervisor import BaseSupervisor
-from .opcuasupervisor import OPCUASupervisor
+from openfactory.apps.supervisor.base_supervisor import BaseSupervisor
+from openfactory.apps.supervisor.opcuasupervisor import OPCUASupervisor

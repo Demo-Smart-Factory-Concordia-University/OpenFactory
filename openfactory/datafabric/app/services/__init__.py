@@ -13,4 +13,4 @@ def create_bp(app):
     # register blueprint
     app.register_blueprint(serv_blueprint, url_prefix='/services')
 
-from . import routes
+from openfactory.datafabric.app.services import routes

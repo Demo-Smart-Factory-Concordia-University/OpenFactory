@@ -3,10 +3,10 @@ DataFabric Main blueprint
 """
 from flask import Blueprint
 from openfactory.datafabric.app import admin_app, db
-from .models.notifications import Notification
-from .models.tasks import RQTask
-from .views.notificationview import NotificationView
-from .views.taskview import RQTaskView
+from openfactory.datafabric.app.main.models.notifications import Notification
+from openfactory.datafabric.app.main.models.tasks import RQTask
+from openfactory.datafabric.app.main.views.notificationview import NotificationView
+from openfactory.datafabric.app.main.views.taskview import RQTaskView
 
 main_blueprint = Blueprint('main', __name__,
                            template_folder='templates',
@@ -22,4 +22,4 @@ def create_bp(app):
     # register blueprint
     app.register_blueprint(main_blueprint)
 
-from . import routes
+from openfactory.datafabric.app.main import routes

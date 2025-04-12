@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
 import openfactory.config as config
-from .base import Base
+from openfactory.models.base import Base
 
 
 class Configuration(Base):

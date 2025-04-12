@@ -6,9 +6,9 @@ from flask import render_template, flash, redirect, url_for
 from flask_login import current_user, login_user, logout_user
 
 from openfactory.datafabric.app import db
-from .models.users import User
-from . import auth_blueprint
-from .forms.loginform import LoginForm
+from openfactory.datafabric.app.auth.models.users import User
+from openfactory.datafabric.app.auth import auth_blueprint
+from openfactory.datafabric.app.auth.forms.loginform import LoginForm
 
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
