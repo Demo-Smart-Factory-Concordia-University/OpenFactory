@@ -1,6 +1,6 @@
 import json
-from datetime import datetime, timezone
 from confluent_kafka import Producer
+from openfactory.assets.asset_class import current_timestamp
 import openfactory.config as config
 
 
@@ -15,7 +15,7 @@ def register_asset(asset_uuid, asset_type, ksqlClient, bootstrap_servers=config.
         "TAG": "AssetType",
         "TYPE": "OpenFactory",
         "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                "timestamp": current_timestamp()
                 }
     }
     prod.produce(topic=ksqlClient.get_kafka_topic('ASSETS_STREAM'),
@@ -29,7 +29,7 @@ def register_asset(asset_uuid, asset_type, ksqlClient, bootstrap_servers=config.
         "TAG": "DockerService",
         "TYPE": "OpenFactory",
         "attributes": {
-                "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+                "timestamp": current_timestamp()
                 }
     }
     prod.produce(topic=ksqlClient.get_kafka_topic('ASSETS_STREAM'),
@@ -48,7 +48,10 @@ def deregister_asset(asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROK
         "ID": "avail",
         "VALUE": "UNAVAILABLE",
         "TAG": "Availability",
-        "TYPE": "Events"
+        "TYPE": "Events",
+        "attributes": {
+                "timestamp": current_timestamp()
+                }
     }
     assets_stream_topic = ksqlClient.get_kafka_topic('ASSETS_STREAM')
     prod.produce(topic=assets_stream_topic,
@@ -60,7 +63,10 @@ def deregister_asset(asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROK
         "ID": "references_below",
         "VALUE": "",
         "TAG": "AssetsReferences",
-        "TYPE": "OpenFactory"
+        "TYPE": "OpenFactory",
+        "attributes": {
+                "timestamp": current_timestamp()
+                }
     }
     prod.produce(topic=assets_stream_topic,
                  key=asset_uuid,

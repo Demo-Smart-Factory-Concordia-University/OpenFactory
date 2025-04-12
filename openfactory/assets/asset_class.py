@@ -11,6 +11,7 @@ from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_co
 
 
 def current_timestamp():
+    """ Returns current timestamp in OpenFactory format """
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
