@@ -1,10 +1,9 @@
 from openfactory import OpenFactoryManager
 from openfactory.schemas.apps import get_apps_from_config_file
 from openfactory.models.user_notifications import user_notify
-from openfactory.ofa.ksqldb import ksql
 
 
-def deploy_apps_from_config_file(yaml_config_file):
+def deploy_apps_from_config_file(yaml_config_file, ksqlClient):
     """
     Deploy OpenFactory applications based on a yaml configuration file
     """
@@ -14,7 +13,7 @@ def deploy_apps_from_config_file(yaml_config_file):
     if apps is None:
         return
 
-    ofa = OpenFactoryManager(ksqlClient=ksql.client)
+    ofa = OpenFactoryManager(ksqlClient=ksqlClient)
 
     for app_name, app in apps.items():
         user_notify.info(f"{app_name}:")

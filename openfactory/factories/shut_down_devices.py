@@ -1,10 +1,9 @@
 from openfactory import OpenFactoryManager
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
-from openfactory.ofa.ksqldb import ksql
 
 
-def shut_down_devices_from_config_file(yaml_config_file):
+def shut_down_devices_from_config_file(yaml_config_file, ksqlClient):
     """
     Shut down devices based on a config file
     """
@@ -14,7 +13,7 @@ def shut_down_devices_from_config_file(yaml_config_file):
     if devices is None:
         return
 
-    ofa = OpenFactoryManager(ksqlClient=ksql.client)
+    ofa = OpenFactoryManager(ksqlClient=ksqlClient)
     uuid_list = [device.asset_uuid for device in ofa.devices()]
 
     for dev_name, device in devices.items():

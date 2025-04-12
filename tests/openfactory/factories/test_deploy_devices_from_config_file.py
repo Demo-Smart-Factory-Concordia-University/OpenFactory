@@ -12,9 +12,8 @@ class TestDeployDevicesFromConfigFile(unittest.TestCase):
     @patch("openfactory.factories.deploy_devices.OpenFactoryManager")
     @patch("openfactory.factories.deploy_devices.user_notify")
     @patch("openfactory.factories.deploy_devices.register_asset")
-    @patch("openfactory.factories.deploy_devices.ksql.client")
     def test_deploy_devices_successful(
-        self, mock_ksql_client, mock_register_asset, mock_user_notify,
+        self, mock_register_asset, mock_user_notify,
         mock_open_factory_manager, mock_get_devices
     ):
         """ Test succesfull deploy of a device """
@@ -36,7 +35,8 @@ class TestDeployDevicesFromConfigFile(unittest.TestCase):
         mock_ofa.devices_uuid.return_value = []  # UUID not present
         mock_open_factory_manager.return_value = mock_ofa
 
-        deploy_devices_from_config_file("/path/to/config.yaml")
+        mock_ksql_client = MagicMock()
+        deploy_devices_from_config_file("/path/to/config.yaml", ksqlClient=mock_ksql_client)
 
         mock_user_notify.info.assert_any_call("Device1:")
         mock_register_asset.assert_called_once_with("uuid-123", "Device", ksqlClient=mock_ksql_client, docker_service="")
@@ -55,7 +55,7 @@ class TestDeployDevicesFromConfigFile(unittest.TestCase):
         mock_get_devices.return_value = None
         mock_ofa = MagicMock()
         mock_open_factory_manager.return_value = mock_ofa
-        result = deploy_devices_from_config_file("/path/to/config.yaml")
+        result = deploy_devices_from_config_file("/path/to/config.yaml", ksqlClient=MagicMock())
 
         self.assertIsNone(result)  # Should exit early with no error
         mock_ofa.deploy_mtconnect_agent.assert_not_called()
@@ -85,7 +85,7 @@ class TestDeployDevicesFromConfigFile(unittest.TestCase):
         mock_ofa.devices_uuid.return_value = ["uuid-xyz"]
         mock_open_factory_manager.return_value = mock_ofa
 
-        deploy_devices_from_config_file("/config.yml")
+        deploy_devices_from_config_file("/config.yml", ksqlClient=MagicMock())
 
         mock_user_notify.info.assert_any_call("Device2:")
         mock_user_notify.info.assert_any_call("Device uuid-xyz exists already and was not deployed")

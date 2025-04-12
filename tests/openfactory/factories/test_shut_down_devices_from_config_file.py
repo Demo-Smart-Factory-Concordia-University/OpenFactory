@@ -8,13 +8,10 @@ class TestShutDownDevices(unittest.TestCase):
     Test shut_down_devices_from_config_file
     """
 
-    @patch('openfactory.factories.shut_down_devices.ksql')
     @patch('openfactory.factories.shut_down_devices.user_notify')
     @patch('openfactory.factories.shut_down_devices.OpenFactoryManager')
     @patch('openfactory.factories.shut_down_devices.get_devices_from_config_file')
-    def test_shut_down_devices_normal_flow(
-        self, mock_get_devices, mock_ofa_cls, mock_user_notify, mock_ksql
-    ):
+    def test_shut_down_devices_normal_flow(self, mock_get_devices, mock_ofa_cls, mock_user_notify):
         """ Test shut_down_devices_from_config_file for normal case """
         # Mock YAML config result
         mock_get_devices.return_value = {
@@ -30,7 +27,7 @@ class TestShutDownDevices(unittest.TestCase):
         mock_ofa.devices.return_value = [mock_device_1]
         mock_ofa_cls.return_value = mock_ofa
 
-        shut_down_devices_from_config_file('config.yaml')
+        shut_down_devices_from_config_file('config.yaml', ksqlClient=MagicMock())
 
         mock_get_devices.assert_called_once_with('config.yaml')
 
@@ -46,17 +43,14 @@ class TestShutDownDevices(unittest.TestCase):
         called_uuids = [call[0][0] for call in mock_ofa.tear_down_device.call_args_list]
         assert 'UUID-999' not in called_uuids
 
-    @patch('openfactory.factories.shut_down_devices.ksql')
     @patch('openfactory.factories.shut_down_devices.user_notify')
     @patch('openfactory.factories.shut_down_devices.OpenFactoryManager')
     @patch('openfactory.factories.shut_down_devices.get_devices_from_config_file')
-    def test_shut_down_devices_none_config(
-        self, mock_get_devices, mock_ofa_cls, mock_user_notify, mock_ksql
-    ):
+    def test_shut_down_devices_none_config(self, mock_get_devices, mock_ofa_cls, mock_user_notify):
         """ Test case where yaml_config_file contains no devices """
         mock_get_devices.return_value = None
 
-        shut_down_devices_from_config_file('empty.yaml')
+        shut_down_devices_from_config_file('empty.yaml', ksqlClient=MagicMock())
 
         mock_get_devices.assert_called_once_with('empty.yaml')
         mock_ofa_cls.assert_not_called()

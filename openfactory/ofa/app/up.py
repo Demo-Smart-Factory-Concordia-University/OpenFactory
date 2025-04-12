@@ -1,5 +1,6 @@
 import click
 from openfactory.factories import deploy_apps_from_config_file
+from openfactory.ofa.ksqldb import ksql
 
 
 @click.command(name='up')
@@ -8,4 +9,4 @@ from openfactory.factories import deploy_apps_from_config_file
                 nargs=1)
 def click_up(yaml_config_file):
     """ Deploy OpenFactory applications """
-    deploy_apps_from_config_file(yaml_config_file)
+    deploy_apps_from_config_file(yaml_config_file, ksqlClient=ksql)

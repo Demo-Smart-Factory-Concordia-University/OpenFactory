@@ -4,6 +4,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 import openfactory.ofa as ofa
+from openfactory.ofa.ksqldb import ksql
 
 
 @patch("openfactory.ofa.device.down.shut_down_devices_from_config_file")
@@ -20,7 +21,7 @@ class TestDeviceDown(TestCase):
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_agents.yml')
         result = runner.invoke(ofa.device.click_down, [config_file])
-        mock_shut_down_devices_from_config_file.assert_called_once_with(config_file)
+        mock_shut_down_devices_from_config_file.assert_called_once_with(config_file, ksqlClient=ksql)
         self.assertEqual(result.exit_code, 0)
 
     def test_device_down_none_existent_file(self, *args):

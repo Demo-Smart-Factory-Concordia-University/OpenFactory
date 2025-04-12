@@ -4,10 +4,9 @@ from openfactory import OpenFactoryManager
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.models.user_notifications import user_notify
 from openfactory.utils import register_asset
-from openfactory.ofa.ksqldb import ksql
 
 
-def deploy_devices_from_config_file(yaml_config_file):
+def deploy_devices_from_config_file(yaml_config_file, ksqlClient):
     """
     Deploy OpenFactory devices based on a yaml configuration file
     """
@@ -17,7 +16,7 @@ def deploy_devices_from_config_file(yaml_config_file):
     if devices is None:
         return
 
-    ofa = OpenFactoryManager(ksqlClient=ksql.client)
+    ofa = OpenFactoryManager(ksqlClient=ksqlClient)
 
     for dev_name, device in devices.items():
         user_notify.info(f"{dev_name}:")
@@ -35,7 +34,7 @@ def deploy_devices_from_config_file(yaml_config_file):
                 if not os.path.isabs(device_xml_uri):
                     device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
 
-        register_asset(device['uuid'], "Device", ksqlClient=ksql.client, docker_service="")
+        register_asset(device['uuid'], "Device", ksqlClient=ksqlClient, docker_service="")
 
         ofa.deploy_mtconnect_agent(device_uuid=device['uuid'],
                                    device_xml_uri=device_xml_uri,
