@@ -125,7 +125,6 @@ class TestInfrastructureSchema(unittest.TestCase):
                     """
         parsed_data = yaml.safe_load(yaml_data)
         infra = InfrastructureSchema(**parsed_data)
-        print(infra)
 
     def test_invalid_ip_address(self):
         """
