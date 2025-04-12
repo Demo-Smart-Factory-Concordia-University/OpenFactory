@@ -9,4 +9,4 @@ from openfactory.ofa.ksqldb import ksql
                 nargs=1)
 def click_up(yaml_config_file):
     """ Deploy OpenFactory applications """
-    deploy_apps_from_config_file(yaml_config_file, ksqlClient=ksql)
+    deploy_apps_from_config_file(yaml_config_file, ksqlClient=ksql.client)
