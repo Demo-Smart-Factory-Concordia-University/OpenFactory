@@ -19,7 +19,7 @@ class OpenFactory:
         if df.empty:
             return []
 
-        return [Asset(asset_uuid=row.ASSET_UUID, ksqlClient=self.ksql) for row in df.itertuples()]
+        return [Asset(asset_uuid=row.ASSET_UUID, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers) for row in df.itertuples()]
 
     def assets_availability(self):
         """ Return availability of OpenFactory assets """
