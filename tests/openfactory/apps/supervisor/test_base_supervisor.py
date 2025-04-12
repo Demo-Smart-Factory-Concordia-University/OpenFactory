@@ -26,6 +26,11 @@ class BaseSupervisorTestCase(unittest.TestCase):
     def setUp(self):
         self.ksql_mock = MagicMock()
 
+        # Patch AssetProducer
+        self.asset_producer_patcher = patch("openfactory.assets.asset_class.AssetProducer")
+        self.MockAssetProducer = self.asset_producer_patcher.start()
+        self.addCleanup(self.asset_producer_patcher.stop)
+
         # Patch add_attribute
         self.add_attribute_patcher = patch.object(BaseSupervisor, 'add_attribute')
         self.mock_add_attribute = self.add_attribute_patcher.start()

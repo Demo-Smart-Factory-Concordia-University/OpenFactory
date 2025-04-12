@@ -5,19 +5,20 @@ import pandas as pd
 from openfactory.assets import Asset, AssetAttribute
 
 
+@patch("openfactory.assets.asset_class.AssetProducer")
 class TestAsset(TestCase):
     """
     Test class Asset
     """
 
-    def test_asset_initialization_success(self):
+    def test_asset_initialization_success(self, MockAssetProducer):
         """ Test Asset initialization when asset exists """
-        asset = Asset("uuid-123", ksqlClient=MagicMock())
+        asset = Asset("uuid-123", ksqlClient=MagicMock(), bootstrap_servers="mock_broker")
 
         # Ensure correct attributes
         self.assertEqual(asset.asset_uuid, "uuid-123")
 
-    def test_type(self):
+    def test_type(self, MockAssetProducer):
         """ Test type when asset exists """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -31,7 +32,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT TYPE FROM assets_type WHERE ASSET_UUID='uuid-123';"
         ksqlMock.query.assert_called_once_with(expected_query)
 
-    def test_type_no_asset(self):
+    def test_type_no_asset(self, MockAssetProducer):
         """ Test type when asset does not exists """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -45,7 +46,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT TYPE FROM assets_type WHERE ASSET_UUID='uuid-123';"
         ksqlMock.query.assert_called_once_with(expected_query)
 
-    def test_attributes_success(self):
+    def test_attributes_success(self, MockAssetProducer):
         """ Test attributes() returns correct attribute IDs """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -61,7 +62,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT ID FROM assets WHERE asset_uuid='uuid-123' AND TYPE != 'Method';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_attributes_empty(self):
+    def test_attributes_empty(self, MockAssetProducer):
         """ Test attributes() returns an empty list when no attributes exist """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -73,7 +74,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(attributes, [])
 
-    def test_samples(self):
+    def test_samples(self, MockAssetProducer):
         """ Test samples() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -90,7 +91,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Samples';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_events(self):
+    def test_events(self, MockAssetProducer):
         """ Test events() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -107,7 +108,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Events';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_conditions(self):
+    def test_conditions(self, MockAssetProducer):
         """ Test conditions() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -132,7 +133,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Condition';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_methods(self):
+    def test_methods(self, MockAssetProducer):
         """ Test methods() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -151,7 +152,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Method';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_method_execution(self):
+    def test_method_execution(self, MockAssetProducer):
         """ Test method() sends the correct Kafka message """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -187,7 +188,7 @@ class TestAsset(TestCase):
         # Ensure flush() was called
         asset.producer.flush.assert_called_once()
 
-    def test_getattr_samples(self):
+    def test_getattr_samples(self, MockAssetProducer):
         """ Test __getattr__ returns float for 'Samples' type """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -207,7 +208,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|id1';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_getattr_string_value(self):
+    def test_getattr_string_value(self, MockAssetProducer):
         """ Test __getattr__ returns raw VALUE for non-'Samples' and non-'Method' types """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -228,7 +229,7 @@ class TestAsset(TestCase):
         ksqlMock.query.assert_any_call(expected_query)
 
     @patch("openfactory.assets.asset_class.Asset.method")
-    def test_getattr_method(self, mock_method):
+    def test_getattr_method(self, mock_method, MockAssetProducer):
         """ Test __getattr__ returns a callable for 'Method' type """
         mock_method.return_value = "Mocked method called successfully"
 
@@ -252,7 +253,7 @@ class TestAsset(TestCase):
         expected_query = "SELECT VALUE, TYPE, TAG, TIMESTAMP FROM assets WHERE key='uuid-123|a_method';"
         ksqlMock.query.assert_any_call(expected_query)
 
-    def test_references_above_no_references(self):
+    def test_references_above_no_references(self, MockAssetProducer):
         """ Test references_above when there are no linked assets """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -262,7 +263,7 @@ class TestAsset(TestCase):
         # Expect an empty list
         self.assertEqual(asset.references_above, [])
 
-    def test_references_above_with_data(self):
+    def test_references_above_with_data(self, MockAssetProducer):
         """ Test references_above when assets are linked """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -277,7 +278,7 @@ class TestAsset(TestCase):
         self.assertEqual(refs[0].asset_uuid, "asset-002")
         self.assertEqual(refs[1].asset_uuid, "asset-003")
 
-    def test_references_below_no_references(self):
+    def test_references_below_no_references(self, MockAssetProducer):
         """ Test references_below when there are no linked assets """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -287,7 +288,7 @@ class TestAsset(TestCase):
         # Expect an empty list
         self.assertEqual(asset.references_below, [])
 
-    def test_references_below_with_data(self):
+    def test_references_below_with_data(self, MockAssetProducer):
         """ Test references_below when assets are linked """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -302,7 +303,7 @@ class TestAsset(TestCase):
         self.assertEqual(refs[0].asset_uuid, "asset-002")
         self.assertEqual(refs[1].asset_uuid, "asset-003")
 
-    def test_add_reference_above_no_existing_reference(self):
+    def test_add_reference_above_no_existing_reference(self, MockAssetProducer):
         """ Test add_reference_above when no existing references are present """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -327,7 +328,7 @@ class TestAsset(TestCase):
         assert actual_attribute.type == "OpenFactory"
         assert actual_attribute.tag == "AssetsReferences"
 
-    def test_add_reference_above_with_existing_reference(self):
+    def test_add_reference_above_with_existing_reference(self, MockAssetProducer):
         """ Test add_reference_above when existing references are present """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -353,7 +354,7 @@ class TestAsset(TestCase):
         assert actual_attribute.type == "OpenFactory"
         assert actual_attribute.tag == "AssetsReferences"
 
-    def test_add_reference_below_no_existing_reference(self):
+    def test_add_reference_below_no_existing_reference(self, MockAssetProducer):
         """ Test add_reference_below when no existing references are present """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
@@ -378,7 +379,7 @@ class TestAsset(TestCase):
         assert actual_attribute.type == "OpenFactory"
         assert actual_attribute.tag == "AssetsReferences"
 
-    def test_add_reference_below_with_existing_reference(self):
+    def test_add_reference_below_with_existing_reference(self, MockAssetProducer):
         """ Test add_reference_below when existing references are present """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
