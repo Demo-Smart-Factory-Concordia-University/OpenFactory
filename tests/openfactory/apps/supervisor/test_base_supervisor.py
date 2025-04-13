@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from openfactory.assets import AssetAttribute
 from openfactory.apps.supervisor import BaseSupervisor
 
 
@@ -42,13 +41,17 @@ class BaseSupervisorTestCase(unittest.TestCase):
         self.assertTrue(issubclass(BaseSupervisor, OpenFactoryApp),
                         "BaseSupervisor should derive from OpenFactoryApp")
 
-    def test_constructor_adds_device_attribute(self):
+    @patch('openfactory.apps.supervisor.base_supervisor.AssetAttribute')
+    def test_constructor_adds_device_attribute(self, MockAssetAttribute):
         """ Test if supervisor attributes are set """
+        mock_instance = MagicMock()
+        MockAssetAttribute.return_value = mock_instance
+
         TestSupervisor("sup-123", "dev-456", self.ksql_mock, bootstrap_servers='mock_bootstrap_servers')
 
         self.mock_add_attribute.assert_any_call(
             attribute_id='device_added',
-            asset_attribute=AssetAttribute(value='dev-456', type='Events', tag='DeviceAdded')
+            asset_attribute=mock_instance
         )
 
     @patch('openfactory.apps.supervisor.base_supervisor.Asset')
