@@ -1,0 +1,33 @@
+<!-- ==========================================================
+       MTConnect Device file for a Mocked Temperature Sensor
+     ========================================================== -->
+
+<MTConnectDevices>
+  <Devices>
+    <Device uuid="TEMP-GEN" id="dht" name="MOCKED-TEMPERATURE-SENSOR">
+
+      <!-- General information -->
+      <Description>
+         A Mocked Temperature Sensor
+      </Description>
+      <DataItems>
+        <DataItem category="EVENT" id="avail" type="AVAILABILITY"/>
+      </DataItems>
+
+      <!-- Components -->
+      <Components>
+
+        <!-- Sensor -->
+        <Sensor id="sensor">
+
+          <!-- DataItems -->
+          <DataItems>
+            <DataItem category="SAMPLE" id="Temp" type="TEMPERATURE" units="CELCIUS"/>
+          </DataItems>
+
+        </Sensor>
+
+      </Components>
+    </Device>
+  </Devices>
+</MTConnectDevices>

@@ -1,0 +1,23 @@
+# Docker compose project for development and debugging
+
+services:
+  temperature-sensor-simualtor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ofa/mocked_temp
+    environment:
+      - SLEEP_INTERVAL=2.0
+      - MIN_TEMP=19
+      - MAX_TEMP=21
+      - ADAPTER_PORT=7878
+    ports:
+      - "7878:7878"
+    networks:
+      - factory-net
+
+networks:
+
+  factory-net:
+    name: factory-net
+    external: true
