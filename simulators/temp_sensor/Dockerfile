@@ -4,7 +4,7 @@ LABEL organisation="Concordia University"
 LABEL description="Docker image for OpenFactory Temperature Sensor simulator"
 LABEL documentation="https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory"
 
-ARG UNAME=supervisor
+ARG UNAME=ofa
 ARG UID=1200
 ARG GID=1200
 ARG VERSION=latest
