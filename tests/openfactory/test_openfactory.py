@@ -23,6 +23,21 @@ class TestOpenFactory(TestCase):
         ofa = OpenFactory(ksqlClient=self.ksql_mock, bootstrap_servers="MockedBroker")
         self.assertEqual(ofa.ksql, self.ksql_mock)
 
+    def test_assets_uuid(self):
+        """ Test assets_uuid() """
+        test_df = pd.DataFrame({"ASSET_UUID": ["uuid1", "uuid2"]})
+        mock_ksql = MagicMock()
+        mock_ksql.query.return_value = test_df
+
+        ofa = OpenFactory(ksqlClient=mock_ksql, bootstrap_servers="MockedBroker")
+        result = ofa.assets_uuid()
+
+        # Ensure the function returns the expected result
+        self.assertEqual(result, ["uuid1", "uuid2"])
+
+        # Verify the correct query was executed
+        mock_ksql.query.assert_called_once_with("SELECT ASSET_UUID FROM assets_type;")
+
     def test_assets_empty(self):
         """ Test assets() when no assets exist """
         mock_ksql = MagicMock()

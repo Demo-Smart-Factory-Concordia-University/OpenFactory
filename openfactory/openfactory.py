@@ -11,15 +11,18 @@ class OpenFactory:
         self.bootstrap_servers = bootstrap_servers
         self.ksql = ksqlClient
 
-    def assets(self):
-        """ Return list of assets deployed on OpenFactory """
-        query = "SELECT * FROM assets_type;"
+    def assets_uuid(self):
+        """ Return list of asset_uuid of assets deployed on OpenFactory """
+        query = "SELECT ASSET_UUID FROM assets_type;"
         df = self.ksql.query(query)
-
         if df.empty:
             return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
-        return [Asset(asset_uuid=row.ASSET_UUID, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers) for row in df.itertuples()]
+    def assets(self):
+        """ Return list of assets deployed on OpenFactory """
+        return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.assets_uuid()]
 
     def assets_availability(self):
         """ Return availability of OpenFactory assets """
