@@ -166,9 +166,6 @@ class TestGetDevicesFromConfigFile(unittest.TestCase):
                         }
                     }
 
-                print()
-                print(devices_dict['device1'])
-                print(expected['device1'])
                 self.assertEqual(devices_dict, expected)
                 mock_user_notify.fail.assert_not_called()
 
