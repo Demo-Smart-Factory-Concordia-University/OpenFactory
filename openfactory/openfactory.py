@@ -38,7 +38,10 @@ class OpenFactory:
         """ Return list of asset_uuid of devices deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';"
         df = self.ksql.query(query)
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
     def devices(self):
         """ Return devices deployed on OpenFactory """
@@ -48,7 +51,10 @@ class OpenFactory:
         """ Return list of asset_uuid of MTConnect agents deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'MTConnectAgent';"
         df = self.ksql.query(query)
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
     def agents(self):
         """ Return MTConnect agents deployed on OpenFactory """
@@ -58,7 +64,10 @@ class OpenFactory:
         """ Return list of asset_uuid of Kafka producers deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';"
         df = self.ksql.query(query)
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
     def producers(self):
         """ Return Kafka producers deployed on OpenFactory """
@@ -68,7 +77,10 @@ class OpenFactory:
         """ Return list of asset_uuid of Supervisors deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Supervisor';"
         df = self.ksql.query(query)
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
     def supervisors(self):
         """ Return Supervisors deployed on OpenFactory """
@@ -78,7 +90,10 @@ class OpenFactory:
         """ Return list of asset_uuid of Applications deployed on OpenFactory """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'OpenFactoryApp';"
         df = self.ksql.query(query)
-        return df['ASSET_UUID'].to_list()
+        if df.empty:
+            return []
+        else:
+            return df['ASSET_UUID'].to_list()
 
     def applications(self):
         """ Return Applications deployed on OpenFactory """
