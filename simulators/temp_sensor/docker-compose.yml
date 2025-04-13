@@ -1,7 +1,7 @@
-# Docker compose project for development and debugging
+# Docker compose project for Mocked Temperature Sensor Adapter
 
 services:
-  temperature-sensor-simualtor:
+  temperature-sensor-simulator:
     build:
       context: .
       dockerfile: Dockerfile
