@@ -180,6 +180,184 @@ class TestKSQLDBClient(unittest.TestCase):
         self.assertEqual(mock_create_session.call_count, 3)
 
     @patch("requests.Session.post")
+    def test_streams_success(self, mock_post):
+        """ Test streams method returns list of stream names """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{
+            "statementText": "SHOW STREAMS;",
+            "streams": [
+                {"name": "stream_one"},
+                {"name": "stream_two"}
+            ]
+        }]
+        mock_post.return_value = mock_response
+
+        result = self.client.streams()
+        self.assertEqual(result, ["stream_one", "stream_two"])
+
+        # Ensure correct endpoint and payload used
+        url = urljoin(self.ksqldb_url, "/ksql")
+        expected_payload = {"ksql": "SHOW STREAMS;", "streamsProperties": {}}
+        mock_post.assert_called_once_with(
+            url,
+            data=json.dumps(expected_payload),
+            stream=False,
+            timeout=10
+        )
+
+    @patch("requests.Session.post")
+    def test_streams_empty_list_if_no_streams_key(self, mock_post):
+        """ Test streams returns empty list when no 'streams' key exists """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{}]
+        mock_post.return_value = mock_response
+
+        result = self.client.streams()
+        self.assertEqual(result, [])
+
+    @patch("requests.Session.post")
+    def test_streams_returns_empty_on_unexpected_response(self, mock_post):
+        """ Test streams returns empty list when response format is unexpected """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{"statementText": "SOME OTHER QUERY"}]
+        mock_post.return_value = mock_response
+
+        result = self.client.streams()
+        self.assertEqual(result, [])
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_streams_retries_on_failure(self, mock_post, mock_create_session):
+        """ Test streams method retries and eventually succeeds """
+        fail = requests.ConnectionError("fail")
+        success_response = MagicMock()
+        success_response.status_code = 200
+        success_response.json.return_value = [{
+            "statementText": "SHOW STREAMS;",
+            "streams": [{"name": "stream_ok"}]
+        }]
+
+        mock_post.side_effect = [fail, fail, success_response]
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        result = self.client.streams()
+        self.assertEqual(result, ["stream_ok"])
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 2)
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_streams_fails_after_max_retries(self, mock_post, mock_create_session):
+        """ Test streams raises exception after retries exhausted """
+        mock_post.side_effect = requests.Timeout("timeout")
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        with self.assertRaises(Exception) as context:
+            self.client.streams()
+
+        self.assertIn("Failed to connect to ksqlDB", str(context.exception))
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 3)
+
+    @patch("requests.Session.post")
+    def test_tables_success(self, mock_post):
+        """ Test tables method returns list of table names """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{
+            "statementText": "SHOW TABLES;",
+            "tables": [
+                {"name": "table_one"},
+                {"name": "table_two"}
+            ]
+        }]
+        mock_post.return_value = mock_response
+
+        result = self.client.tables()
+        self.assertEqual(result, ["table_one", "table_two"])
+
+        # Ensure correct endpoint and payload used
+        url = urljoin(self.ksqldb_url, "/ksql")
+        expected_payload = {"ksql": "SHOW TABLES;", "streamsProperties": {}}
+        mock_post.assert_called_once_with(
+            url,
+            data=json.dumps(expected_payload),
+            stream=False,
+            timeout=10
+        )
+
+    @patch("requests.Session.post")
+    def test_tables_empty_list_if_no_tables_key(self, mock_post):
+        """ Test tables returns empty list when no 'tables' key exists """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{}]
+        mock_post.return_value = mock_response
+
+        result = self.client.tables()
+        self.assertEqual(result, [])
+
+    @patch("requests.Session.post")
+    def test_tables_returns_empty_on_unexpected_response(self, mock_post):
+        """ Test tables returns empty list when response format is unexpected """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = [{"statementText": "SOME OTHER QUERY"}]
+        mock_post.return_value = mock_response
+
+        result = self.client.tables()
+        self.assertEqual(result, [])
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_tables_retries_on_failure(self, mock_post, mock_create_session):
+        """ Test tables method retries and eventually succeeds """
+        fail = requests.ConnectionError("fail")
+        success_response = MagicMock()
+        success_response.status_code = 200
+        success_response.json.return_value = [{
+            "statementText": "SHOW TABLES;",
+            "tables": [{"name": "table_ok"}]
+        }]
+
+        mock_post.side_effect = [fail, fail, success_response]
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        result = self.client.tables()
+        self.assertEqual(result, ["table_ok"])
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 2)
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_tables_fails_after_max_retries(self, mock_post, mock_create_session):
+        """ Test tables raises exception after retries exhausted """
+        mock_post.side_effect = requests.Timeout("timeout")
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        with self.assertRaises(Exception) as context:
+            self.client.tables()
+
+        self.assertIn("Failed to connect to ksqlDB", str(context.exception))
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 3)
+
+    @patch("requests.Session.post")
     def test_query(self, mock_post):
         """ Test query method """
         query = "SELECT * FROM test;"

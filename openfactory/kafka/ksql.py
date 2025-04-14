@@ -8,6 +8,10 @@ from urllib.parse import urljoin
 
 
 class KSQLDBClient:
+    """
+    ksqlDB client used by OpenFactory
+    """
+
     def __init__(self, ksqldb_url, max_retries=3, retry_delay=2):
         """
         Initializes the ksqlDB client with a persistent session
@@ -92,6 +96,72 @@ class KSQLDBClient:
 
         raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
+    def streams(self):
+        """
+        Returns a list of existing stream names in ksqlDB
+        """
+        query = "SHOW STREAMS;"
+        payload = {"ksql": query, "streamsProperties": {}}
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self.session.post(
+                    urljoin(self.ksqldb_url, "/ksql"),
+                    data=json.dumps(payload),
+                    stream=False,
+                    timeout=10
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and "streams" in data[0]:
+                        return [stream["name"] for stream in data[0]["streams"]]
+                    elif "statementText" in data[0] and "SHOW STREAMS" in data[0]["statementText"]:
+                        return [row["name"] for row in data[0]["streams"]]
+                    else:
+                        return []
+                raise Exception(f"Error retrieving streams: {response.text}")
+
+            except (requests.ConnectionError, requests.Timeout) as e:
+                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
+                time.sleep(self.retry_delay)
+                self.session = self._create_session()
+
+        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+
+    def tables(self):
+        """
+        Returns a list of existing table names in ksqlDB
+        """
+        query = "SHOW TABLES;"
+        payload = {"ksql": query, "streamsProperties": {}}
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self.session.post(
+                    urljoin(self.ksqldb_url, "/ksql"),
+                    data=json.dumps(payload),
+                    stream=False,
+                    timeout=10
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and "tables" in data[0]:
+                        return [table["name"] for table in data[0]["tables"]]
+                    elif "statementText" in data[0] and "SHOW TABLES" in data[0]["statementText"]:
+                        return [row["name"] for row in data[0]["tables"]]
+                    else:
+                        return []
+                raise Exception(f"Error retrieving tables: {response.text}")
+
+            except (requests.ConnectionError, requests.Timeout) as e:
+                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
+                time.sleep(self.retry_delay)
+                self.session = self._create_session()
+
+        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+
     def query(self, query: str) -> pd.DataFrame:
         """
         Executes a ksqlDB query with automatic retry logic
@@ -170,6 +240,8 @@ if __name__ == "__main__":
     ksql = KSQLDBClient('http://localhost:8088')
 
     print('ksqlDB server info:', ksql.info())
+    print('streams:', ksql.streams())
+    print('tables:', ksql.tables())
 
     query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Samples';"
     print('\nSamples:\n', ksql.query(query))
