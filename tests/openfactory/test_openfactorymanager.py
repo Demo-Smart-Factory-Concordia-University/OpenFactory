@@ -22,6 +22,11 @@ class TestOpenFactoryManager(unittest.TestCase):
         Test deploy_mtconnect_agent
         """
 
+        # Create separate mock instances for device and agent
+        mock_device_asset = MagicMock()
+        mock_agent_asset = MagicMock()
+        MockAsset.side_effect = [mock_device_asset, mock_agent_asset]
+
         # Mock config values
         mock_config.MTCONNECT_AGENT_CFG_FILE = "mock_agent_cfg_file"
         mock_config.MTCONNECT_AGENT_IMAGE = "mock_image"
@@ -113,6 +118,19 @@ class TestOpenFactoryManager(unittest.TestCase):
                                                     ksqlClient=ksqlMock,
                                                     bootstrap_servers='mokded_bootstrap_servers',
                                                     docker_service=device_uuid.lower() + '-agent')
+
+        # Check that add_attribute was called with expected parameters
+        mock_agent_asset.add_attribute.assert_called_once()
+        args, kwargs = mock_agent_asset.add_attribute.call_args
+
+        # Check attribute name
+        self.assertEqual(args[0], 'agent_port')
+
+        # Check attribute value (the AssetAttribute instance)
+        attr_value = args[1]
+        self.assertEqual(attr_value.value, agent['port'])
+        self.assertEqual(attr_value.type, 'Events')
+        self.assertEqual(attr_value.tag, 'NetworkPort')
 
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with("Agent device-uuid-123-agent deployed successfully")

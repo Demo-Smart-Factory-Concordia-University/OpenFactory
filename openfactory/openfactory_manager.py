@@ -1,7 +1,7 @@
 import docker
 import openfactory.config as config
 from openfactory import OpenFactory
-from openfactory.assets import Asset
+from openfactory.assets import Asset, AssetAttribute
 from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
 from openfactory.models.user_notifications import user_notify
@@ -95,6 +95,12 @@ class OpenFactoryManager(OpenFactory):
         device.add_reference_below(agent_uuid)
         agent = Asset(agent_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         agent.add_reference_above(device_uuid)
+        agent.add_attribute('agent_port',
+                            AssetAttribute(
+                                value=agent_port,
+                                type='Events',
+                                tag='NetworkPort'
+                            ))
 
         user_notify.success(f"Agent {device_uuid.lower()}-agent deployed successfully")
 
