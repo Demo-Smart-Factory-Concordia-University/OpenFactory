@@ -1,17 +1,33 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "Ubuntu",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-		"image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
-	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	"name": "Integration Test Container",
+	"build": {
+	  "dockerfile": "Dockerfile"
 	},
-	"postCreateCommand": "./MTConnect/tests/test_agent/set_host_ip_env_var.sh",
-    "customizations": {
-      "vscode": {
-        "settings": {},
-        "extensions": []
-      }
-    }
+	"workspaceFolder": "/workspace",
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspace,type=bind",
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	],
+	"postCreateCommand": "docker network create factory-net || true && pip install -r requirements.txt",
+	"remoteEnv": {
+		"PYTHONUNBUFFERED": "1"
+	},
+	"containerEnv": {
+		"KAFKA_BROKER": "test-env-broker:29092",
+		"KSQLDB": "http://test-env-ksqldb-server:8088"
+	},
+	"runArgs": [
+		"--network=factory-net"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.unittest",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
 }
