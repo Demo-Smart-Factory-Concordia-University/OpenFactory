@@ -71,6 +71,7 @@ services:
     container_name: ksqldb-cli
     environment:
       - KSQL_START_SCRIPTS=mtcdevices.sql:ofacmds.sql
+      - KSQL_URL=http://ksqldb-server:8088
     volumes:
       - "./scripts:/home/appuser/scripts"
     networks:
