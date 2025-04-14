@@ -7,7 +7,6 @@ LABEL documentation="https://github.com/Demo-Smart-Factory-Concordia-University/
 ARG UNAME=ofa
 ARG UID=1200
 ARG GID=1200
-ARG VERSION=latest
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -21,11 +20,7 @@ RUN apt-get update
 RUN apt-get -y install git
 
 # python dependencies
-RUN pip install git+https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory.git
 RUN pip install git+https://github.com/Demo-Smart-Factory-Concordia-University/MTCAdapters.git
-
-# Set environment variable from build argument
-ENV APPLICATION_VERSION=${VERSION}
 
 WORKDIR /home/$UNAME
 USER $UNAME
