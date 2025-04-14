@@ -1,14 +1,12 @@
 import click
-from sqlalchemy import select
-
-from openfactory.models.agents import Agent
-from openfactory.ofa.db import db
+from openfactory import OpenFactory
+from openfactory.ofa.ksqldb import ksql
 
 
 @click.command(name='ls')
 def ls():
     """ List MTConnect agents defined in OpenFactory """
-    agents = select(Agent)
-    print('UUID                      NODE                      PORT     STATUS')
-    for agent in db.session.scalars(agents):
-        print(f'{agent.uuid:25} {agent.node:25} {agent.agent_port:<8d} {agent.status:7}')
+    ofa = OpenFactory(ksqlClient=ksql.client)
+    print('UUID                      AVAILABILITY              PORT')
+    for agent in ofa.agents():
+        print(f'{agent.asset_uuid:25} {agent.agent_avail.value:25} {agent.agent_port.value}')
