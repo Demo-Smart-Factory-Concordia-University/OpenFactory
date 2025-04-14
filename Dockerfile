@@ -10,6 +10,7 @@ FROM python:3.10
 # Build arguments
 ARG UNAME=ofauser
 ARG UID=1001
+ARG DOCKER_GID=984
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -17,16 +18,16 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
+RUN apt-get update && \
+    apt-get -y install git && \
+    groupadd -g ${DOCKER_GID} docker || true && \
+    useradd -m -u ${UID} -G docker -s /bin/bash ${UNAME}
+
 # Install pip requirements
-RUN apt-get update
-RUN apt-get -y install git
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
 WORKDIR /ofa
-
-# Creates a non-root user with an explicit UID
-RUN adduser --uid ${UID} --disabled-password --gecos "" ${UNAME}
 
 # Copies secrets
 RUN mkdir -p /home/${UNAME}/.ssh
