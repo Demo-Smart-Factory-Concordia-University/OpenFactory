@@ -1,6 +1,5 @@
 import click
-from openfactory.ofa.db import db
-from openfactory.factories import connect_devices_to_influxdb
+# from openfactory.factories import connect_devices_to_influxdb
 
 
 @click.command(name='connect-influxdb')
@@ -9,4 +8,5 @@ from openfactory.factories import connect_devices_to_influxdb
                 nargs=1)
 def click_connect_influxdb(yaml_config_file):
     """ Connects devices to InfluxDB """
-    connect_devices_to_influxdb(db.session, yaml_config_file)
+    pass
+    # connect_devices_to_influxdb(db.session, yaml_config_file)
