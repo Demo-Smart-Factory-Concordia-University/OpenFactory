@@ -6,6 +6,10 @@ OPENFACTORY_USER: openfactory
 # OpenFactory Manager Node
 OPENFACTORY_MANAGER_NODE: ${MANAGER_NODE_IP}
 
+# OpenFactory Manager Node docker url
+# OPENFACTORY_MANAGER_NODE_DOCKER_URL: ssh://openfactory@${MANAGER_NODE_IP}
+OPENFACTORY_MANAGER_NODE_DOCKER_URL: unix://var/run/docker.sock
+
 # OpenFactory Overlay network
 OPENFACTORY_NETWORK: factory-net
 

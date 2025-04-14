@@ -14,7 +14,7 @@ class DockerAccesLayer:
 
     def connect(self):
         """ Connect to Docker engine via the OpenFactory Manger Node """
-        self.docker_url = f"ssh://{config.OPENFACTORY_USER}@{config.OPENFACTORY_MANAGER_NODE}"
+        self.docker_url = config.OPENFACTORY_MANAGER_NODE_DOCKER_URL
         self.ip = config.OPENFACTORY_MANAGER_NODE
         self.docker_client = docker.DockerClient(base_url=self.docker_url)
         self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
