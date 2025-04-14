@@ -3,6 +3,7 @@ from openfactory.models.user_notifications import user_notify
 import openfactory.ofa as ofa
 from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.ksqldb import ksql
+from openfactory.kafka.ksql import KSQLDBClienException
 import openfactory.config as config
 
 """
@@ -91,7 +92,11 @@ dal.connect()
 
 # connect to ksqlDB server
 # (disconnect is handled by KSQLDBClient class)
-ksql.connect(config.KSQLDB)
+try:
+    ksql.connect(config.KSQLDB)
+except KSQLDBClienException:
+    user_notify.fail('Failed to connect to ksqlDB server')
+    exit(1)
 
 
 if __name__ == '__main__':

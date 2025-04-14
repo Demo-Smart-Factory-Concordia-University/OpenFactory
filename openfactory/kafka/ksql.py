@@ -7,6 +7,11 @@ import signal
 from urllib.parse import urljoin
 
 
+class KSQLDBClienException(Exception):
+    """ A general error in OpenFactory """
+    pass
+
+
 class KSQLDBClient:
     """
     ksqlDB client used by OpenFactory
@@ -56,7 +61,7 @@ class KSQLDBClient:
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()
 
-        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def get_kafka_topic(self, stream_name) -> str:
         """
@@ -64,7 +69,7 @@ class KSQLDBClient:
 
         :param stream_name: Name of the ksqlDB stream
         :return: The Kafka topic name as a string
-        :raises Exception: If the query fails or the stream is not found
+        :raises KSQLDBClienException: If the query fails or the stream is not found
         """
         query = f"DESCRIBE {stream_name} EXTENDED;"
         payload = {"ksql": query}
@@ -84,17 +89,17 @@ class KSQLDBClient:
                         # Extract and return the Kafka topic
                         return data[0]["sourceDescription"]["topic"]
                     else:
-                        raise Exception("Stream details not found in the response.")
+                        raise KSQLDBClienException("Stream details not found in the response.")
 
-                # If response is not OK, raise an exception
-                raise Exception(f"Error in ksqlDB query {query}: {response.text}")
+                # If response is not OK, raise an KSQLDBClienException
+                raise KSQLDBClienException(f"Error in ksqlDB query {query}: {response.text}")
 
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()  # Reset session before retrying
 
-        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def streams(self):
         """
@@ -120,14 +125,14 @@ class KSQLDBClient:
                         return [row["name"] for row in data[0]["streams"]]
                     else:
                         return []
-                raise Exception(f"Error retrieving streams: {response.text}")
+                raise KSQLDBClienException(f"Error retrieving streams: {response.text}")
 
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()
 
-        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def tables(self):
         """
@@ -153,14 +158,14 @@ class KSQLDBClient:
                         return [row["name"] for row in data[0]["tables"]]
                     else:
                         return []
-                raise Exception(f"Error retrieving tables: {response.text}")
+                raise KSQLDBClienException(f"Error retrieving tables: {response.text}")
 
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()
 
-        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def query(self, query: str) -> pd.DataFrame:
         """
@@ -182,15 +187,15 @@ class KSQLDBClient:
                 if response.status_code == 200:
                     return self._process_response(response)
 
-                # If response is not OK, raise an exception
-                raise Exception(f"Error in ksqlDB query {query}: {response.text}")
+                # If response is not OK, raise an KSQLDBClienException
+                raise KSQLDBClienException(f"Error in ksqlDB query {query}: {response.text}")
 
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()  # Reset session before retrying
 
-        raise Exception(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
     def _process_response(self, response):
         """ Processes the ksqlDB response and returns a DataFrame """
