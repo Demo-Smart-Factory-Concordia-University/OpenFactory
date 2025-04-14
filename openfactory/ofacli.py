@@ -2,7 +2,6 @@ import click
 from openfactory.models.user_notifications import user_notify
 import openfactory.ofa as ofa
 from openfactory.docker.docker_access_layer import dal
-from openfactory.ofa.db import db
 from openfactory.ofa.ksqldb import ksql
 import openfactory.config as config
 
@@ -89,10 +88,6 @@ user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{con
 
 # connect to Docker engine
 dal.connect()
-
-# connect to database
-db.conn_uri = config.SQL_ALCHEMY_CONN
-db.connect()
 
 # connect to ksqlDB server
 # (disconnect is handled by KSQLDBClient class)
