@@ -6,6 +6,7 @@ sqlalchemy
 flake8
 git+https://github.com/rwuthric/PyKSQL.git
 git+https://github.com/rwuthric/python-mtc2kafka.git
+git+https://github.com/Demo-Smart-Factory-Concordia-University/MTCAdapters.git
 python-dotenv
 PyGithub
 fsspec
