@@ -10,6 +10,7 @@ x-openfactory-common:
   image: ofa/ofa
   environment:
       - SQL_ALCHEMY_CONN=sqlite:////home/ofauser/local/openfact.db
+      - OPENFACTORY_MANAGER_NODE_DOCKER_URL=${OPENFACTORY_MANAGER_NODE_DOCKER_URL}
   volumes:
       - ./local:/home/ofauser/local
       - .:/ofa
