@@ -8,10 +8,12 @@
 	"workspaceFolder": "/workspace",
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspace,type=bind",
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+		"source=${env:SSH_AUTH_SOCK},target=/ssh-agent,type=bind"
 	],
 	"postCreateCommand": "docker network create factory-net || true && pip install -r requirements.txt",
 	"remoteEnv": {
+		"SSH_AUTH_SOCK": "/ssh-agent",
 		"PYTHONUNBUFFERED": "1"
 	},
 	"containerEnv": {
