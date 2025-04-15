@@ -1,8 +1,8 @@
-import yaml
 from typing import Dict, Optional
 from pydantic import BaseModel, Field, RootModel, model_validator, ValidationError
 from ipaddress import IPv4Address
 from openfactory.models.user_notifications import user_notify
+from openfactory.config import load_yaml
 
 
 class Volume(BaseModel):
@@ -86,8 +86,7 @@ def get_infrastructure_from_config_file(infra_yaml_config_file):
     Side effect: sends user notifications in case of validation errors
     """
     # load yaml description file
-    with open(infra_yaml_config_file, 'r') as stream:
-        cfg = yaml.safe_load(stream)
+    cfg = load_yaml(infra_yaml_config_file)
 
     # validate and create devices configuration
     try:
