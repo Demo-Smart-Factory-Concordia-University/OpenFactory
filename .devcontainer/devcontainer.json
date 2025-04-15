@@ -3,12 +3,17 @@
 {
 	"name": "Integration Test Container",
 	"build": {
-	  "dockerfile": "Dockerfile"
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+		"version": "latest",
+		"moby": true
+		}
 	},
 	"workspaceFolder": "/workspace",
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspace,type=bind",
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
 		"source=${env:SSH_AUTH_SOCK},target=/ssh-agent,type=bind"
 	],
 	"postCreateCommand": "docker network create factory-net || true && pip install -r requirements.txt",
@@ -18,7 +23,8 @@
 	},
 	"containerEnv": {
 		"KAFKA_BROKER": "test-env-broker:29092",
-		"KSQLDB": "http://test-env-ksqldb-server:8088"
+		"KSQLDB": "http://test-env-ksqldb-server:8088",
+		"OPENFACTORY_MANAGER_NODE_DOCKER_URL": "ssh://openfactory@${localEnv:HOST_IP}"
 	},
 	"runArgs": [
 		"--network=factory-net"
