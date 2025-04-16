@@ -1,5 +1,6 @@
 import docker
 import openfactory.config as config
+from openfactory.exceptions import OFAException
 
 
 class DockerAccesLayer:
@@ -17,6 +18,8 @@ class DockerAccesLayer:
         self.docker_url = config.OPENFACTORY_MANAGER_NODE_DOCKER_URL
         self.ip = config.OPENFACTORY_MANAGER_NODE
         self.docker_client = docker.DockerClient(base_url=self.docker_url)
+        if 'JoinTokens' not in self.docker_client.swarm.attrs:
+            raise OFAException(f'Docker running on {config.OPENFACTORY_MANAGER_NODE_DOCKER_URL} is not in Swarm mode')
         self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
         self.manager_token = self.docker_client.swarm.attrs['JoinTokens']['Manager']
 
