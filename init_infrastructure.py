@@ -12,8 +12,8 @@ It will
 Usage:
    python init_infrastructure.py <infrastructure_config_file>
 
-The infrastructure_config_file must contain the definition of the OpenFactory Network
-and optionally the ingress network, in case the standard Docker Swarm ingress network has to be
+The infrastructure_config_file can contain the definition of the OpenFactory Network
+and the ingress network, in case the standard Docker Swarm ingress network has to be
 replaced:
 
 networks:
@@ -120,11 +120,15 @@ def init_infrastructure(networks, manager_labels, volumes):
         print("Docker ingress network created successfully")
 
     # create the openfactory-network
+    if 'openfactory-network' in networks:
+        ipamConfig = ipam_config(networks['openfactory-network'])
+    else:
+        ipamConfig = docker.types.IPAMConfig(driver='default', pool_configs=[])
     client.networks.create(
         name=config.OPENFACTORY_NETWORK,
         driver='overlay',
         attachable=True,
-        ipam=ipam_config(networks['openfactory-network'])
+        ipam=ipamConfig
     )
     print(f"Network '{config.OPENFACTORY_NETWORK}' created successfully.")
 
@@ -145,9 +149,7 @@ if __name__ == '__main__':
 
     cfg = get_infrastructure_from_config_file(sys.argv[1])
 
-    if 'openfactory-network' not in cfg['networks']:
-        print("Could not initialise the OpenFactory infrastructure.")
-        print("The network 'openfactory-network' has to be defined.")
-        exit(1)
+    if not cfg.get('networks'):
+        cfg['networks'] = []
 
     init_infrastructure(cfg['networks'], get_manager_labels(cfg), cfg.get('volumes', {}))
