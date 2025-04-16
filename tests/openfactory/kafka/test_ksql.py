@@ -5,7 +5,7 @@ import pandas as pd
 import json
 import signal
 from urllib.parse import urljoin
-from openfactory.kafka import KSQLDBClient
+from openfactory.kafka.ksql import KSQLDBClient, KSQLDBClienException
 
 
 class TestKSQLDBClient(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestKSQLDBClient(unittest.TestCase):
 
     @patch("requests.Session.get")
     def test_info_success(self, mock_get):
-        """ Test info method """
+        """ Test info method returns server info on success """
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"KsqlServerInfo": {"version": "0.28.0"}}
@@ -54,21 +54,19 @@ class TestKSQLDBClient(unittest.TestCase):
         result = self.client.info()
 
         expected_url = urljoin(self.ksqldb_url, "info")
-        mock_get.assert_called_with(expected_url)
+        mock_get.assert_called_once_with(expected_url)
         self.assertEqual(result["KsqlServerInfo"]["version"], "0.28.0")
-        self.assertEqual(mock_get.call_count, 1)
 
     @patch.object(KSQLDBClient, "_create_session")
     @patch("requests.Session.get")
     def test_info_retries_then_succeeds(self, mock_get, mock_create_session):
-        """ Test info method with reconnect attempts """
+        """ Test info method retries on failure and succeeds """
         mock_get.side_effect = [
-            requests.ConnectionError("fail 1"),
-            requests.ConnectionError("fail 2"),
+            requests.ConnectionError("Connection failed"),
+            requests.ConnectionError("Connection failed again"),
             MagicMock(status_code=200, json=lambda: {"KsqlServerInfo": {"version": "0.30.0"}})
         ]
 
-        # Patch _create_session to return a dummy session (same one reused)
         dummy_session = MagicMock()
         dummy_session.get = mock_get
         mock_create_session.return_value = dummy_session
@@ -77,24 +75,22 @@ class TestKSQLDBClient(unittest.TestCase):
 
         self.assertEqual(result["KsqlServerInfo"]["version"], "0.30.0")
         self.assertEqual(mock_get.call_count, 3)
-
-        # It should recreate the session twice (after each of the 2 failures)
         self.assertEqual(mock_create_session.call_count, 2)
 
     @patch.object(KSQLDBClient, "_create_session")
     @patch("requests.Session.get")
     def test_info_fails_after_max_retries(self, mock_get, mock_create_session):
-        """ Test info method with connection failures exceeding max_retries """
-        mock_get.side_effect = requests.ConnectionError("mock_fail")
+        """ Test info method raises exception after max retries """
+        mock_get.side_effect = requests.ConnectionError("Connection failed")
 
         dummy_session = MagicMock()
         dummy_session.get = mock_get
         mock_create_session.return_value = dummy_session
 
-        with self.assertRaises(Exception) as context:
+        with self.assertRaises(KSQLDBClienException) as context:
             self.client.info()
 
-        self.assertIn("Failed to connect to ksqlDB after", str(context.exception))
+        self.assertIn("Failed to connect to ksqlDB", str(context.exception))
         self.assertEqual(mock_get.call_count, 3)
         self.assertEqual(mock_create_session.call_count, 3)
 

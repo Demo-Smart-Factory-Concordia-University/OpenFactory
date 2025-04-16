@@ -61,7 +61,7 @@ class KSQLDBClient:
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()
 
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB {self.ksqldb_url} after {self.max_retries} attempts.")
 
     def get_kafka_topic(self, stream_name) -> str:
         """
