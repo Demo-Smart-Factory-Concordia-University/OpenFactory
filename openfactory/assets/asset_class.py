@@ -234,7 +234,7 @@ class Asset():
                                                type='OpenFactory'
                                                ))
 
-    def wait_until(self, attribute, value, kafka_group_id=None, timeout=30):
+    def wait_until(self, attribute, value, timeout=30):
         """ Waits until the asset attribute has a specific value or times out.
 
         Args:
@@ -250,8 +250,7 @@ class Asset():
         if self.__getattr__(attribute).value == value:
             return True
 
-        if kafka_group_id is None:
-            kafka_group_id = f"{self.asset_uuid}_{uuid.uuid4()}"
+        kafka_group_id = f"{self.asset_uuid}_{uuid.uuid4()}"
 
         consumer = KafkaAssetConsumer(
             consumer_group_id=kafka_group_id,
@@ -266,6 +265,7 @@ class Asset():
             # Check for timeout
             if (time.time() - start_time) > timeout:
                 consumer.consumer.close()
+                delete_consumer_group(kafka_group_id, bootstrap_servers=self.bootstrap_servers)
                 return False
 
             msg = consumer.consumer.poll(timeout=0.1)
@@ -291,15 +291,18 @@ class Asset():
                     try:
                         if float(msg_value['value']) == value:
                             consumer.consumer.close()
+                            delete_consumer_group(kafka_group_id, bootstrap_servers=self.bootstrap_servers)
                             return True
                     except ValueError:
                         continue
                 else:
                     if msg_value['value'] == value:
                         consumer.consumer.close()
+                        delete_consumer_group(kafka_group_id, bootstrap_servers=self.bootstrap_servers)
                         return True
 
         consumer.consumer.close()
+        delete_consumer_group(kafka_group_id, bootstrap_servers=self.bootstrap_servers)
         return False
 
     def __consume_messages(self, kakfa_group_id, on_message):

@@ -525,11 +525,12 @@ class TestAsset(TestCase):
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
     @patch('openfactory.assets.asset_class.uuid.uuid4')
     @patch('openfactory.assets.asset_class.time.time')
-    def test_wait_until_attribute_matches_after_polling(self, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
+    @patch('openfactory.assets.asset_class.delete_consumer_group')
+    def test_wait_until_attribute_matches_after_polling(self, mock_delete_consumer_group, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
         """ Test wait_until when the attribute matches after polling """
         # Mock the Asset object
         mock_ksql = MagicMock()
-        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql)
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql, bootstrap_servers="mock_broker")
 
         # Mock the attribute value to not match initially
         mock_attribute = MagicMock()
@@ -551,20 +552,23 @@ class TestAsset(TestCase):
         mock_time.side_effect = [0, 1, 2]
 
         # Call the method
+        mock_uuid.return_value = "mock"
         result = asset.wait_until(attribute="test_attribute", value="expected_value", timeout=10)
 
         # Assert the result is True
         self.assertTrue(result)
         mock_consumer_instance.consumer.close.assert_called_once()
+        mock_delete_consumer_group.assert_called_once_with("test_uuid_mock", bootstrap_servers="mock_broker")
 
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
     @patch('openfactory.assets.asset_class.uuid.uuid4')
     @patch('openfactory.assets.asset_class.time.time')
-    def test_wait_until_attribute_matches_samples(self, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
+    @patch('openfactory.assets.asset_class.delete_consumer_group')
+    def test_wait_until_attribute_matches_samples(self, mock_delete_consumer_group, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
         """ Test wait_until when the attribute matches after polling for Samples attribute """
         # Mock the Asset object
         mock_ksql = MagicMock()
-        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql)
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql, bootstrap_servers="mock_broker")
 
         # Mock the attribute value to not match initially
         mock_attribute = MagicMock()
@@ -586,20 +590,23 @@ class TestAsset(TestCase):
         mock_time.side_effect = [0, 1, 2]
 
         # Call the method
+        mock_uuid.return_value = "mock"
         result = asset.wait_until(attribute="test_attribute", value=33, timeout=10)
 
         # Assert the result is True
         self.assertTrue(result)
         mock_consumer_instance.consumer.close.assert_called_once()
+        mock_delete_consumer_group.assert_called_once_with("test_uuid_mock", bootstrap_servers="mock_broker")
 
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
     @patch('openfactory.assets.asset_class.uuid.uuid4')
     @patch('openfactory.assets.asset_class.time.time')
-    def test_wait_until_timeout(self, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
+    @patch('openfactory.assets.asset_class.delete_consumer_group')
+    def test_wait_until_timeout(self, mock_delete_consumer_group, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
         """ Test wait_until when the timeout is reached """
         # Mock the Asset object
         mock_ksql = MagicMock()
-        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql)
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql, bootstrap_servers="mock_broker")
 
         # Mock the attribute value to not match initially
         mock_attribute = MagicMock()
@@ -617,20 +624,23 @@ class TestAsset(TestCase):
         mock_time.side_effect = [0, 1, 2, 31]
 
         # Call the method
+        mock_uuid.return_value = "mock"
         result = asset.wait_until(attribute="test_attribute", value="expected_value", timeout=30)
 
         # Assert the result is False
         self.assertFalse(result)
         mock_consumer_instance.consumer.close.assert_called_once()
+        mock_delete_consumer_group.assert_called_once_with("test_uuid_mock", bootstrap_servers="mock_broker")
 
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
     @patch('openfactory.assets.asset_class.uuid.uuid4')
     @patch('openfactory.assets.asset_class.time.time')
-    def test_wait_until_handles_invalid_message(self, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
+    @patch('openfactory.assets.asset_class.delete_consumer_group')
+    def test_wait_until_handles_invalid_message(self, mock_delete_consumer_group, mock_time, mock_uuid, mock_kafka_consumer, MockAssetProducer):
         """ Test wait_until when the message is invalid format """
         # Mock the Asset object
         mock_ksql = MagicMock()
-        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql)
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=mock_ksql, bootstrap_servers="mock_broker")
 
         # Mock the attribute value to not match initially
         mock_attribute = MagicMock()
@@ -651,8 +661,10 @@ class TestAsset(TestCase):
         mock_time.side_effect = [0, 1, 31]
 
         # Call the method
+        mock_uuid.return_value = "mock"
         result = asset.wait_until(attribute="test_attribute", value="expected_value", timeout=30)
 
         # Assert the result is False
         self.assertFalse(result)
         mock_consumer_instance.consumer.close.assert_called_once()
+        mock_delete_consumer_group.assert_called_once_with("test_uuid_mock", bootstrap_servers="mock_broker")
