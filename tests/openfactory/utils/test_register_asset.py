@@ -28,9 +28,9 @@ class TestRegisterAsset(unittest.TestCase):
         # Check that AssetProducer is instantiated correctly
         MockAssetProducer.assert_called_once_with(asset_uuid, mock_ksql_client, bootstrap_servers)
 
-        # Check that send_asset_attribute is called twice with correct AssetAttribute values
+        # Check that send_asset_attribute is called four times with correct AssetAttribute values
         calls = mock_producer_instance.send_asset_attribute.call_args_list
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 4)
 
         # Check contents of the first call
         asset_type_call = calls[0]
@@ -47,3 +47,19 @@ class TestRegisterAsset(unittest.TestCase):
         self.assertEqual(docker_service_call[0][1].value, docker_service)
         self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
         self.assertEqual(docker_service_call[0][1].tag, "DockerService")
+
+        # Check contents of the third call
+        docker_service_call = calls[2]
+        self.assertEqual(docker_service_call[0][0], "references_below")
+        self.assertIsInstance(docker_service_call[0][1], AssetAttribute)
+        self.assertEqual(docker_service_call[0][1].value, "")
+        self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
+        self.assertEqual(docker_service_call[0][1].tag, "AssetsReferences")
+
+        # Check contents of the fourth call
+        docker_service_call = calls[3]
+        self.assertEqual(docker_service_call[0][0], "references_above")
+        self.assertIsInstance(docker_service_call[0][1], AssetAttribute)
+        self.assertEqual(docker_service_call[0][1].value, "")
+        self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
+        self.assertEqual(docker_service_call[0][1].tag, "AssetsReferences")

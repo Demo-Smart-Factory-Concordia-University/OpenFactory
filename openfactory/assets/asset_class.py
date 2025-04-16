@@ -166,6 +166,14 @@ class Asset():
         """ Adds a new attribute to the asset """
         self.producer.send_asset_attribute(attribute_id, asset_attribute)
 
+    def references_above_uuid(self):
+        """ List of asset UUID of assets above """
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
+        df = self.ksql.query(query)
+        if df.empty or df['VALUE'][0].strip() == "":
+            return []
+        return [item.strip() for item in df['VALUE'][0].split(',')]
+
     @property
     def references_above(self):
         """ References to above OpenFactory assets """
@@ -174,6 +182,14 @@ class Asset():
         if df.empty or df['VALUE'][0].strip() == "":
             return []
         return [Asset(asset_uuid=asset_uuid.strip(), ksqlClient=self.ksql) for asset_uuid in df['VALUE'][0].split(",")]
+
+    def references_below_uuid(self):
+        """ List of asset UUID of assets below """
+        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
+        df = self.ksql.query(query)
+        if df.empty or df['VALUE'][0].strip() == "":
+            return []
+        return [item.strip() for item in df['VALUE'][0].split(',')]
 
     @property
     def references_below(self):
