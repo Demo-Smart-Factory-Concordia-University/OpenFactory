@@ -46,7 +46,10 @@ To prepare your host for running the devcontainer:
 Before launching the devcontainer, make sure to:
 
 1. **Start the OpenFactory single-node cluster on your host machine**  
-   Use the [`init_infrastructure.py`](init_infrastructure.py) script.
+   Use the [`init_infrastructure.py`](init_infrastructure.py) script:
+   ```bash
+   python init_infrastructure.py tests/integration-tests/configs/infra.yml
+   ```
 
 2. **Start the Kafka cluster**  
    From your host machine:

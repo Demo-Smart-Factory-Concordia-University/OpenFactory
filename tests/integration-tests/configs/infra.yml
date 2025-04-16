@@ -1,0 +1,6 @@
+# A single node OpenFactory cluster
+
+nodes:
+  managers:
+    manager: 
+      ip: ${HOST_IP}
