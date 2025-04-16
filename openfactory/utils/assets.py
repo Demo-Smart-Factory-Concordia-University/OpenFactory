@@ -17,6 +17,13 @@ def register_asset(asset_uuid, asset_type, ksqlClient, bootstrap_servers=config.
         AssetAttribute(value=docker_service, type="OpenFactory", tag="DockerService")
     )
 
+    # Initialize references
+    for ref_id in ["references_below", "references_above"]:
+        producer.send_asset_attribute(
+            ref_id,
+            AssetAttribute(value="", type="OpenFactory", tag="AssetsReferences")
+        )
+
 
 def deregister_asset(asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
     """ Deregister an asset from OpenFactory """

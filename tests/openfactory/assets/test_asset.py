@@ -405,6 +405,102 @@ class TestAsset(TestCase):
         assert actual_attribute.type == "OpenFactory"
         assert actual_attribute.tag == "AssetsReferences"
 
+    def test_references_above_uuid_empty_result(self, MockAssetProducer):
+        """ Test references_above_uuid when the query returns an empty DataFrame """
+        # Simulate an empty DataFrame returned by the query
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(empty=True)
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_above_uuid()
+
+        self.assertEqual(result, [])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+        )
+
+    def test_references_above_uuid_no_value(self, MockAssetProducer):
+        """ Test references_above_uuid when the VALUE field is empty """
+        # Simulate a DataFrame with an empty VALUE field
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(
+            empty=False,
+            __getitem__=lambda _, key: [""] if key == "VALUE" else None
+        )
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_above_uuid()
+
+        self.assertEqual(result, [])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+        )
+
+    def test_references_above_uuid_with_values(self, MockAssetProducer):
+        """ Test references_above_uuid when the VALUE field is not empty """
+        # Simulate a DataFrame with a non-empty VALUE field
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(
+            empty=False,
+            __getitem__=lambda _, key: ["uuid1, uuid2, uuid3"] if key == "VALUE" else None
+        )
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_above_uuid()
+
+        self.assertEqual(result, ["uuid1", "uuid2", "uuid3"])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+        )
+
+    def test_references_below_uuid_empty_result(self, MockAssetProducer):
+        """ Test references_below_uuid when the query returns an empty DataFrame """
+        # Simulate an empty DataFrame returned by the query
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(empty=True)
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_below_uuid()
+
+        self.assertEqual(result, [])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+        )
+
+    def test_references_below_uuid_no_value(self, MockAssetProducer):
+        """ Test references_below_uuid when the VALUE field is empty """
+        # Simulate a DataFrame with an empty VALUE field
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(
+            empty=False,
+            __getitem__=lambda _, key: [""] if key == "VALUE" else None
+        )
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_below_uuid()
+
+        self.assertEqual(result, [])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+        )
+
+    def test_references_below_uuid_with_values(self, MockAssetProducer):
+        """ Test references_below_uuid when the VALUE field is not empty """
+        # Simulate a DataFrame with a non-empty VALUE field
+        ksqlMock = MagicMock()
+        ksqlMock.query.return_value = MagicMock(
+            empty=False,
+            __getitem__=lambda _, key: ["uuid1, uuid2, uuid3"] if key == "VALUE" else None
+        )
+        asset = Asset("asset-001", ksqlClient=ksqlMock)
+
+        result = asset.references_below_uuid()
+
+        self.assertEqual(result, ["uuid1", "uuid2", "uuid3"])
+        ksqlMock.query.assert_called_once_with(
+            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+        )
+
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
     @patch('openfactory.assets.asset_class.uuid.uuid4')
     @patch('openfactory.assets.asset_class.time.time')
