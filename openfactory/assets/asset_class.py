@@ -2,6 +2,7 @@ import json
 import re
 import threading
 import uuid
+import time
 from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -217,11 +218,21 @@ class Asset():
                                                type='OpenFactory'
                                                ))
 
-    def wait_until(self, attribute, value, kafka_group_id=None):
-        """ Waits until the asset attribute has a specific value """
+    def wait_until(self, attribute, value, kafka_group_id=None, timeout=30):
+        """ Waits until the asset attribute has a specific value or times out.
+
+        Args:
+            attribute (str): Attribute to monitor
+            value (Any): Value to wait for
+            kafka_group_id (str, optional): Kafka consumer group ID
+            timeout (int): Timeout in seconds
+
+        Returns:
+            bool: True if the condition was met before timeout, False otherwise.
+        """
 
         if self.__getattr__(attribute).value == value:
-            return
+            return True
 
         if kafka_group_id is None:
             kafka_group_id = f"{self.asset_uuid}_{uuid.uuid4()}"
@@ -230,10 +241,17 @@ class Asset():
             consumer_group_id=kafka_group_id,
             asset_uuid=self.asset_uuid,
             on_message=None,
-            bootstrap_servers=self.bootstrap_servers,
-            ksqldb_url=self.ksqldb_url)
+            ksqlClient=self.ksql,
+            bootstrap_servers=self.bootstrap_servers)
+
+        start_time = time.time()
 
         while True:
+            # Check for timeout
+            if (time.time() - start_time) > timeout:
+                consumer.consumer.close()
+                return False
+
             msg = consumer.consumer.poll(timeout=0.1)
             if msg is None:
                 continue
@@ -245,24 +263,28 @@ class Asset():
                     print(f"Error: {msg.error()}")
                     break
 
-            # Decode the message
             msg_key = msg.key().decode('utf-8') if msg.key() else None
             msg_value = json.loads(msg.value().decode('utf-8'))
             msg_value = CaseInsensitiveDict(msg_value)
 
-            # Filter desired key
             if msg_key != self.asset_uuid:
                 continue
 
             if msg_value['id'] == attribute:
                 if msg_value['type'] == 'Samples' and msg_value['value'] != 'UNAVAILABLE':
-                    if float(msg_value['value']) == value:
-                        break
+                    try:
+                        if float(msg_value['value']) == value:
+                            consumer.consumer.close()
+                            return True
+                    except ValueError:
+                        continue
                 else:
                     if msg_value['value'] == value:
-                        break
+                        consumer.consumer.close()
+                        return True
 
         consumer.consumer.close()
+        return False
 
     def __consume_messages(self, kakfa_group_id, on_message):
         """ Kafka consumer that runs in a separate thread and calls `on_message` """
@@ -449,8 +471,7 @@ if __name__ == "__main__":
     cnc.subscribe_to_events(on_event, 'demo_events_group')
     cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
 
-    # run a main loop while subscriptions remain
-    import time
+    # run a main loop while subscriptions remain active
     try:
         while True:
             time.sleep(1)
