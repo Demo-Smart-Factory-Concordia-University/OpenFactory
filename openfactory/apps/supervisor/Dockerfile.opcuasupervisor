@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.13-slim-bullseye
 LABEL author="Rolf Wuthrich" 
 LABEL organisation="Concordia University"
 LABEL description="Docker image for OpenFactory Asset OPC UA Supervisor"
@@ -30,6 +30,6 @@ ENV APPLICATION_VERSION=${VERSION}
 WORKDIR /home/$UNAME
 USER $UNAME
 
-COPY opcuasupervisor.py .
+COPY opcua_supervisor_package.py .
 
-CMD ["python3", "-u", "opcuasupervisor.py"]
+CMD ["python3", "-u", "opcua_supervisor_package.py"]
