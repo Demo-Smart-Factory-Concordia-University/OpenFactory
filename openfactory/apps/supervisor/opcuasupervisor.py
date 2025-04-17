@@ -177,11 +177,11 @@ class OPCUASupervisor(BaseSupervisor):
             objects = self.opcua_client.get_objects_node()
             self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])
             print(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
-            self._send_available_commands()
-            self.adapter_connection_status = "ESTABLISHED"
 
             # Get methods of the OPC UA adapter
             await self._fetch_available_commands()
+            self._send_available_commands()
+            self.adapter_connection_status = "ESTABLISHED"
 
         except Exception as e:
             print(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
