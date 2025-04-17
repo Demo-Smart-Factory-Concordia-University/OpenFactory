@@ -311,6 +311,91 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
+    @patch("openfactory.openfactory_manager.config")
+    @patch('openfactory.openfactory_manager.dal.docker_client')
+    @patch('openfactory.openfactory_manager.register_asset')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_openfactory_application_success(self, mock_user_notify, mock_register_asset, mock_docker_client, mock_config):
+        """ Test deploy_openfactory_application """
+
+        # Mock config values
+        mock_config.OPENFACTORY_NETWORK = "mock_network"
+
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+
+        application = {
+            'uuid': 'test-app',
+            'image': 'test-image',
+            'environment': ['VAR1=value1', 'VAR2=value2']
+        }
+
+        # Call the method to test
+        manager.deploy_openfactory_application(application)
+
+        # Assert
+        mock_docker_client.services.create.assert_called_once_with(
+            image='test-image',
+            name='test-app',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[
+                'APP_UUID=test-app',
+                'KAFKA_BROKER=mokded_bootstrap_servers',
+                'KSQLDB_URL=mock_ksqldb_url',
+                'DOCKER_SERVICE=test-app',
+                'VAR1=value1',
+                'VAR2=value2'
+            ],
+            networks=['mock_network']
+        )
+        mock_register_asset.assert_called_once_with(
+            'test-app', 'OpenFactoryApp',
+            ksqlClient=manager.ksql,
+            bootstrap_servers='mokded_bootstrap_servers',
+            docker_service='test-app'
+        )
+        mock_user_notify.success.assert_called_once_with("Application test-app deployed successfully")
+
+    @patch("openfactory.openfactory_manager.config")
+    @patch('openfactory.openfactory_manager.dal.docker_client')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_openfactory_application_failure(self, mock_user_notify, mock_docker_client, mock_config):
+        """ Test deploy_openfactory_application when Docker API fails """
+
+        # Mock config values
+        mock_config.OPENFACTORY_NETWORK = "mock_network"
+
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+
+        application = {
+            'uuid': 'test-app',
+            'image': 'test-image',
+            'environment': None
+        }
+
+        mock_docker_client.services.create.side_effect = docker.errors.APIError("Mocked Docker API error")
+
+        # Call the method to test
+        manager.deploy_openfactory_application(application)
+
+        # Assert
+        mock_docker_client.services.create.assert_called_once_with(
+            image='test-image',
+            name='test-app',
+            mode={"Replicated": {"Replicas": 1}},
+            env=[
+                'APP_UUID=test-app',
+                'KAFKA_BROKER=mokded_bootstrap_servers',
+                'KSQLDB_URL=mock_ksqldb_url',
+                'DOCKER_SERVICE=test-app'
+            ],
+            networks=['mock_network']
+        )
+        mock_user_notify.fail.assert_called_once_with("Application test-app could not be deployed\nMocked Docker API error")
+
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
