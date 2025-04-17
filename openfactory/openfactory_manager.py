@@ -227,8 +227,8 @@ class OpenFactoryManager(OpenFactory):
         supervisor_uuid = f"{device_uuid.upper()}-SUPERVISOR"
         env = [f"SUPERVISOR_UUID={supervisor_uuid}",
                f"DEVICE_UUID={device_uuid}",
-               f"KSQL_HOST={config.KSQLDB_URL}",
-               f"KAFKA_BROKER={config.KAFKA_BROKER}",
+               f"KAFKA_BROKER={self.bootstrap_servers}",
+               f"KSQLDB_URL={self.ksql.ksqldb_url}",
                f"ADAPTER_IP={supervisor['adapter']['ip']}",
                f"ADAPTER_PORT={supervisor['adapter']['port']}"]
 
@@ -270,7 +270,7 @@ class OpenFactoryManager(OpenFactory):
         # build environment variables
         env = [f"APP_UUID={application['uuid']}",
                f"KAFKA_BROKER={self.bootstrap_servers}",
-               f"KSQLDB_URL={self.ksql.ksql_url}",
+               f"KSQLDB_URL={self.ksql.ksqldb_url}",
                f"DOCKER_SERVICE={application['uuid'].lower()}"]
         if application['environment'] is not None:
             for item in application['environment']:

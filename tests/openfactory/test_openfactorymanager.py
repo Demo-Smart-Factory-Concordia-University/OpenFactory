@@ -229,8 +229,6 @@ class TestOpenFactoryManager(unittest.TestCase):
         """
 
         # Mock config values
-        mock_config.KSQLDB_URL = "mock_ksqldb"
-        mock_config.KAFKA_BROKER = "mock_broker"
         mock_config.OPENFACTORY_NETWORK = "mock_network"
 
         # Set up mocks
@@ -260,6 +258,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Call the method to test
         ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
         manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
         manager.deploy_device_supervisor(device_uuid, supervisor)
 
@@ -278,8 +277,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         expected_env = [
             f"SUPERVISOR_UUID={device_uuid.upper()}-SUPERVISOR",
             f"DEVICE_UUID={device_uuid}",
-            f"KSQL_HOST={mock_config.KSQLDB_URL}",
-            f"KAFKA_BROKER={mock_config.KAFKA_BROKER}",
+            "KAFKA_BROKER=mokded_bootstrap_servers",
+            "KSQLDB_URL=mock_ksqldb_url",
             f"ADAPTER_IP={supervisor['adapter']['ip']}",
             f"ADAPTER_PORT={supervisor['adapter']['port']}",
             'VAR1=value1',
