@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     # Example usage of KafkaCommandsConsumer class
     from openfactory.kafka import KSQLDBClient
-    ksql = KSQLDBClient(config.KSQLDB)
+    ksql = KSQLDBClient(config.KSQLDB_URL)
 
     def on_command(msg_key, msg_value):
         """ Callback to process received messages """

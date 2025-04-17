@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     # Example usage of the KafkaAssetConsumer
     from openfactory.kafka import KSQLDBClient
-    ksql = KSQLDBClient(config.KSQLDB)
+    ksql = KSQLDBClient(config.KSQLDB_URL)
 
     def on_message(msg_key, msg_value):
         """ Callback to process received messages """

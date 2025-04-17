@@ -455,7 +455,7 @@ class Asset():
 if __name__ == "__main__":
 
     # Example usage of Asset
-    ksql = KSQLDBClient(config.KSQLDB)
+    ksql = KSQLDBClient(config.KSQLDB_URL)
     cnc = Asset('PROVER3018', ksqlClient=ksql)
 
     # list samples

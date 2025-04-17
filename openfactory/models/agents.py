@@ -247,7 +247,7 @@ class Agent(Base):
         try:
             self.create_ksqldb_tables(ksql_tables)
         except HTTPError:
-            raise OFAException(f"Could not connect to ksqlDB {config.KSQLDB}")
+            raise OFAException(f"Could not connect to ksqlDB {config.KSQLDB_URL}")
 
         # create producer
         try:
@@ -310,7 +310,7 @@ class Agent(Base):
 
     def send_unavailable(self):
         """ Send agent and device unavailable messages to ksqlDB """
-        ksql = KSQL(config.KSQLDB)
+        ksql = KSQL(config.KSQLDB_URL)
         msg = [
             {
                 "device_uuid": self.uuid,
@@ -333,7 +333,7 @@ class Agent(Base):
         """ Create ksqlDB tables related to the agent """
         if ksql_tables is None:
             return
-        ksql = KSQL(config.KSQLDB)
+        ksql = KSQL(config.KSQLDB_URL)
 
         if 'device' in ksql_tables:
             # device stream
@@ -377,7 +377,7 @@ class Agent(Base):
 
     def remove_ksqldb_tables(self):
         """ Remove ksqlDB tables related to the agent """
-        ksql = KSQL(config.KSQLDB)
+        ksql = KSQL(config.KSQLDB_URL)
 
         # producer table
         ksql._statement_query(f"""DROP TABLE {self.producer_uuid.replace('-', '_')} DELETE TOPIC;""")
@@ -407,7 +407,7 @@ class Agent(Base):
                 name=self.device_uuid.lower() + '-influxdb-connector',
                 mode={"Replicated": {"Replicas": 1}},
                 env=[f'DEVICE_UUID={self.device_uuid}',
-                     f'KSQLDB_URL={config.KSQLDB}',
+                     f'KSQLDB_URL={config.KSQLDB_URL}',
                      f'INFLUXDB_URL={influxdb_config["url"]}',
                      f'INFLUXDB_TOKEN={influxdb_config["token"]}',
                      f'INFLUXDB_ORG={influxdb_config["organisation"]}',

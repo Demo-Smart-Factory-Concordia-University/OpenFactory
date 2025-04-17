@@ -88,7 +88,7 @@ from pyksql.ksql import KSQL
 import openfactory.config as config
 
 device_uuid = 'DEVICE-UUID'
-ksql = KSQL(config.KSQLDB)
+ksql = KSQL(config.KSQLDB_URL)
 prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
 prod.produce(topic=ksql.get_kafka_topic('assets'),
              key=device_uuid.encode('utf-8'),
@@ -119,7 +119,7 @@ from pyksql.ksql import KSQL
 import openfactory.config as config
 
 device_uuid = 'DEVICE-UUID'
-ksql = KSQL(config.KSQLDB)
+ksql = KSQL(config.KSQLDB_URL)
 prod = Producer({'bootstrap.servers': config.KAFKA_BROKER})
 prod.produce(topic=ksql.get_kafka_topic('devices_avail'),
              key=device_uuid.encode('utf-8'),

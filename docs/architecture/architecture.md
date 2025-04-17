@@ -21,7 +21,7 @@ Key variables that may require customization for your environment include:
 - **`OPENFACTORY_MANAGER_NODE`**: The IP address of the OpenFactory manager node.  
 - **`SQL_ALCHEMY_CONN`**: The SQLAlchemy connection string for the database used by OpenFactory.  
 - **`KAFKA_BROKER`**: The Kafka broker address, formatted as `ip-address:port`.  
-- **`KSQLDB`**: The URL of the ksqlDB server, formatted as `http://ip-address:port`.  
+- **`KSQLDB_URL`**: The URL of the ksqlDB server, formatted as `http://ip-address:port`.  
 
 For detailed guidance on configuring the [openfactory.yml](../../openfactory/config/openfactory.yml) file, refer to the [documentation](../ofa_cluster/ofa_config_file.md).  
 

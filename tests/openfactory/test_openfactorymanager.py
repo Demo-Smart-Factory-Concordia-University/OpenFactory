@@ -229,7 +229,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         """
 
         # Mock config values
-        mock_config.KSQLDB = "mock_ksqldb"
+        mock_config.KSQLDB_URL = "mock_ksqldb"
         mock_config.KAFKA_BROKER = "mock_broker"
         mock_config.OPENFACTORY_NETWORK = "mock_network"
 
@@ -278,7 +278,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         expected_env = [
             f"SUPERVISOR_UUID={device_uuid.upper()}-SUPERVISOR",
             f"DEVICE_UUID={device_uuid}",
-            f"KSQL_HOST={mock_config.KSQLDB}",
+            f"KSQL_HOST={mock_config.KSQLDB_URL}",
             f"KAFKA_BROKER={mock_config.KAFKA_BROKER}",
             f"ADAPTER_IP={supervisor['adapter']['ip']}",
             f"ADAPTER_PORT={supervisor['adapter']['port']}",

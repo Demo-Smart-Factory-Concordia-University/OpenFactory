@@ -66,7 +66,7 @@ KAFKA_BROKER: ${KAFKA_BROKER}
 Defines the URL of the ksqlDB server connected to the Kafka cluster.
 
 ```yaml
-KSQLDB: http://ksqldb-server:8088
+KSQLDB_URL: http://ksqldb-server:8088
 ```
 
 ---
