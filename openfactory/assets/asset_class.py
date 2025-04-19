@@ -234,14 +234,16 @@ class Asset():
                                                type='OpenFactory'
                                                ))
 
-    def wait_until(self, attribute, value, timeout=30):
-        """ Waits until the asset attribute has a specific value or times out.
+    def wait_until(self, attribute, value, timeout=30, use_ksqlDB=False):
+        """
+        Waits until the asset attribute has a specific value or times out.
+        Monitors the Kafka topic to check if the attribute value matches the expected value.
 
         Args:
             attribute (str): Attribute to monitor
             value (Any): Value to wait for
-            kafka_group_id (str, optional): Kafka consumer group ID
             timeout (int): Timeout in seconds
+            use_ksqlDB (bool): If True, uses ksqlDB instead of Kafka topic to check the attribute value
 
         Returns:
             bool: True if the condition was met before timeout, False otherwise.
@@ -249,6 +251,17 @@ class Asset():
 
         if self.__getattr__(attribute).value == value:
             return True
+
+        start_time = time.time()
+
+        if use_ksqlDB:
+            while True:
+                if (time.time() - start_time) > timeout:
+                    return False
+
+                if self.__getattr__(attribute).value == value:
+                    return True
+                time.sleep(0.1)
 
         kafka_group_id = f"{self.asset_uuid}_{uuid.uuid4()}"
 
@@ -258,8 +271,6 @@ class Asset():
             on_message=None,
             ksqlClient=self.ksql,
             bootstrap_servers=self.bootstrap_servers)
-
-        start_time = time.time()
 
         while True:
             # Check for timeout

@@ -668,3 +668,27 @@ class TestAsset(TestCase):
         self.assertFalse(result)
         mock_consumer_instance.consumer.close.assert_called_once()
         mock_delete_consumer_group.assert_called_once_with("test_uuid_mock", bootstrap_servers="mock_broker")
+
+    @patch('openfactory.assets.asset_class.time')
+    def test_wait_until_ksqlDB_true(self, mock_time, MockAssetProducer):
+        """ Test wait_until when use_ksqlDB is True """
+        # Mock setup
+        mock_time.time.side_effect = [0, 1, 2, 3, 4, 5]
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=MagicMock())
+        asset.__getattr__ = MagicMock(side_effect=[MagicMock(value="initial"), MagicMock(value="target")])
+
+        # Test when use_ksqlDB is True
+        result = asset.wait_until(attribute="test_attribute", value="target", timeout=10, use_ksqlDB=True)
+        self.assertTrue(result)
+
+    @patch('openfactory.assets.asset_class.time')
+    def test_wait_until_ksqlDB_timeout(self, mock_time, MockAssetProducer):
+        """ Test wait_until when use_ksqlDB times out """
+        # Mock setup
+        mock_time.time.side_effect = [0, 1, 2, 3, 4, 5]
+        asset = Asset(asset_uuid="test_uuid", ksqlClient=MagicMock())
+        asset.__getattr__ = MagicMock(return_value=MagicMock(value="initial"))
+
+        # Test timeout when use_ksqlDB is True
+        result = asset.wait_until(attribute="test_attribute", value="target", timeout=3, use_ksqlDB=True)
+        self.assertFalse(result)
