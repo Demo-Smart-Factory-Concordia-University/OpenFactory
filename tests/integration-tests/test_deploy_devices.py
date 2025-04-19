@@ -85,7 +85,6 @@ class TestDeployDevices(TestCase):
         # Check availability of assets
         sensor = Asset('TEMP-002', ksqlClient=ksql.client, bootstrap_servers=config.KAFKA_BROKER)
         self.assertTrue(sensor.wait_until('avail', 'AVAILABLE', timeout=15), 'Sensor [TEMP-002] did not become available before timeout')
-        print(sensor.avail)
         self.assertEqual(sensor.avail.value, 'AVAILABLE', 'Sensor [TEMP-002] is not available as it should')
         expected_attributes = [
             'AssetType', 'DockerService', 'Temp', 'avail',
