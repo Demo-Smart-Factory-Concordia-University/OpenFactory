@@ -435,6 +435,81 @@ class TestKSQLDBClient(unittest.TestCase):
 
         self.assertIn("Error in ksqlDB query", str(context.exception))
 
+    @patch("requests.Session.post")
+    def test_statement_query_success(self, mock_post):
+        """ Test statement_query method returns response on success """
+        statement = "CREATE STREAM test_stream AS SELECT * FROM source_stream;"
+        expected_payload = {"ksql": statement}
+        expected_headers = {"Accept": "application/vnd.ksql.v1+json"}
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = self.client.statement_query(statement)
+
+        self.assertEqual(result, mock_response)
+
+        # Validate the POST request
+        mock_post.assert_called_once()
+        url, = mock_post.call_args[0]
+        kwargs = mock_post.call_args[1]
+
+        self.assertIn("/ksql", url)
+        self.assertEqual(kwargs["json"], expected_payload)
+        self.assertEqual(kwargs["headers"], expected_headers)
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_statement_query_retries_on_failure(self, mock_post, mock_create_session):
+        """ Test statement_query method retries on failure and succeeds """
+        statement = "CREATE STREAM test_stream AS SELECT * FROM source_stream;"
+        fail = requests.ConnectionError("mock_fail")
+        success_response = MagicMock()
+        success_response.status_code = 200
+        mock_post.side_effect = [fail, fail, success_response]
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        result = self.client.statement_query(statement)
+
+        self.assertEqual(result, success_response)
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 2)
+
+    @patch.object(KSQLDBClient, "_create_session")
+    @patch("requests.Session.post")
+    def test_statement_query_fails_after_max_retries(self, mock_post, mock_create_session):
+        """ Test statement_query raises exception after exceeding max retries """
+        statement = "CREATE STREAM test_stream AS SELECT * FROM source_stream;"
+        mock_post.side_effect = requests.ConnectionError("mock_fail")
+
+        dummy_session = MagicMock()
+        dummy_session.post = mock_post
+        mock_create_session.return_value = dummy_session
+
+        with self.assertRaises(KSQLDBClienException) as context:
+            self.client.statement_query(statement)
+
+        self.assertIn("Failed to connect to ksqlDB", str(context.exception))
+        self.assertEqual(mock_post.call_count, 3)
+        self.assertEqual(mock_create_session.call_count, 3)
+
+    @patch("requests.Session.post")
+    def test_statement_query_raises_exception_on_non_200(self, mock_post):
+        """ Test statement_query raises exception on non-200 response """
+        statement = "CREATE STREAM test_stream AS SELECT * FROM source_stream;"
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+        mock_post.return_value = mock_response
+
+        with self.assertRaises(requests.HTTPError):
+            self.client.statement_query(statement)
+
     @patch.object(KSQLDBClient, "close")
     def test_handle_exit_on_sigint(self, mock_close):
         """ Test _handle_exit for SIGINT """
