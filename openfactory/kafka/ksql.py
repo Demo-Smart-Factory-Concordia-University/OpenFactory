@@ -197,6 +197,28 @@ class KSQLDBClient:
 
         raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
 
+    def statement_query(self, statement):
+        """ Executes a ksqlDB statement query """
+        payload = {"ksql": statement}
+        headers = {"Accept": "application/vnd.ksql.v1+json"}
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self.session.post(
+                    urljoin(self.ksqldb_url, "/ksql"),
+                    json=payload,
+                    headers=headers
+                )
+                response.raise_for_status()
+                return response
+
+            except (requests.ConnectionError, requests.Timeout) as e:
+                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
+                time.sleep(self.retry_delay)
+                self.session = self._create_session()  # Reset session before retrying
+
+        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+
     def _process_response(self, response):
         """ Processes the ksqlDB response and returns a DataFrame """
         data, columns = [], []
