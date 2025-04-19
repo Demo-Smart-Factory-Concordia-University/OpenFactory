@@ -27,7 +27,7 @@ KAFKA_BROKER: ${KAFKA_BROKER}
 KSQLDB_URL: ${KSQLDB_URL}
 
 # Docker Images
-MTCONNECT_AGENT_IMAGE: ghcr.io/demo-smart-factory-concordia-university/mtcagent
+MTCONNECT_AGENT_IMAGE: ghcr.io/demo-smart-factory-concordia-university/mtcagent:v2.5.0.4
 MTCONNECT_AGENT_CFG_FILE: ${MTCONNECT_AGENT_CFG_FILE}
 MTCONNECT_PRODUCER_IMAGE: ghcr.io/demo-smart-factory-concordia-university/kafka-mtc-producer
 INFLUXDB_CONNECTOR_IMAGE: ghcr.io/demo-smart-factory-concordia-university/influxdb_connector:latest
