@@ -1,0 +1,31 @@
+devices:
+
+  testcnc:
+    uuid: TEST_CNC
+    agent:
+      port: 3201
+      device_xml: cnc/test_cnc.xml
+      adapter:
+        ip: 192.168.0.201
+        port: 7879
+      deploy:
+        resources:
+          limits:
+            cpus: 0.25
+          reservations:
+            cpus: 0.2
+
+    supervisor:
+      image: ghcr.io/demo-smart-factory-concordia-university/opcua-supervisor
+      adapter:
+        ip: 192.168.0.201
+        port: 4840
+        environment:
+         - NAMESPACE_URI=openfactory
+         - BROWSE_NAME=TESTCNC
+      deploy:
+        resources:
+          limits:
+            cpus: 0.25
+          reservations:
+            cpus: 0.2

@@ -1,0 +1,16 @@
+devices:
+
+  temperature_sensor_001:
+    uuid: TEMP-001
+    agent:
+      port: 3101
+      device_xml: github://Demo-Smart-Factory-Concordia-University:OpenFactory@/simulators/temp_sensor/device.xml
+      adapter:
+        ip: temperature-sensor-simulator
+        port: 7878
+      deploy:
+        resources:
+          limits:
+            cpus: 0.25
+          reservations:
+            cpus: 0.2

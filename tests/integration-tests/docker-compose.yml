@@ -1,0 +1,100 @@
+# Infrastructure for integration tests
+#
+# For more information on Kafka configurations:
+# https://developer.confluent.io/quickstart/kafka-docker/
+# https://github.com/confluentinc/cp-all-in-one/blob/7.5.0-post/cp-all-in-one-kraft/docker-compose.yml
+# https://docs.confluent.io/platform/current/installation/docker/operations/monitoring.html
+
+services:
+
+  test-env-broker:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: test-env-broker
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://test-env-broker:29092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@test-env-broker:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'OPENFACTORY-INTEGRATION-TEST-CLUSTER'
+    networks:
+      - factory-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 29092 || exit 1"]
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  test-env-ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:7.7.0
+    hostname: ksqldb-server
+    container_name: test-env-ksqldb-server
+    depends_on:
+      test-env-broker:
+         condition: service_healthy
+    environment:
+      # https://docs.confluent.io/platform/current/installation/docker/config-reference.html#ksqldb-server-configuration
+      KSQL_CONFIG_DIR: "/etc/ksql"
+      KSQL_BOOTSTRAP_SERVERS: "test-env-broker:29092"
+      KSQL_HOST_NAME: test-env-ksqldb-server
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+      KSQL_KSQL_SERVICE_ID: ofa_
+    healthcheck:
+      test: nc -z localhost 8088 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - factory-net
+
+  test-env-ksqldb-cli:
+    # To run interactively in the devcontainer:
+    # docker exec -it test-env-ksqldb-cli ksql http://test-env-ksqldb-server:8088
+    image: confluentinc/cp-ksqldb-cli:7.7.0
+    container_name: test-env-ksqldb-cli
+    depends_on:
+      test-env-broker:
+         condition: service_healthy
+      test-env-ksqldb-server:
+         condition: service_healthy
+    environment:
+      - KSQL_START_SCRIPTS=mtcdevices.sql:ofacmds.sql
+      - KSQL_URL=http://test-env-ksqldb-server:8088
+    volumes:
+      - "../../Kafka-Cluster/scripts:/home/appuser/scripts"
+    entrypoint: bash -c "source ./scripts/start_ksql.sh; tail -F anything"
+    tty: true
+    networks:
+      - factory-net
+
+  temperature-sensor-simulator:
+    build:
+      context: ../../simulators/temp_sensor
+      dockerfile: Dockerfile
+    image: ofa/mocked-temp-sensor-adapter
+    environment:
+      - SLEEP_INTERVAL=2.0
+      - MIN_TEMP=19
+      - MAX_TEMP=21
+      - ADAPTER_PORT=7878
+    networks:
+      - factory-net
+
+networks:
+  factory-net:
+    name: factory-net
+    external: true

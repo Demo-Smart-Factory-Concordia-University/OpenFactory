@@ -1,0 +1,22 @@
+devices:
+
+  # Test configuration with an adapter deployed from an image
+  temperature_sensor_002:
+    uuid: TEMP-002
+    agent:
+      port: 3102
+      device_xml: github://demo-smart-factory-concordia-university:openfactory@/simulators/temp_sensor/device.xml
+      adapter:
+        image: ghcr.io/demo-smart-factory-concordia-university/mocked-temp-sensor-shdr
+        port: 7878
+        environment:
+          - SLEEP_INTERVAL=3.0
+          - MIN_TEMP=19.5
+          - MAX_TEMP=20.3
+          - ADAPTER_PORT=7878
+      deploy:
+        resources:
+          limits:
+            cpus: 0.25
+          reservations:
+            cpus: 0.2
