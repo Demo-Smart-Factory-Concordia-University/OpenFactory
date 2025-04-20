@@ -4,6 +4,7 @@ import pandas as pd
 import time
 import atexit
 import signal
+import httpx
 from urllib.parse import urljoin
 
 
@@ -28,6 +29,7 @@ class KSQLDBClient:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.session = self._create_session()
+        self._http2_client = httpx.Client(http1=False, http2=True)
         self._register_cleanup()
 
     def _create_session(self):
@@ -212,12 +214,43 @@ class KSQLDBClient:
                 response.raise_for_status()
                 return response
 
+            except requests.exceptions.HTTPError as e:
+                error_message = f"HTTPError occurred: {e.response.status_code} - {e.response.reason} - {e.response.text}"
+                raise KSQLDBClienException(f"Query failed with error: {error_message}")
+
             except (requests.ConnectionError, requests.Timeout) as e:
                 print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
                 time.sleep(self.retry_delay)
                 self.session = self._create_session()  # Reset session before retrying
 
         raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+
+    def insert_into_stream(self, stream_name, rows):
+        """
+        Insert rows into a ksqlDB stream.
+        :param stream_name: The name of the ksqlDB stream
+        :param rows: List of dictionaries representing the rows to insert like so
+                     rows = [
+                        {"field1": "foo", "field2": 123, "field3": True},
+                        {"field1": "bar", "field2": 456, "field3": False},
+                     ]
+        :return: List of responses from the server
+        """
+        url = urljoin(self.ksqldb_url, "/inserts-stream")
+        data = json.dumps({"target": stream_name}) + "\n"
+        for row in rows:
+            data += json.dumps(row) + "\n"
+
+        headers = {"Content-Type": "application/vnd.ksql.v1+json"}
+
+        with self._http2_client.stream("POST", url, content=data, headers=headers) as r:
+            response_text = b"".join(r.iter_bytes()).decode("utf-8")
+
+            if r.status_code != 200:
+                raise KSQLDBClienException(f"Error in ksqlDB insert: {response_text}")
+
+            # Successful: return parsed lines
+            return [json.loads(line) for line in response_text.splitlines()]
 
     def _process_response(self, response):
         """ Processes the ksqlDB response and returns a DataFrame """
@@ -238,6 +271,7 @@ class KSQLDBClient:
         """ Closes the session """
         if self.session:
             print("Closing ksqlDB connection...")
+            self._http2_client.close()
             self.session.close()
             self.session = None  # Avoid re-closing
 
@@ -277,5 +311,44 @@ if __name__ == "__main__":
     print('\nEvents:\n', ksql.query(query))
 
     print('\nKafka topic of CMDS_STREAM:', ksql.get_kafka_topic('CMDS_STREAM'), '\n')
+
+    ksql.statement_query("DROP STREAM IF EXISTS demo_stream;")
+    ksql.statement_query(
+        """
+            CREATE STREAM demo_stream (
+                ASSET_UUID VARCHAR KEY,
+                id VARCHAR,
+                value VARCHAR,
+                tag VARCHAR,
+                type VARCHAR
+            ) WITH (
+                KAFKA_TOPIC = 'ofa_assets',
+                PARTITIONS = 1,
+                VALUE_FORMAT = 'JSON'
+            );
+        """)
+
+    rows = [
+        {
+            "ASSET_UUID": "123e4567-e89b-12d3-a456-426614174000",
+            "id": "sensor-1",
+            "value": "72.4",
+            "tag": "temperature",
+            "type": "float"
+        },
+        {
+            "ASSET_UUID": "987e6543-e21b-12d3-a456-426614174999",
+            "id": "sensor-2",
+            "value": "1013",
+            "tag": "pressure",
+            "type": "int"
+        }
+    ]
+
+    response = ksql.insert_into_stream("demo_stream", rows)
+    for entry in response:
+        print(entry)
+
+    ksql.statement_query("DROP STREAM IF EXISTS demo_stream;")
 
     ksql.close()
