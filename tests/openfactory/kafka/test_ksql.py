@@ -559,3 +559,62 @@ class TestKSQLDBClient(unittest.TestCase):
         self.assertEqual(client.old_sigterm_handler, mock_old_sigterm)
 
         client.close()
+
+    @patch("httpx.Client.stream")
+    def test_insert_into_stream_success(self, mock_stream):
+        """ Test insert_into_stream method on success """
+        stream_name = "test_stream"
+        rows = [
+            {"field1": "foo", "field2": 123, "field3": True},
+            {"field1": "bar", "field2": 456, "field3": False},
+        ]
+        expected_url = urljoin(self.ksqldb_url, "/inserts-stream")
+        expected_data = (
+            json.dumps({"target": stream_name})
+            + "\n"
+            + "\n".join(json.dumps(row) for row in rows)
+            + "\n"
+        )
+        expected_headers = {"Content-Type": "application/vnd.ksql.v1+json"}
+
+        # Setup fake response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.iter_bytes.return_value = iter([
+            b'{"status":"success"}\n',
+            b'{"status":"success"}\n'
+        ])
+        mock_stream.return_value.__enter__.return_value = mock_response
+
+        # Call method
+        result = self.client.insert_into_stream(stream_name, rows)
+
+        self.assertEqual(result, [{"status": "success"}, {"status": "success"}])
+        mock_stream.assert_called_once()
+
+        # Inspect the actual arguments passed
+        called_args, called_kwargs = mock_stream.call_args
+
+        self.assertEqual(called_args[0], "POST")
+        self.assertEqual(called_args[1], expected_url)
+        self.assertEqual(called_kwargs["content"], expected_data)
+        self.assertEqual(called_kwargs["headers"], expected_headers)
+
+    @patch("httpx.Client.stream")
+    def test_insert_into_stream_failure(self, mock_stream):
+        """ Test insert_into_stream method raises exception on failure """
+        stream_name = "test_stream"
+        rows = [
+            {"field1": "foo", "field2": 123, "field3": True},
+            {"field1": "bar", "field2": 456, "field3": False},
+        ]
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.iter_bytes.return_value = iter([b'{"error":"failure"}\n'])
+        mock_stream.return_value.__enter__.return_value = mock_response
+
+        with self.assertRaises(KSQLDBClienException) as context:
+            self.client.insert_into_stream(stream_name, rows)
+
+        self.assertIn("Error in ksqlDB insert", str(context.exception))
