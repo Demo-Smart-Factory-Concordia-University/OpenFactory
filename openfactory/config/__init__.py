@@ -11,6 +11,11 @@ def load_yaml(yaml_file):
     Loads a yaml file and parses environment variables
     """
 
+    # Read the OpenFactory version from openfactory-version.txt
+    with open("openfactory-version.txt", "r") as f:
+        version = f.read().strip()
+    os.environ["OPENFACTORY_VERSION"] = version
+
     # load environment variables from working directory
     load_dotenv('.ofaenv')
 
