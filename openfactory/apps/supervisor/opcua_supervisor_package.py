@@ -12,7 +12,7 @@ supervisor = OPCUASupervisor(
     device_uuid=os.getenv('DEVICE_UUID'),
     adapter_ip=os.getenv('ADAPTER_IP'),
     adapter_port=os.getenv('ADAPTER_PORT'),
-    ksqlClient=KSQLDBClient(os.getenv('KSQLDB_URL'), os.getenv('KSQLDB_LOG_LEVEL')),
+    ksqlClient=KSQLDBClient(os.getenv('KSQLDB_URL'), loglevel=os.getenv('KSQLDB_LOG_LEVEL')),
     bootstrap_servers=os.getenv('KAFKA_BROKER')
 )
 
