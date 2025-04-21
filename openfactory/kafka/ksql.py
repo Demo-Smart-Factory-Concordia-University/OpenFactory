@@ -1,354 +1,205 @@
-import requests
 import json
 import pandas as pd
 import time
 import atexit
 import signal
+import logging
 import httpx
 from urllib.parse import urljoin
+from openfactory.setup_logging import configure_prefixed_logger, setup_third_party_loggers
 
 
-class KSQLDBClienException(Exception):
+class KSQLDBClientException(Exception):
     """ A general error in OpenFactory """
     pass
 
 
 class KSQLDBClient:
-    """
-    ksqlDB client used by OpenFactory
-    """
+    """ ksqlDB client used by OpenFactory """
 
-    def __init__(self, ksqldb_url, max_retries=3, retry_delay=2):
+    def __init__(
+        self,
+        ksqldb_url: str,
+        max_retries: int = 3,
+        retry_delay: float = 2.0,
+        timeout: float = 10.0,
+    ):
         """
-        Initializes the ksqlDB client with a persistent session
         :param ksqldb_url: URL of the ksqlDB server
-        :param max_retries: Number of times to retry if the connection fails
+        :param max_retries: Number of retry attempts on network failure
         :param retry_delay: Seconds to wait between retries
+        :param timeout: Request timeout in seconds
         """
-        self.ksqldb_url = ksqldb_url
+        self.ksqldb_url = ksqldb_url.rstrip("/")
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self.session = self._create_session()
-        self._http2_client = httpx.Client(http1=False, http2=True)
+        self.timeout = httpx.Timeout(timeout)
+
+        # single HTTP/2-only client
+        self._client = httpx.Client(
+            headers={"Content-Type": "application/json"},
+            http2=True,
+            http1=False,
+            timeout=self.timeout,
+        )
+
         self._register_cleanup()
 
-    def _create_session(self):
-        """ Creates a new requests session """
-        session = requests.Session()
-        session.headers.update({"Content-Type": "application/json"})
-        return session
+        # Set up logging
+        setup_third_party_loggers()
+        self.logger = configure_prefixed_logger("openfactory.ksqlDB", prefix="KSQL")
 
-    def _register_cleanup(self):
-        """ Registers cleanup functions for normal and forced exits """
-        # Ensures close() runs at exit
+        self.logger.info(f"Connected to ksqlDB at {self.ksqldb_url}")
+
+    def _register_cleanup(self) -> None:
         atexit.register(self.close)
-
-        # Store old signal handlers
-        self.old_sigint_handler = signal.getsignal(signal.SIGINT)
-        self.old_sigterm_handler = signal.getsignal(signal.SIGTERM)
-
+        self.old_sigint = signal.getsignal(signal.SIGINT)
+        self.old_sigterm = signal.getsignal(signal.SIGTERM)
         signal.signal(signal.SIGINT, self._handle_exit)
         signal.signal(signal.SIGTERM, self._handle_exit)
 
-    def info(self):
-        """ Return info on ksqlDB server """
-        for attempt in range(self.max_retries):
+    def _request(
+        self,
+        method: str,
+        path: str,
+        json_payload: dict = None,
+        stream: bool = False,
+        headers: dict = None,
+        content: bytes = None,
+    ) -> httpx.Response:
+        """
+        Internal HTTP request wrapper with retry logic
+        """
+        url = urljoin(self.ksqldb_url + '/', path.lstrip('/'))
+        for attempt in range(1, self.max_retries + 1):
             try:
-                response = self.session.get(urljoin(self.ksqldb_url, "info"))
-                response.raise_for_status()
-                return response.json()
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                time.sleep(self.retry_delay)
-                self.session = self._create_session()
-
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB {self.ksqldb_url} after {self.max_retries} attempts.")
-
-    def get_kafka_topic(self, stream_name) -> str:
-        """
-        Gets Kafka topic from the ksqlDB stream 'stream_name'
-
-        :param stream_name: Name of the ksqlDB stream
-        :return: The Kafka topic name as a string
-        :raises KSQLDBClienException: If the query fails or the stream is not found
-        """
-        query = f"DESCRIBE {stream_name} EXTENDED;"
-        payload = {"ksql": query}
-
-        for attempt in range(self.max_retries):
-            try:
-                response = self.session.post(
-                    urljoin(self.ksqldb_url, "/ksql"),
-                    data=json.dumps(payload),
-                    stream=False,
-                    timeout=10
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if "sourceDescription" in data[0]:
-                        # Extract and return the Kafka topic
-                        return data[0]["sourceDescription"]["topic"]
-                    else:
-                        raise KSQLDBClienException("Stream details not found in the response.")
-
-                # If response is not OK, raise an KSQLDBClienException
-                raise KSQLDBClienException(f"Error in ksqlDB query {query}: {response.text}")
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                time.sleep(self.retry_delay)
-                self.session = self._create_session()  # Reset session before retrying
-
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
-
-    def streams(self):
-        """
-        Returns a list of existing stream names in ksqlDB
-        """
-        query = "SHOW STREAMS;"
-        payload = {"ksql": query, "streamsProperties": {}}
-
-        for attempt in range(self.max_retries):
-            try:
-                response = self.session.post(
-                    urljoin(self.ksqldb_url, "/ksql"),
-                    data=json.dumps(payload),
-                    stream=False,
-                    timeout=10
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data and "streams" in data[0]:
-                        return [stream["name"] for stream in data[0]["streams"]]
-                    elif "statementText" in data[0] and "SHOW STREAMS" in data[0]["statementText"]:
-                        return [row["name"] for row in data[0]["streams"]]
-                    else:
-                        return []
-                raise KSQLDBClienException(f"Error retrieving streams: {response.text}")
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                time.sleep(self.retry_delay)
-                self.session = self._create_session()
-
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
-
-    def tables(self):
-        """
-        Returns a list of existing table names in ksqlDB
-        """
-        query = "SHOW TABLES;"
-        payload = {"ksql": query, "streamsProperties": {}}
-
-        for attempt in range(self.max_retries):
-            try:
-                response = self.session.post(
-                    urljoin(self.ksqldb_url, "/ksql"),
-                    data=json.dumps(payload),
-                    stream=False,
-                    timeout=10
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data and "tables" in data[0]:
-                        return [table["name"] for table in data[0]["tables"]]
-                    elif "statementText" in data[0] and "SHOW TABLES" in data[0]["statementText"]:
-                        return [row["name"] for row in data[0]["tables"]]
-                    else:
-                        return []
-                raise KSQLDBClienException(f"Error retrieving tables: {response.text}")
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                time.sleep(self.retry_delay)
-                self.session = self._create_session()
-
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
-
-    def query(self, query: str) -> pd.DataFrame:
-        """
-        Executes a ksqlDB query with automatic retry logic
-        :param query: ksqlDB SQL query string
-        :return: Pandas DataFrame containing the query results
-        """
-        payload = {"ksql": query, "streamsProperties": {}}
-
-        for attempt in range(self.max_retries):
-            try:
-                response = self.session.post(
-                    urljoin(self.ksqldb_url, "/query"),
-                    data=json.dumps(payload),
-                    stream=True,
-                    timeout=10
-                )
-
-                if response.status_code == 200:
-                    return self._process_response(response)
-
-                # If response is not OK, raise an KSQLDBClienException
-                raise KSQLDBClienException(f"Error in ksqlDB query {query}: {response.text}")
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
-                time.sleep(self.retry_delay)
-                self.session = self._create_session()  # Reset session before retrying
-
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
-
-    def statement_query(self, statement):
-        """ Executes a ksqlDB statement query """
-        payload = {"ksql": statement}
-        headers = {"Accept": "application/vnd.ksql.v1+json"}
-
-        for attempt in range(self.max_retries):
-            try:
-                response = self.session.post(
-                    urljoin(self.ksqldb_url, "/ksql"),
-                    json=payload,
-                    headers=headers
+                if stream:
+                    return self._client.stream(
+                        method,
+                        url,
+                        headers=headers,
+                        content=content or json.dumps(json_payload)
+                    )
+                response = self._client.request(
+                    method,
+                    url,
+                    headers=headers,
+                    json=json_payload,
+                    content=content
                 )
                 response.raise_for_status()
                 return response
 
-            except requests.exceptions.HTTPError as e:
-                error_message = f"HTTPError occurred: {e.response.status_code} - {e.response.reason} - {e.response.text}"
-                raise KSQLDBClienException(f"Query failed with error: {error_message}")
-
-            except (requests.ConnectionError, requests.Timeout) as e:
-                print(f"Connection failed (attempt {attempt + 1}/{self.max_retries}): {e}")
+            except (httpx.HTTPStatusError, httpx.RequestError) as e:
+                self.logger.warning(
+                    "Request %s %s failed (attempt %d/%d): %s",
+                    method, url, attempt, self.max_retries, e,
+                )
+                if attempt == self.max_retries:
+                    raise KSQLDBClientException(f"Failed {method} {url}: {e}")
                 time.sleep(self.retry_delay)
-                self.session = self._create_session()  # Reset session before retrying
 
-        raise KSQLDBClienException(f"Failed to connect to ksqlDB after {self.max_retries} attempts.")
+    def info(self) -> dict:
+        """ Return server info """
+        resp = self._request('GET', 'info')
+        return resp.json()
 
-    def insert_into_stream(self, stream_name, rows):
-        """
-        Insert rows into a ksqlDB stream.
-        :param stream_name: The name of the ksqlDB stream
-        :param rows: List of dictionaries representing the rows to insert like so
-                     rows = [
-                        {"field1": "foo", "field2": 123, "field3": True},
-                        {"field1": "bar", "field2": 456, "field3": False},
-                     ]
-        :return: List of responses from the server
-        """
-        url = urljoin(self.ksqldb_url, "/inserts-stream")
-        data = json.dumps({"target": stream_name}) + "\n"
-        for row in rows:
-            data += json.dumps(row) + "\n"
+    def get_kafka_topic(self, stream_name: str) -> str:
+        """ Return Kafka topic for a stream """
+        payload = {"ksql": f"DESCRIBE {stream_name} EXTENDED;"}
+        resp = self._request('POST', '/ksql', json_payload=payload)
+        data = resp.json()
+        try:
+            return data[0]['sourceDescription']['topic']
+        except (KeyError, IndexError):
+            raise KSQLDBClientException("Stream details not found")
 
+    def streams(self) -> list[str]:
+        """ List existing streams """
+        payload = {"ksql": "SHOW STREAMS;", "streamsProperties": {}}
+        resp = self._request('POST', '/ksql', json_payload=payload)
+        data = resp.json()
+        entry = data[0]
+        return [r['name'] for r in entry.get('streams', [])]
+
+    def tables(self) -> list[str]:
+        """ List existing tables """
+        payload = {"ksql": "SHOW TABLES;", "streamsProperties": {}}
+        resp = self._request('POST', '/ksql', json_payload=payload)
+        data = resp.json()
+        entry = data[0]
+        return [r['name'] for r in entry.get('tables', [])]
+
+    def query(self, ksql: str) -> pd.DataFrame:
+        """ Execute a pull query and return a DataFrame """
+        payload = {"ksql": ksql, "streamsProperties": {}}
+        with self._request('POST', '/query', json_payload=payload, stream=True) as resp:
+            raw = resp.read()
+        text = raw.decode(errors='ignore')
+        if resp.status_code != 200:
+            raise KSQLDBClientException(f"Query error: {text}")
+
+        rows = []
+        cols = []
+        for line in text.splitlines():
+            j = json.loads(line)
+            if 'columnNames' in j:
+                cols = j['columnNames']
+            elif isinstance(j, list):
+                rows.append(j)
+        return pd.DataFrame(rows, columns=cols)
+
+    def statement_query(self, sql: str) -> dict:
+        """ Execute a statement query (e.g., CREATE/DROP) """
+        payload = {"ksql": sql}
+        headers = {"Accept": "application/vnd.ksql.v1+json"}
+        resp = self._request('POST', '/ksql', json_payload=payload, headers=headers)
+        return resp.json()
+
+    def insert_into_stream(self, stream_name: str, rows: list[dict]) -> list[dict]:
+        """ Insert rows into a stream over HTTP/2 """
+        urlpath = '/inserts-stream'
+        content = b"".join(
+            [json.dumps({"target": stream_name}).encode() + b"\n"] +
+            [json.dumps(r).encode() + b"\n" for r in rows]
+        )
         headers = {"Content-Type": "application/vnd.ksql.v1+json"}
+        with self._request('POST', urlpath, stream=True, headers=headers, content=content) as resp:
+            text = b"".join(resp.iter_bytes()).decode(errors='ignore')
+        if resp.status_code != 200:
+            raise KSQLDBClientException(f"Insert error: {text}")
+        return [json.loads(line) for line in text.splitlines()]
 
-        with self._http2_client.stream("POST", url, content=data, headers=headers) as r:
-            response_text = b"".join(r.iter_bytes()).decode("utf-8")
+    def close(self) -> None:
+        """ Close HTTP client """
+        if self._client:
+            self.logger.info("Closing HTTP client")
+            self._client.close()
+            self._client = None
 
-            if r.status_code != 200:
-                raise KSQLDBClienException(f"Error in ksqlDB insert: {response_text}")
-
-            # Successful: return parsed lines
-            return [json.loads(line) for line in response_text.splitlines()]
-
-    def _process_response(self, response):
-        """ Processes the ksqlDB response and returns a DataFrame """
-        data, columns = [], []
-
-        for line in response.iter_lines():
-            if line:
-                json_line = json.loads(line.decode("utf-8"))
-
-                if "columnNames" in json_line:
-                    columns = json_line["columnNames"]
-                elif isinstance(json_line, list):
-                    data.append(json_line)
-
-        return pd.DataFrame(data, columns=columns) if data else pd.DataFrame(columns=columns)
-
-    def close(self):
-        """ Closes the session """
-        if self.session:
-            print("Closing ksqlDB connection...")
-            self._http2_client.close()
-            self.session.close()
-            self.session = None  # Avoid re-closing
-
-    def _handle_exit(self, signum, frame):
-        """ Handles termination signals (SIGINT/SIGTERM) by closing the session """
-        # Call the previous handler if it exists and is not default
-        if signum == signal.SIGINT and callable(self.old_sigint_handler):
-            self.old_sigint_handler(signum, frame)
-        if signum == signal.SIGTERM and callable(self.old_sigterm_handler):
-            self.old_sigterm_handler(signum, frame)
-
-        print(f"\nReceived termination signal ({signum}), shutting down ksqlDB connection...")
+    def _handle_exit(self, signum, frame) -> None:
+        if callable(self.old_sigint) and signum == signal.SIGINT:
+            self.old_sigint(signum, frame)
+        if callable(self.old_sigterm) and signum == signal.SIGTERM:
+            self.old_sigterm(signum, frame)
+        self.logger.info("Received termination signal %s, shutting down", signum)
         self.close()
-
-        exit(0)
+        raise SystemExit
 
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
 
 if __name__ == "__main__":
-
-    # Example usage of KSQLDBClient
+    # Example usage
+    logging.basicConfig(level=logging.INFO)
     ksql = KSQLDBClient('http://localhost:8088')
-
-    print('ksqlDB server info:', ksql.info())
-    print('streams:', ksql.streams())
-    print('tables:', ksql.tables())
-
-    query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Samples';"
-    print('\nSamples:\n', ksql.query(query))
-
-    query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Events';"
-    print('\nEvents:\n', ksql.query(query))
-
-    print('\nKafka topic of CMDS_STREAM:', ksql.get_kafka_topic('CMDS_STREAM'), '\n')
-
-    ksql.statement_query("DROP STREAM IF EXISTS demo_stream;")
-    ksql.statement_query(
-        """
-            CREATE STREAM demo_stream (
-                ASSET_UUID VARCHAR KEY,
-                id VARCHAR,
-                value VARCHAR,
-                tag VARCHAR,
-                type VARCHAR
-            ) WITH (
-                KAFKA_TOPIC = 'ofa_assets',
-                PARTITIONS = 1,
-                VALUE_FORMAT = 'JSON'
-            );
-        """)
-
-    rows = [
-        {
-            "ASSET_UUID": "123e4567-e89b-12d3-a456-426614174000",
-            "id": "sensor-1",
-            "value": "72.4",
-            "tag": "temperature",
-            "type": "float"
-        },
-        {
-            "ASSET_UUID": "987e6543-e21b-12d3-a456-426614174999",
-            "id": "sensor-2",
-            "value": "1013",
-            "tag": "pressure",
-            "type": "int"
-        }
-    ]
-
-    response = ksql.insert_into_stream("demo_stream", rows)
-    for entry in response:
-        print(entry)
-
-    ksql.statement_query("DROP STREAM IF EXISTS demo_stream;")
-
+    print('Info:', ksql.info())
+    print('Streams:', ksql.streams())
+    print('Tables:', ksql.tables())
+    df = ksql.query("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Samples';")
+    print(df)
     ksql.close()
