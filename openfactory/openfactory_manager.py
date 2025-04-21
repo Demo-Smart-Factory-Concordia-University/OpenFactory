@@ -278,6 +278,10 @@ class OpenFactoryManager(OpenFactory):
                 var, val = item.split('=')
                 env.append(f"{var.strip()}={val.strip()}")
 
+        # if KSQLDB_LOG_LEVEL is not set by user, set it to the default value
+        if not any(var.startswith("KSQLDB_LOG_LEVEL=") for var in env):
+            env.append(f"KSQLDB_LOG_LEVEL={config.KSQLDB_LOG_LEVEL}")
+
         try:
             dal.docker_client.services.create(
                 image=application['image'],

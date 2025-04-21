@@ -322,6 +322,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Mock config values
         mock_config.OPENFACTORY_NETWORK = "mock_network"
+        mock_config.KSQLDB_LOG_LEVEL = "MOCK_LOG_LEVEL"
 
         ksqlMock = MagicMock()
         ksqlMock.ksqldb_url = "mock_ksqldb_url"
@@ -330,7 +331,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         application = {
             'uuid': 'test-app',
             'image': 'test-image',
-            'environment': ['VAR1=value1', 'VAR2=value2']
+            'environment': ['VAR1=value1', 'VAR2=value2', 'KSQLDB_LOG_LEVEL=MOCK_USER_LOG_LEVEL']
         }
 
         # Call the method to test
@@ -347,7 +348,8 @@ class TestOpenFactoryManager(unittest.TestCase):
                 'KSQLDB_URL=mock_ksqldb_url',
                 'DOCKER_SERVICE=test-app',
                 'VAR1=value1',
-                'VAR2=value2'
+                'VAR2=value2',
+                'KSQLDB_LOG_LEVEL=MOCK_USER_LOG_LEVEL'
             ],
             networks=['mock_network']
         )
@@ -367,6 +369,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Mock config values
         mock_config.OPENFACTORY_NETWORK = "mock_network"
+        mock_config.KSQLDB_LOG_LEVEL = "MOCK_LOG_LEVEL"
 
         ksqlMock = MagicMock()
         ksqlMock.ksqldb_url = "mock_ksqldb_url"
@@ -392,7 +395,8 @@ class TestOpenFactoryManager(unittest.TestCase):
                 'APP_UUID=test-app',
                 'KAFKA_BROKER=mokded_bootstrap_servers',
                 'KSQLDB_URL=mock_ksqldb_url',
-                'DOCKER_SERVICE=test-app'
+                'DOCKER_SERVICE=test-app',
+                'KSQLDB_LOG_LEVEL=MOCK_LOG_LEVEL'
             ],
             networks=['mock_network']
         )

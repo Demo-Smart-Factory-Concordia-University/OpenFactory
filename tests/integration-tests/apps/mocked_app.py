@@ -27,7 +27,9 @@ class TestApp(OpenFactoryApp):
 
 app = TestApp(
     app_uuid='TEST-APP',
-    ksqlClient=KSQLDBClient(os.environ.get("KSQLDB_URL", "http://localhost:8088")),
+    ksqlClient=KSQLDBClient(
+            ksqldb_url=os.environ.get("KSQLDB_URL", "http://localhost:8088"),
+            loglevel=os.environ.get("KSQLDB_LOG_LEVEL", "WARNING")),
     bootstrap_servers=os.environ.get("KAFKA_BROKER", "localhost:9092")
 )
 app.run()

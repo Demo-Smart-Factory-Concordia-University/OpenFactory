@@ -3,3 +3,5 @@ apps:
   test-app:
     uuid: TEST-APP
     image: ofa/test-app
+    environment:
+      - KSQLDB_LOG_LEVEL=DEBUG
