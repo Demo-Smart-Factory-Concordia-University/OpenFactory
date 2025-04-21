@@ -94,7 +94,7 @@ dal.connect()
 # (disconnect is handled by KSQLDBClient class)
 try:
     ksql.connect(config.KSQLDB_URL)
-except KSQLDBClienException:
+except KSQLDBClientException:
     user_notify.fail('Failed to connect to ksqlDB server')
     exit(1)
 
