@@ -3,7 +3,7 @@ from openfactory.models.user_notifications import user_notify
 import openfactory.ofa as ofa
 from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.ksqldb import ksql
-from openfactory.kafka.ksql import KSQLDBClienException
+from openfactory.kafka.ksql import KSQLDBClientException
 import openfactory.config as config
 
 """
