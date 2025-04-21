@@ -230,6 +230,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Mock config values
         mock_config.OPENFACTORY_NETWORK = "mock_network"
+        mock_config.KSQLDB_LOG_LEVEL = "MOCK_LOG_LEVEL"
 
         # Set up mocks
         mock_client = MagicMock()
@@ -281,6 +282,7 @@ class TestOpenFactoryManager(unittest.TestCase):
             "KSQLDB_URL=mock_ksqldb_url",
             f"ADAPTER_IP={supervisor['adapter']['ip']}",
             f"ADAPTER_PORT={supervisor['adapter']['port']}",
+            'KSQLDB_LOG_LEVEL=MOCK_LOG_LEVEL',
             'VAR1=value1',
             'VAR2=value2'
         ]

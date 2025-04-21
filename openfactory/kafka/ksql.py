@@ -7,6 +7,7 @@ import logging
 import httpx
 from urllib.parse import urljoin
 from openfactory.setup_logging import configure_prefixed_logger, setup_third_party_loggers
+import openfactory.config as Config
 
 
 class KSQLDBClientException(Exception):
@@ -23,6 +24,7 @@ class KSQLDBClient:
         max_retries: int = 3,
         retry_delay: float = 2.0,
         timeout: float = 10.0,
+        loglevel: str = Config.KSQLDB_LOG_LEVEL,
     ):
         """
         :param ksqldb_url: URL of the ksqlDB server
@@ -47,7 +49,10 @@ class KSQLDBClient:
 
         # Set up logging
         setup_third_party_loggers()
-        self.logger = configure_prefixed_logger("openfactory.ksqlDB", prefix="KSQL")
+        self.logger = configure_prefixed_logger(
+            "openfactory.ksqlDB",
+            prefix="KSQL",
+            level=loglevel)
 
         self.logger.info(f"Connected to ksqlDB at {self.ksqldb_url}")
 

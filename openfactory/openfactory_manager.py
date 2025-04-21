@@ -230,7 +230,8 @@ class OpenFactoryManager(OpenFactory):
                f"KAFKA_BROKER={self.bootstrap_servers}",
                f"KSQLDB_URL={self.ksql.ksqldb_url}",
                f"ADAPTER_IP={supervisor['adapter']['ip']}",
-               f"ADAPTER_PORT={supervisor['adapter']['port']}"]
+               f"ADAPTER_PORT={supervisor['adapter']['port']}",
+               f"KSQLDB_LOG_LEVEL={config.KSQLDB_LOG_LEVEL}"]
 
         if supervisor['adapter']['environment'] is not None:
             for item in supervisor['adapter']['environment']:

@@ -17,6 +17,10 @@ OPENFACTORY_MANAGER_NODE_DOCKER_URL: ssh://openfactory@${MANAGER_NODE_IP}
 # OpenFactory Overlay network
 OPENFACTORY_NETWORK: factory-net
 
+# OpenFactory Log Level
+OPENFACTORY_LOG_LEVEL: INFO
+KSQLDB_LOG_LEVEL: WARNING
+
 # OpenFactory Database
 SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
 
