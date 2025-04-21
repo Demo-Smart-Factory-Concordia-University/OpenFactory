@@ -29,11 +29,11 @@ class TestKSQLDBClient(unittest.TestCase):
 
         # Mock the actual creation of the KSQLDBClient
         ksqldb_url = "http://localhost:8088"
-        KSQLDBClient(ksqldb_url)
+        KSQLDBClient(ksqldb_url, loglevel="MOCK_LEVEL")
 
         # Assertions to ensure the logger was correctly set up
         mock_setup_loggers.assert_called_once()
-        mock_configure_logger.assert_called_once_with("openfactory.ksqlDB", prefix="KSQL")
+        mock_configure_logger.assert_called_once_with("openfactory.ksqlDB", prefix="KSQL", level="MOCK_LEVEL")
         mock_logger.info.assert_called_once_with(f"Connected to ksqlDB at {ksqldb_url}")
 
     @patch("openfactory.kafka.ksql.KSQLDBClient._request")
