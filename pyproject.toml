@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openfactory"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
     "paramiko",
     "docker",
@@ -35,9 +35,6 @@ include-package-data = true
 
 [tool.setuptools.packages]
 find = { where = ["."], include = ["openfactory", "openfactory.*"] }
-
-[tool.setuptools.package-data]
-openfactory = ["openfactory-version.txt"]
 
 [project.scripts]
 ofa = "openfactory.ofacli:cli"
