@@ -4,7 +4,7 @@ import json
 import ast
 from dotenv import load_dotenv
 from pathlib import Path
-from importlib.resources import files
+from importlib.metadata import version
 
 
 def load_yaml(yaml_file):
@@ -12,11 +12,8 @@ def load_yaml(yaml_file):
     Loads a yaml file and parses environment variables
     """
 
-    # Read the OpenFactory version from openfactory-version.txt
-    version_file = files('openfactory').joinpath('openfactory-version.txt')
-    with open(version_file, "r") as f:
-        version = f.read().strip()
-    os.environ["OPENFACTORY_VERSION"] = version
+    # Fetch the version from the installed package
+    os.environ["OPENFACTORY_VERSION"] = f"v{version('openfactory')}"
 
     # load environment variables from working directory
     load_dotenv('.ofaenv')
