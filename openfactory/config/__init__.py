@@ -4,6 +4,7 @@ import json
 import ast
 from dotenv import load_dotenv
 from pathlib import Path
+from importlib.resources import files
 
 
 def load_yaml(yaml_file):
@@ -12,7 +13,7 @@ def load_yaml(yaml_file):
     """
 
     # Read the OpenFactory version from openfactory-version.txt
-    version_file = os.path.join(os.path.dirname(__file__), "..", "..", "openfactory-version.txt")
+    version_file = files('openfactory').joinpath('openfactory-version.txt')
     with open(version_file, "r") as f:
         version = f.read().strip()
     os.environ["OPENFACTORY_VERSION"] = version
