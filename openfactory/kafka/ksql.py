@@ -158,8 +158,7 @@ class KSQLDBClient:
         """ Execute a statement query (e.g., CREATE/DROP) """
         payload = {"ksql": sql}
         headers = {"Accept": "application/vnd.ksql.v1+json"}
-        resp = self._request('POST', '/ksql', json_payload=payload, headers=headers)
-        return resp.json()
+        return self._request('POST', '/ksql', json_payload=payload, headers=headers)
 
     def insert_into_stream(self, stream_name: str, rows: list[dict]) -> list[dict]:
         """ Insert rows into a stream over HTTP/2 """

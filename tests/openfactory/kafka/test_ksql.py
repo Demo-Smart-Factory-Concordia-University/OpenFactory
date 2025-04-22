@@ -183,7 +183,7 @@ class TestKSQLDBClient(unittest.TestCase):
         result = self.client.statement_query(sql)
 
         # Assertions
-        self.assertEqual(result, {"status": "success"})
+        self.assertEqual(result.status_code, 200)
         mock_request.assert_called_once_with(
             "POST",
             "/ksql",
