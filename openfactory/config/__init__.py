@@ -12,7 +12,8 @@ def load_yaml(yaml_file):
     """
 
     # Read the OpenFactory version from openfactory-version.txt
-    with open("openfactory-version.txt", "r") as f:
+    version_file = os.path.join(os.path.dirname(__file__), "..", "..", "openfactory-version.txt")
+    with open(version_file, "r") as f:
         version = f.read().strip()
     os.environ["OPENFACTORY_VERSION"] = version
 
