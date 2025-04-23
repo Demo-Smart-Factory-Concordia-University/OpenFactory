@@ -1,6 +1,8 @@
 name: Lint with Flake8
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   flake8_py3:
