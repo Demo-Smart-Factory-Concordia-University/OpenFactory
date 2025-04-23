@@ -26,3 +26,5 @@ def load_yaml(yaml_file):
 # assign variables
 config_file = Path.joinpath(Path(__file__).resolve().parent, 'openfactory.yml')
 globals().update(load_yaml(config_file))
+
+MTCONNECT_AGENT_CFG_FILE = os.path.join(Path(__file__).resolve().parent, 'agent.cfg')
