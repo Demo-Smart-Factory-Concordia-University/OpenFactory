@@ -1,23 +1,20 @@
 import fsspec
-import json
 from requests.exceptions import HTTPError
 from openfactory.exceptions import OFAException
-from openfactory.models.configurations import get_configuration
+from openfactory.utils.github_tokenstore import GitHubTokenStore
 
 
-def open_github(uri, path):
+def open_github(path):
     """
     Open a file from GitHub
     """
+    uri = f"github://{path}"
     repo = path.split('@', 1)[0]
-    tokens = get_configuration('github_access_tokens')
+    tokenStore = GitHubTokenStore()
+    tokens = tokenStore.list_tokens()
 
-    # validate GitHub token
+    # validate GitHub tokens
     if tokens:
-        try:
-            tokens = json.loads(tokens)
-        except json.decoder.JSONDecodeError as err:
-            raise OFAException(f"Error in decoding 'github_access_tokens': {err}")
         if repo in tokens:
             if 'user' not in tokens[repo]:
                 raise OFAException(f"GitHub access token for '{repo}' missconfigured. No 'user' field defined")
@@ -50,6 +47,6 @@ def open_ofa(uri):
     protocol, path = fsspec.core.split_protocol(uri)
 
     match protocol:
-        case 'github': return open_github(uri, path)
+        case 'github': return open_github(path)
 
     return open(uri)
