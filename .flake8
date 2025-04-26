@@ -10,4 +10,4 @@ exclude =
    *.md,
    build
    venv
-
+   .venv
