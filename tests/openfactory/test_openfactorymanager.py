@@ -433,6 +433,103 @@ class TestOpenFactoryManager(unittest.TestCase):
             'environment': None
         })
 
+    @patch('openfactory.openfactory_manager.get_devices_from_config_file')
+    @patch('openfactory.openfactory_manager.register_asset')
+    @patch('openfactory.openfactory_manager.user_notify')
+    @patch('openfactory.openfactory_manager.os.path')
+    @patch('openfactory.openfactory_manager.split_protocol')
+    def test_deploy_devices_from_config_file(self, mock_split_protocol, mock_path, mock_user_notify, mock_register_asset, mock_get_devices):
+        """ Test deploy_devices_from_config_file """
+        # Mock dependencies
+        mock_path.isabs.return_value = False
+        mock_path.dirname.return_value = "/mock/path"
+        mock_path.join.return_value = "/mock/path/device.xml"
+        mock_split_protocol.return_value = (None, None)
+        mock_get_devices.return_value = {
+            "Device1": {
+                "uuid": "device-uuid-1",
+                "agent": {
+                    "ip": None,
+                    "device_xml": "device.xml"
+                },
+                "ksql_tables": None,
+                "supervisor": "MockSupervisor"
+            }
+        }
+
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.devices_uuid = MagicMock(return_value=[])
+        manager.deploy_mtconnect_agent = MagicMock()
+        manager.deploy_kafka_producer = MagicMock()
+        manager.create_device_ksqldb_tables = MagicMock()
+        manager.deploy_device_supervisor = MagicMock()
+
+        # Call the method
+        manager.deploy_devices_from_config_file("mock_config.yaml")
+
+        # Assertions
+        mock_get_devices.assert_called_once_with("mock_config.yaml")
+        mock_register_asset.assert_called_once_with("device-uuid-1", "Device", ksqlClient=manager.ksql, docker_service="")
+        manager.deploy_mtconnect_agent.assert_called_once_with(
+            device_uuid="device-uuid-1",
+            device_xml_uri="/mock/path/device.xml",
+            agent={"ip": None, "device_xml": "device.xml"}
+        )
+        manager.deploy_kafka_producer.assert_called_once_with(mock_get_devices.return_value["Device1"])
+        manager.deploy_device_supervisor.assert_called_once_with(
+            device_uuid=mock_get_devices.return_value["Device1"]['uuid'],
+            supervisor="MockSupervisor")
+        mock_user_notify.success.assert_called_with("Device device-uuid-1 deployed successfully")
+
+    @patch('openfactory.openfactory_manager.get_devices_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_devices_from_config_file_no_devices(self, mock_user_notify, mock_get_devices):
+        """ Test deploy_devices_from_config_file when no devices are found in the config file """
+        # Mock dependencies
+        mock_get_devices.return_value = None
+
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+
+        # Call the method
+        manager.deploy_devices_from_config_file("mock_config.yaml")
+
+        # Assertions
+        mock_get_devices.assert_called_once_with("mock_config.yaml")
+        mock_user_notify.info.assert_not_called()
+
+    @patch('openfactory.openfactory_manager.get_devices_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_devices_from_config_file_device_exists(self, mock_user_notify, mock_get_devices):
+        """ Test deploy_devices_from_config_file when device already exists """
+        # Mock dependencies
+        mock_get_devices.return_value = {
+            "Device1": {
+                "uuid": "device-uuid-1",
+                "agent": {
+                    "ip": None,
+                    "device_xml": "device.xml"
+                },
+                "ksql_tables": None,
+                "supervisor": None
+            }
+        }
+
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.devices_uuid = MagicMock(return_value=["device-uuid-1"])
+
+        # Call the method
+        manager.deploy_devices_from_config_file("mock_config.yaml")
+
+        # Assertions
+        mock_get_devices.assert_called_once_with("mock_config.yaml")
+        mock_user_notify.info.assert_any_call("Device device-uuid-1 exists already and was not deployed")
+
     @patch('openfactory.openfactory_manager.get_apps_from_config_file')
     @patch('openfactory.openfactory_manager.user_notify')
     def test_deploy_apps_from_config_file_no_apps(self, mock_user_notify, mock_get_apps_from_config_file):
@@ -527,6 +624,56 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Check if the exception was raised for the service removal
         mock_service.remove.assert_called()
+
+    @patch('openfactory.openfactory_manager.get_devices_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_shut_down_devices_from_config_file(self, mock_user_notify, mock_get_devices_from_config_file):
+        """ Test shut_down_devices_from_config_file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.devices = MagicMock(return_value=[
+            MagicMock(asset_uuid="device-uuid-1"),
+            MagicMock(asset_uuid="device-uuid-2")
+        ])
+        manager.tear_down_device = MagicMock()
+
+        # Mock the devices returned by the config file
+        mock_get_devices_from_config_file.return_value = {
+            "Device1": {"uuid": "device-uuid-1"},
+            "Device2": {"uuid": "device-uuid-3"}
+        }
+
+        # Call the method
+        manager.shut_down_devices_from_config_file("dummy_config.yaml")
+
+        # Assertions
+        mock_get_devices_from_config_file.assert_called_once_with("dummy_config.yaml")
+        mock_user_notify.info.assert_any_call("Device1:")
+        mock_user_notify.info.assert_any_call("Device2:")
+        mock_user_notify.info.assert_any_call("No device device-uuid-3 deployed in OpenFactory")
+        manager.tear_down_device.assert_called_once_with("device-uuid-1")
+
+    @patch('openfactory.openfactory_manager.get_devices_from_config_file')
+    def test_shut_down_devices_from_config_file_no_devices(self, mock_get_devices_from_config_file):
+        """ Test shut_down_devices_from_config_file when no devices are found in the config file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.devices = MagicMock(return_value=[])
+        manager.tear_down_device = MagicMock()
+
+        # Mock the devices returned by the config file
+        mock_get_devices_from_config_file.return_value = None
+
+        # Call the method
+        manager.shut_down_devices_from_config_file("dummy_config.yaml")
+
+        # Assertions
+        mock_get_devices_from_config_file.assert_called_once_with("dummy_config.yaml")
+        manager.tear_down_device.assert_not_called()
 
     @patch("openfactory.openfactory_manager.Asset")
     @patch("openfactory.openfactory_manager.dal")

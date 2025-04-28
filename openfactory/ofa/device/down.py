@@ -1,5 +1,5 @@
 import click
-from openfactory.factories import shut_down_devices_from_config_file
+from openfactory import OpenFactoryManager
 from openfactory.ofa.ksqldb import ksql
 
 
@@ -9,4 +9,5 @@ from openfactory.ofa.ksqldb import ksql
                 nargs=1)
 def click_down(yaml_config_file):
     """ Tear down devices """
-    shut_down_devices_from_config_file(yaml_config_file, ksqlClient=ksql.client)
+    ofa = OpenFactoryManager(ksqlClient=ksql.client)
+    ofa.shut_down_devices_from_config_file(yaml_config_file)
