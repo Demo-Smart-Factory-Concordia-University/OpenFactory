@@ -11,7 +11,8 @@ class TestAppDown(TestCase):
     """
 
     @patch("openfactory.ofa.app.down.OpenFactoryManager")
-    def test_app_down(self, mock_openfactory_manager):
+    @patch("openfactory.ofa.app.down.process_yaml_files")
+    def test_app_down(self, mock_process_yaml_files, mock_openfactory_manager):
         """
         Test shut_down_apps_from_config_file called correctly
         """
@@ -21,8 +22,11 @@ class TestAppDown(TestCase):
         runner = CliRunner()
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/mock_apps.yml')
-        result = runner.invoke(ofa.app.click_down, [config_file])
-        mock_instance.shut_down_apps_from_config_file.assert_called_once_with(config_file)
+        result = runner.invoke(ofa.app.click_down, [config_file, '--dry-run'])
+        mock_process_yaml_files.assert_called_once_with(config_file, True,
+                                                        action_func=mock_instance.shut_down_apps_from_config_file,
+                                                        action_name="shut down",
+                                                        pattern='app_*.yml')
         self.assertEqual(result.exit_code, 0)
 
     def test_app_down_none_existent_file(self):
@@ -31,8 +35,9 @@ class TestAppDown(TestCase):
         """
         runner = CliRunner()
         result = runner.invoke(ofa.app.click_down, ['/does/not/exist/config_file.yml'])
-        expect = ("Usage: down [OPTIONS] YAML_CONFIG_FILE\n"
+        expect = ("Usage: down [OPTIONS] PATH\n"
                   "Try 'down --help' for help.\n"
                   "\n"
-                  "Error: Invalid value for 'YAML_CONFIG_FILE': Path '/does/not/exist/config_file.yml' does not exist.\n")
+                  "Error: Invalid value for 'PATH': Path '/does/not/exist/config_file.yml' does not exist.\n")
         self.assertEqual(result.output, expect)
+        self.assertEqual(result.exit_code, 2)
