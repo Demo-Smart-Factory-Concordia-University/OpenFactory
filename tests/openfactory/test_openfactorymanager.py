@@ -402,6 +402,56 @@ class TestOpenFactoryManager(unittest.TestCase):
         )
         mock_user_notify.fail.assert_called_once_with("Application test-app could not be deployed\nMocked Docker API error")
 
+    @patch('openfactory.openfactory_manager.get_apps_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_apps_from_config_file(self, mock_user_notify, mock_get_apps_from_config_file):
+        """ Test deploy_apps_from_config_file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.applications_uuid = MagicMock(return_value=['existing-app-uuid'])
+        manager.deploy_openfactory_application = MagicMock()
+
+        # Mock the YAML configuration file loading
+        mock_get_apps_from_config_file.return_value = {
+            'App1': {'uuid': 'new-app-uuid', 'image': 'app1-image', 'environment': None},
+            'App2': {'uuid': 'existing-app-uuid', 'image': 'app2-image', 'environment': None}
+        }
+
+        # Call the method to test
+        manager.deploy_apps_from_config_file('dummy_config.yaml')
+
+        # Assertions
+        mock_get_apps_from_config_file.assert_called_once_with('dummy_config.yaml')
+        mock_user_notify.info.assert_any_call('App1:')
+        mock_user_notify.info.assert_any_call('App2:')
+        mock_user_notify.info.assert_any_call('Application existing-app-uuid exists already and was not deployed')
+        manager.deploy_openfactory_application.assert_called_once_with({
+            'uuid': 'new-app-uuid',
+            'image': 'app1-image',
+            'environment': None
+        })
+
+    @patch('openfactory.openfactory_manager.get_apps_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_deploy_apps_from_config_file_no_apps(self, mock_user_notify, mock_get_apps_from_config_file):
+        """ Test deploy_apps_from_config_file when no apps are found in the config file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+
+        # Mock the YAML configuration file loading to return None
+        mock_get_apps_from_config_file.return_value = None
+
+        # Call the method to test
+        manager.deploy_apps_from_config_file('dummy_config.yaml')
+
+        # Assertions
+        mock_get_apps_from_config_file.assert_called_once_with('dummy_config.yaml')
+        mock_user_notify.info.assert_not_called()
+
     @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.deregister_asset")
@@ -606,3 +656,47 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # No success message
         mock_user_notify.assert_not_called()
+
+    @patch('openfactory.openfactory_manager.get_apps_from_config_file')
+    @patch('openfactory.openfactory_manager.user_notify')
+    def test_shut_down_apps_from_config_file(self, mock_user_notify, mock_get_apps_from_config_file):
+        """ Test shut_down_apps_from_config_file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager.applications_uuid = MagicMock(return_value=['app-uuid-1', 'app-uuid-2'])
+        manager.tear_down_application = MagicMock()
+
+        # Mock the YAML config file content
+        mock_get_apps_from_config_file.return_value = {
+            'App1': {'uuid': 'app-uuid-1'},
+            'App2': {'uuid': 'app-uuid-3'}
+        }
+
+        # Call the method
+        manager.shut_down_apps_from_config_file('dummy_config.yaml')
+
+        # Assertions
+        mock_get_apps_from_config_file.assert_called_once_with('dummy_config.yaml')
+        mock_user_notify.info.assert_any_call('App1:')
+        mock_user_notify.info.assert_any_call('App2:')
+        mock_user_notify.info.assert_any_call('No application app-uuid-3 deployed in OpenFactory')
+        manager.tear_down_application.assert_called_once_with('app-uuid-1')
+
+    @patch('openfactory.openfactory_manager.get_apps_from_config_file')
+    def test_shut_down_apps_from_config_file_no_apps(self, mock_get_apps_from_config_file):
+        """ Test shut_down_apps_from_config_file when no apps are found in the config file """
+        # Mock the OpenFactoryManager instance
+        ksqlMock = MagicMock()
+        ksqlMock.ksqldb_url = "mock_ksqldb_url"
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+
+        # Mock the YAML config file returning None
+        mock_get_apps_from_config_file.return_value = None
+
+        # Call the method
+        manager.shut_down_apps_from_config_file('dummy_config.yaml')
+
+        # Assertions
+        mock_get_apps_from_config_file.assert_called_once_with('dummy_config.yaml')

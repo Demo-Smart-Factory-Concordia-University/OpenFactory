@@ -1,6 +1,7 @@
 import docker
 import openfactory.config as config
 from openfactory import OpenFactory
+from openfactory.schemas.apps import get_apps_from_config_file
 from openfactory.assets import Asset, AssetAttribute
 from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
@@ -298,6 +299,24 @@ class OpenFactoryManager(OpenFactory):
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
+    def deploy_apps_from_config_file(self, yaml_config_file):
+        """
+        Deploy OpenFactory applications based on a yaml configuration file
+        """
+
+        # load yaml description file
+        apps = get_apps_from_config_file(yaml_config_file)
+        if apps is None:
+            return
+
+        for app_name, app in apps.items():
+            user_notify.info(f"{app_name}:")
+            if app['uuid'] in self.applications_uuid():
+                user_notify.info(f"Application {app['uuid']} exists already and was not deployed")
+                continue
+
+            self.deploy_openfactory_application(app)
+
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
         """
         Create ksqlDB tables of an OpenFactory device
@@ -416,6 +435,24 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(err)
         deregister_asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"OpenFactory application {app_uuid} shut down successfully")
+
+    def shut_down_apps_from_config_file(self, yaml_config_file):
+        """
+        Shut down OpenFactory applications based on a config file
+        """
+
+        # Load yaml description file
+        apps = get_apps_from_config_file(yaml_config_file)
+        if apps is None:
+            return
+
+        for app_name, app in apps.items():
+            user_notify.info(f"{app_name}:")
+            if not app['uuid'] in self.applications_uuid():
+                user_notify.info(f"No application {app['uuid']} deployed in OpenFactory")
+                continue
+
+            self.tear_down_application(app['uuid'])
 
     def get_asset_uuid_from_docker_service(self, docker_service_name):
         """

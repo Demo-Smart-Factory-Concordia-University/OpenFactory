@@ -1,7 +1,5 @@
 from openfactory.factories.deploy_devices import deploy_devices_from_config_file
 from openfactory.factories.shut_down_devices import shut_down_devices_from_config_file
-from openfactory.factories.deploy_apps import deploy_apps_from_config_file
-from openfactory.factories.shut_down_apps import shut_down_apps_from_config_file
 from openfactory.factories.create_infra import create_infrastack
 from openfactory.factories.remove_infra import remove_infrastack
 from openfactory.factories.connect_inlfuxdb import connect_devices_to_influxdb
