@@ -1,6 +1,11 @@
 import docker
+import os
+from fsspec.core import split_protocol
+
 import openfactory.config as config
 from openfactory import OpenFactory
+from openfactory.schemas.devices import get_devices_from_config_file
+from openfactory.schemas.apps import get_apps_from_config_file
 from openfactory.assets import Asset, AssetAttribute
 from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
@@ -298,6 +303,68 @@ class OpenFactoryManager(OpenFactory):
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
+    def deploy_devices_from_config_file(self, yaml_config_file):
+        """
+        Deploy OpenFactory devices based on a yaml configuration file
+        """
+
+        # load yaml description file
+        devices = get_devices_from_config_file(yaml_config_file)
+        if devices is None:
+            return
+
+        for dev_name, device in devices.items():
+            user_notify.info(f"{dev_name}:")
+            if device['uuid'] in self.devices_uuid():
+                user_notify.info(f"Device {device['uuid']} exists already and was not deployed")
+                continue
+
+            # compute device device xml uri
+            if device['agent']['ip']:
+                device_xml_uri = ""
+            else:
+                device_xml_uri = device['agent']['device_xml']
+                protocol, _ = split_protocol(device_xml_uri)
+                if not protocol:
+                    if not os.path.isabs(device_xml_uri):
+                        device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
+
+            register_asset(device['uuid'], "Device", ksqlClient=self.ksql, docker_service="")
+
+            self.deploy_mtconnect_agent(device_uuid=device['uuid'],
+                                        device_xml_uri=device_xml_uri,
+                                        agent=device['agent'])
+
+            self.deploy_kafka_producer(device)
+
+            if device['ksql_tables']:
+                self.create_device_ksqldb_tables(device_uuid=device['uuid'],
+                                                 ksql_tables=device['ksql_tables'])
+
+            if device['supervisor']:
+                self.deploy_device_supervisor(device_uuid=device['uuid'],
+                                              supervisor=device['supervisor'])
+
+            user_notify.success(f"Device {device['uuid']} deployed successfully")
+
+    def deploy_apps_from_config_file(self, yaml_config_file):
+        """
+        Deploy OpenFactory applications based on a yaml configuration file
+        """
+
+        # load yaml description file
+        apps = get_apps_from_config_file(yaml_config_file)
+        if apps is None:
+            return
+
+        for app_name, app in apps.items():
+            user_notify.info(f"{app_name}:")
+            if app['uuid'] in self.applications_uuid():
+                user_notify.info(f"Application {app['uuid']} exists already and was not deployed")
+                continue
+
+            self.deploy_openfactory_application(app)
+
     def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
         """
         Create ksqlDB tables of an OpenFactory device
@@ -400,6 +467,26 @@ class OpenFactoryManager(OpenFactory):
         deregister_asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"{device_uuid} shut down successfully")
 
+    def shut_down_devices_from_config_file(self, yaml_config_file):
+        """
+        Shut down devices based on a config file
+        """
+
+        # Load yaml description file
+        devices = get_devices_from_config_file(yaml_config_file)
+        if devices is None:
+            return
+
+        uuid_list = [device.asset_uuid for device in self.devices()]
+
+        for dev_name, device in devices.items():
+            user_notify.info(f"{dev_name}:")
+            if not device['uuid'] in uuid_list:
+                user_notify.info(f"No device {device['uuid']} deployed in OpenFactory")
+                continue
+
+            self.tear_down_device(device['uuid'])
+
     def tear_down_application(self, app_uuid):
         """
         Tear down a deployed OpenFactory application
@@ -416,6 +503,24 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(err)
         deregister_asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"OpenFactory application {app_uuid} shut down successfully")
+
+    def shut_down_apps_from_config_file(self, yaml_config_file):
+        """
+        Shut down OpenFactory applications based on a config file
+        """
+
+        # Load yaml description file
+        apps = get_apps_from_config_file(yaml_config_file)
+        if apps is None:
+            return
+
+        for app_name, app in apps.items():
+            user_notify.info(f"{app_name}:")
+            if not app['uuid'] in self.applications_uuid():
+                user_notify.info(f"No application {app['uuid']} deployed in OpenFactory")
+                continue
+
+            self.tear_down_application(app['uuid'])
 
     def get_asset_uuid_from_docker_service(self, docker_service_name):
         """
