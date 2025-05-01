@@ -129,7 +129,7 @@ class TestKafkaAssetConsumer(unittest.TestCase):
         self.assertFalse(consumer_thread.is_alive(), "Consumer thread did not terminate")
 
     def test_kafkaerror_in_consume_message(self):
-        """ Test if KafkaError in message consumption closes consumer gracefully """
+        """ Test if KafkaError in message consumption closes consumer gracefully and logs error """
         error_msg = MockKafkaMessage(
             key=None,
             value=None,
@@ -138,11 +138,23 @@ class TestKafkaAssetConsumer(unittest.TestCase):
         self.mock_consumer.poll.side_effect = [error_msg]
         self.mock_consumer.subscribe.return_value = None
 
-        # Run the consume method
-        self.consumer.consume()
+        with patch('openfactory.kafka.asset_consumer.kafka_logger') as mock_logger:
+            # Run the consume method
+            consumer_thread = threading.Thread(target=self.consumer.consume)
+            consumer_thread.start()
+            time.sleep(0.2)
 
-        # Check consumer gets closed
-        self.mock_consumer.close.assert_called_once()
+            # Check that the error was logged
+            error_logs = [call for call in mock_logger.error.call_args_list if "Error:" in str(call)]
+            self.assertTrue(error_logs, "Expected Kafka error log not found")
+
+            # Check that consumer gets closed after error
+            self.mock_consumer.close.assert_called_once()
+
+            # Ensure the consumer thread is closed gracefully
+            self.consumer.stop()
+            consumer_thread.join(timeout=2)
+            self.assertFalse(consumer_thread.is_alive(), "Consumer thread did not terminate")
 
     def test_invalid_json_message(self):
         """ Test handling of non-JSON message values gracefully """
@@ -159,7 +171,7 @@ class TestKafkaAssetConsumer(unittest.TestCase):
 
         self.mock_consumer.poll.side_effect = poll_side_effect()
 
-        with patch('builtins.print') as mock_print:
+        with patch('openfactory.kafka.asset_consumer.kafka_logger') as mock_logger:
             consumer_thread = threading.Thread(target=self.consumer.consume)
             consumer_thread.start()
             time.sleep(0.2)
@@ -168,7 +180,7 @@ class TestKafkaAssetConsumer(unittest.TestCase):
             self.on_message_mock.assert_not_called()
 
             # Check that the error was printed
-            error_logs = [call for call in mock_print.call_args_list if "Topic contained a none JSON value" in str(call)]
+            error_logs = [call for call in mock_logger.error.call_args_list if "Topic contained a none JSON value" in str(call)]
             self.assertTrue(error_logs, "Expected JSON decode error log not found")
 
             self.consumer.stop()
