@@ -1,20 +1,20 @@
-# License
+License
+=======
 
-**OpenFactory**  
-**License Version**: Polyform Noncommercial License 1.0.0  
-**Effective Starting Version**: v0.2.0
+OpenFactory  
+License Version: Polyform Noncommercial License 1.0.0  
+Effective Starting Version: v0.2.0
 
-## Summary
+Summary
 
-This software is licensed under the [Polyform Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/), which allows free use, modification, and distribution for **non-commercial purposes**, including academic research and personal projects.
+This software is licensed under the Polyform Noncommercial License 1.0.0, which allows free use, modification, and distribution for non-commercial purposes, including academic research and personal projects.
 
-Commercial use requires a **separate commercial license**, as detailed below.
+Commercial use requires a separate commercial license, as detailed below.
 
----
 
-## License Text
+License Text
+============
 
-```
 Polyform Noncommercial License 1.0.0
 
 Acceptance
@@ -49,25 +49,24 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 This license is governed by the laws of the jurisdiction in which the licensor is located, unless otherwise agreed in writing.
 
 For more information, visit https://polyformproject.org/licenses/noncommercial/1.0.0/
-```
 
----
 
-## Commercial Licensing
+Commercial Licensing
+====================
 
-Commercial use of this software—including its inclusion in paid products, services, or SaaS platforms—is **not permitted** under the Polyform Noncommercial License. 
+Commercial use of this software—including its inclusion in paid products, services, or SaaS platforms—is not permitted under the Polyform Noncommercial License. 
 
 To obtain a commercial license:
 
 - Interested parties must contact the project maintainer.
-- Licensing is coordinated through the appropriate institutional channels at **Concordia University**.
+- Licensing is coordinated through the appropriate institutional channels at Concordia University.
 - Terms may include license fees and specific usage conditions.
 
-Contact: [rolf.wuthrich@concordia.ca]
+Contact: rolf.wuthrich@concordia.ca
 
----
 
-## Previous Versions
+Previous Versions
+=================
 
-- Versions up to and including **v0.1.0** are licensed under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
-- This change in licensing applies starting with **v0.2.0**.
+- Versions up to and including v0.1.0 are licensed under the BSD-3-Clause License.
+- This change in licensing applies starting with v0.2.0.
