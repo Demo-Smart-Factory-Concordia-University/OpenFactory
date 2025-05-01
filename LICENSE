@@ -1,28 +1,73 @@
-BSD 3-Clause License
+# License
 
-Copyright (c) 2024, Demo Smart Factory - Concordia University
+**OpenFactory**  
+**License Version**: Polyform Noncommercial License 1.0.0  
+**Effective Starting Version**: v0.2.0
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+## Summary
 
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
+This software is licensed under the [Polyform Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/), which allows free use, modification, and distribution for **non-commercial purposes**, including academic research and personal projects.
 
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
+Commercial use requires a **separate commercial license**, as detailed below.
 
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
+---
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+## License Text
+
+```
+Polyform Noncommercial License 1.0.0
+
+Acceptance
+
+In order to get any license under these terms, you must agree to them as both the licensor and the recipient of the software.
+
+Noncommercial License
+
+You are granted a non-exclusive, worldwide, non-transferable, non-sublicensable license to use and modify the software, and to distribute it non-commercially, subject to the limitations and conditions below.
+
+Limitations
+
+You may not make any commercial use of the software. A commercial use is one primarily intended for or directed toward commercial advantage or monetary compensation.
+
+Conditions
+
+1. You must preserve the license notice in all copies of the software you distribute.
+2. You must not attempt to alter the terms under which the software is licensed.
+
+No Other Rights
+
+These terms do not grant you any rights under any patents, trademarks, or other intellectual property rights.
+
+Termination
+
+If you use the software in violation of these terms, such use is not licensed, and you must cease all use and distribution of the software immediately.
+
+Disclaimer
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+This license is governed by the laws of the jurisdiction in which the licensor is located, unless otherwise agreed in writing.
+
+For more information, visit https://polyformproject.org/licenses/noncommercial/1.0.0/
+```
+
+---
+
+## Commercial Licensing
+
+Commercial use of this software—including its inclusion in paid products, services, or SaaS platforms—is **not permitted** under the Polyform Noncommercial License. 
+
+To obtain a commercial license:
+
+- Interested parties must contact the project maintainer.
+- Licensing is coordinated through the appropriate institutional channels at **Concordia University**.
+- Terms may include license fees and specific usage conditions.
+
+Contact: [rolf.wuthrich@concordia.ca]
+
+---
+
+## Previous Versions
+
+- Versions up to and including **v0.1.0** are licensed under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
+- This change in licensing applies starting with **v0.2.0**.
