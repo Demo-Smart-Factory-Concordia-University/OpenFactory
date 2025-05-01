@@ -1,0 +1,36 @@
+import unittest
+from unittest.mock import patch, MagicMock
+import sys
+import importlib
+
+
+class TestKafkaLogger(unittest.TestCase):
+    """
+    Test kafka_logger setup
+    """
+    def tearDown(self):
+        """
+        Restore the kafka_logger module after test modifications to avoid affecting other tests
+        """
+        if 'openfactory.kafka.kafka_logger' not in sys.modules:
+            importlib.import_module('openfactory.kafka.kafka_logger')
+        else:
+            importlib.reload(sys.modules['openfactory.kafka.kafka_logger'])
+
+    @patch('openfactory.setup_logging.configure_prefixed_logger')
+    def test_kafka_logger_configuration(self, mock_configure_logger):
+        """ Test that kafka_logger is configured with the correct prefix and log level """
+
+        mock_logger = MagicMock()
+        mock_configure_logger.return_value = mock_logger
+
+        with patch('openfactory.config.KAFKA_LOG_LEVEL', new='DEBUG'):
+            sys.modules.pop('openfactory.kafka.kafka_logger', None)
+            import openfactory.kafka.kafka_logger as kafka_logger_module
+
+        mock_configure_logger.assert_called_once_with(
+            'openfactory.kafka',
+            prefix='KAFKA',
+            level='DEBUG'
+        )
+        self.assertIs(kafka_logger_module.kafka_logger, mock_logger)
