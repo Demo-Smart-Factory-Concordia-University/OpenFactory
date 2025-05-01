@@ -79,3 +79,29 @@ OpenFactory addresses the Value Stream axis of RAMI 4.0 by enabling the seamless
 
 ### Lifecycle
 OpenFactory provides the necessary foundation to contribute to effective lifecycle management by enabling coherent data collection and organization. This capability allows relevant information to be stored and accessed, facilitating insights that optimize asset performance throughout their lifecycle.
+
+## License
+![License: Polyform Noncommercial](https://img.shields.io/badge/license-Polyform--NC-blue)
+
+This project is licensed under the [Polyform Noncommercial License 1.0.0](LICENSE), effective from release **v0.2.0**.
+
+### **Non-Commercial Use**
+Use, modification, and distribution of this software are permitted for **academic, research, and personal purposes**, provided that such use is **non-commercial** in nature.
+
+### **Commercial Use**
+Commercial use—including use in any paid product, service, or Software-as-a-Service (SaaS) offering—**requires a separate commercial license**. Interested parties must contact the project maintainer to obtain explicit written permission. Licensing discussions and agreements are managed in coordination with the Concorida Univerity technology transfer office.
+
+For licensing inquiries, please contact: [rolf.wuthrich@concordia.ca]
+
+### **Previous License (v0.1.1 and earlier)**
+Versions up to and including **v0.1.1** were released under the **BSD-3-Clause License**. That license remains applicable solely to those earlier versions.
+
+## Contributing
+
+Contributions are welcome under the terms of the **Polyform Noncommercial License**. 
+
+Please note:
+- Contributions must align with the project's **non-commercial licensing model**.
+- Organizations or individuals intending to use the project in **commercial contexts** must initiate a licensing discussion prior to contributing code.
+
+For guidelines on contributing, refer to [CONTRIBUTOR.md](CONTRIBUTOR.md).
