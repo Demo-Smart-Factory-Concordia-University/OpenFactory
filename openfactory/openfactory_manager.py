@@ -1,6 +1,19 @@
+"""
+OpenFactory Manager API.
+
+Provides functionality for managing the OpenFactory system.
+
+It includes the `OpenFactoryManager` class, which facilitates the deployment of MTConnect agents
+and other related operations such as registering assets, handling configurations, and managing Docker services.
+
+The module interacts with Docker for container management, as well as with OpenFactory services to integrate deployed agents
+into the system, along with error handling, user notifications, and resource management.
+"""
+
 import docker
 import os
 from fsspec.core import split_protocol
+from typing import Dict
 
 import openfactory.config as config
 from openfactory import OpenFactory
@@ -15,17 +28,24 @@ from openfactory.utils import get_nested, open_ofa, register_asset, deregister_a
 
 class OpenFactoryManager(OpenFactory):
     """
-    OpenFactory Manager API
+    OpenFactory Manager API.
 
-    Allows to deploy services on OpenFactory
-    User requires Docker access on the OpenFactory cluster
+    Allows to deploy services on OpenFactory.
+    User requires Docker access on the OpenFactory cluster.
     """
 
-    def deploy_mtconnect_agent(self, device_uuid, device_xml_uri, agent):
+    def deploy_mtconnect_agent(self, device_uuid: str, device_xml_uri: str, agent: Dict) -> None:
         """
-        Deploy an MTConnect agent
-        """
+        Deploy an MTConnect agent.
 
+        Args:
+            device_uuid (str): The UUID of the device.
+            device_xml_uri (str): URI to the device's XML model.
+            agent (dict): The agent configuration as a dictionary.
+
+        Raises:
+            OFAException: If the agent cannot be deployed.
+        """
         # if external agent nothing to deploy
         if agent['ip']:
             return
@@ -109,9 +129,16 @@ class OpenFactoryManager(OpenFactory):
 
         user_notify.success(f"Agent {device_uuid.lower()}-agent deployed successfully")
 
-    def deploy_mtconnect_adapter(self, device_uuid, adapter):
+    def deploy_mtconnect_adapter(self, device_uuid: str, adapter: Dict) -> None:
         """
-        Deploy an MTConnect adapter
+        Deploy an MTConnect adapter.
+
+        Args:
+            device_uuid (str): The UUID of the device.
+            adapter (dict): The adapter configuration as a dictionary.
+
+        Raises:
+            OFAException: If the adapter cannot be deployed.
         """
         client = dal.docker_client
 
@@ -154,11 +181,16 @@ class OpenFactoryManager(OpenFactory):
             return
         user_notify.success(f"Adapter {device_uuid.lower()}-adapter deployed successfully")
 
-    def deploy_kafka_producer(self, device):
+    def deploy_kafka_producer(self, device: Dict) -> None:
         """
-        Deploy a Kafka producer
-        """
+        Deploy a Kafka producer.
 
+        Args:
+            device (dict): The device configuration as a dictionary.
+
+        Raises:
+            OFAException: If the producer cannot be deployed.
+        """
         # compute ressources
         cpus_reservation = get_nested(device, ['agent', 'deploy', 'resources', 'reservations', 'cpus'], 0.5)
         cpus_limit = get_nested(device, ['agent', 'deploy', 'resources', 'limits', 'cpus'], 1)
@@ -210,11 +242,17 @@ class OpenFactoryManager(OpenFactory):
 
         user_notify.success(f"Kafka producer {service_name} deployed successfully")
 
-    def deploy_device_supervisor(self, device_uuid, supervisor):
+    def deploy_device_supervisor(self, device_uuid: str, supervisor: Dict) -> None:
         """
-        Deploy an OpenFactory device supervisor
-        """
+        Deploy an OpenFactory device supervisor.
 
+        Args:
+            device_uuid (str): The UUID of the device.
+            supervisor (dict): The supervisor configuration as a dictionary.
+
+        Raises:
+            OFAException: If the supervisor cannot be deployed.
+        """
         # compute ressources
         cpus_reservation = get_nested(supervisor, ['deploy', 'resources', 'reservations', 'cpus'], 0.5)
         cpus_limit = get_nested(supervisor, ['deploy', 'resources', 'limits', 'cpus'], 1)
@@ -268,11 +306,16 @@ class OpenFactoryManager(OpenFactory):
 
         user_notify.success(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
-    def deploy_openfactory_application(self, application):
+    def deploy_openfactory_application(self, application: Dict) -> None:
         """
-        Deploy an OpenFactory application
-        """
+        Deploy an OpenFactory application.
 
+        Args:
+            application (dict): The application configuration as a dictionary.
+
+        Raises:
+            OFAException: If the application cannot be deployed.
+        """
         # build environment variables
         env = [f"APP_UUID={application['uuid']}",
                f"KAFKA_BROKER={self.bootstrap_servers}",
@@ -303,11 +346,16 @@ class OpenFactoryManager(OpenFactory):
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
-    def deploy_devices_from_config_file(self, yaml_config_file):
+    def deploy_devices_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Deploy OpenFactory devices based on a yaml configuration file
-        """
+        Deploy OpenFactory devices based on a yaml configuration file.
 
+        Args:
+            yaml_config_file (str): Path to the yaml configuration file.
+
+        Raises:
+            OFAException: If the device cannot be deployed.
+        """
         # load yaml description file
         devices = get_devices_from_config_file(yaml_config_file)
         if devices is None:
@@ -347,11 +395,16 @@ class OpenFactoryManager(OpenFactory):
 
             user_notify.success(f"Device {device['uuid']} deployed successfully")
 
-    def deploy_apps_from_config_file(self, yaml_config_file):
+    def deploy_apps_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Deploy OpenFactory applications based on a yaml configuration file
-        """
+        Deploy OpenFactory applications based on a yaml configuration file.
 
+        Args:
+            yaml_config_file (str): Path to the yaml configuration file.
+
+        Raises:
+            OFAException: If the application cannot be deployed.
+        """
         # load yaml description file
         apps = get_apps_from_config_file(yaml_config_file)
         if apps is None:
@@ -365,9 +418,16 @@ class OpenFactoryManager(OpenFactory):
 
             self.deploy_openfactory_application(app)
 
-    def create_device_ksqldb_tables(self, device_uuid, ksql_tables):
+    def create_device_ksqldb_tables(self, device_uuid: str, ksql_tables: list) -> None:
         """
-        Create ksqlDB tables of an OpenFactory device
+        Create ksqlDB tables of an OpenFactory device.
+
+        Args:
+            device_uuid (str): The UUID of the device.
+            ksql_tables (list): List of ksqlDB tables to create.
+
+        Raises:
+            OFAException: If the ksqlDB tables cannot be created.
         """
         if ksql_tables is None:
             return
@@ -412,11 +472,16 @@ class OpenFactoryManager(OpenFactory):
                                              GROUP BY id;""")
             user_notify.success((f"ksqlDB table {device_uuid.replace('-', '_')}_PRODUCER created successfully"))
 
-    def tear_down_device(self, device_uuid):
+    def tear_down_device(self, device_uuid: str) -> None:
         """
-        Tear down a device deployed on OpenFactory
-        """
+        Tear down a device deployed on OpenFactory.
 
+        Args:
+            device_uuid (str): The UUID of the device to be torn down.
+
+        Raises:
+            OFAException: If the device cannot be torn down.
+        """
         # tear down Adapter
         try:
             service = dal.docker_client.services.get(device_uuid.lower() + '-adapter')
@@ -467,11 +532,16 @@ class OpenFactoryManager(OpenFactory):
         deregister_asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"{device_uuid} shut down successfully")
 
-    def shut_down_devices_from_config_file(self, yaml_config_file):
+    def shut_down_devices_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Shut down devices based on a config file
-        """
+        Shut down devices based on a config file.
 
+        Args:
+            yaml_config_file (str): Path to the yaml configuration file.
+
+        Raises:
+            OFAException: If the device cannot be shut down.
+        """
         # Load yaml description file
         devices = get_devices_from_config_file(yaml_config_file)
         if devices is None:
@@ -487,9 +557,15 @@ class OpenFactoryManager(OpenFactory):
 
             self.tear_down_device(device['uuid'])
 
-    def tear_down_application(self, app_uuid):
+    def tear_down_application(self, app_uuid: str) -> None:
         """
-        Tear down a deployed OpenFactory application
+        Tear down a deployed OpenFactory application.
+
+        Args:
+            app_uuid (str): The UUID of the application to be torn down.
+
+        Raises:
+            OFAException: If the application cannot be torn down.
         """
         try:
             app = Asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
@@ -504,11 +580,16 @@ class OpenFactoryManager(OpenFactory):
         deregister_asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         user_notify.success(f"OpenFactory application {app_uuid} shut down successfully")
 
-    def shut_down_apps_from_config_file(self, yaml_config_file):
+    def shut_down_apps_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Shut down OpenFactory applications based on a config file
-        """
+        Shut down OpenFactory applications based on a config file.
 
+        Args:
+            yaml_config_file (str): Path to the yaml configuration file.
+
+        Raises:
+            OFAException: If the application cannot be shut down.
+        """
         # Load yaml description file
         apps = get_apps_from_config_file(yaml_config_file)
         if apps is None:
@@ -522,9 +603,15 @@ class OpenFactoryManager(OpenFactory):
 
             self.tear_down_application(app['uuid'])
 
-    def get_asset_uuid_from_docker_service(self, docker_service_name):
+    def get_asset_uuid_from_docker_service(self, docker_service_name: str) -> str:
         """
-        Return ASSET_UUID of the asset running on the Docker service docker_service_name
+        Return ASSET_UUID of the asset running on the Docker service docker_service_name.
+
+        Args:
+            docker_service_name (str): The name of the Docker service.
+
+        Returns:
+            str: The ASSET_UUID of the asset running on the Docker service.
         """
         query = f"select ASSET_UUID from DOCKER_SERVICES where DOCKER_SERVICE='{docker_service_name}';"
         df = self.ksql.query(query)

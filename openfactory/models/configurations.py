@@ -1,3 +1,5 @@
+""" Configuration key-value store. """
+
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import create_engine
@@ -11,9 +13,7 @@ from openfactory.models.base import Base
 
 
 class Configuration(Base):
-    """
-    Configuration key-value store
-    """
+    """ Configuration key-value store. """
 
     __tablename__ = 'configurations'
 
@@ -23,11 +23,12 @@ class Configuration(Base):
     description: Mapped[str] = mapped_column(Text)
 
     def __repr__(self):
+        """ String representation. """
         return f"{self.key} = {self.value}"
 
 
 def get_configuration(key):
-    """ Fetch configuration from database """
+    """ Fetch configuration from database. """
     db_engine = create_engine(config.SQL_ALCHEMY_CONN)
     with Session(db_engine) as session:
         query = select(Configuration).where(Configuration.key == key)

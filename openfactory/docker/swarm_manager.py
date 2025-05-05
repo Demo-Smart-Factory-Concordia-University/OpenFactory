@@ -1,10 +1,19 @@
+""" Fetch a Swarm manager. """
+
 import docker
 from openfactory.docker.docker_access_layer import dal
+from typing import Optional
 
 
-def swarm_manager():
+def swarm_manager() -> Optional[docker.models.nodes.Node]:
     """
-    Returns an active and reachable swarm manager or None
+    Returns an active and reachable Swarm manager node, or None if no such node is found.
+
+    Attempts to list all nodes in the Docker Swarm and filters for manager nodes
+    that are active, healthy, and reachable. If no active manager nodes are found, it returns None.
+
+    Returns:
+        Optional[docker.models.nodes.Node]: The first active and reachable manager node, or None if no such node exists.
     """
     client = dal.docker_client
 

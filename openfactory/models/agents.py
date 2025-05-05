@@ -1,3 +1,5 @@
+""" Agent Model - THIS IS OBSOLETE AND WILL BE REMOVED IN FUTURE. """
+
 import docker
 import docker.errors
 from sqlalchemy import event
@@ -26,20 +28,19 @@ from openfactory.models.base import Base
 
 
 class AgentKafkaProducer(MTCSourceConnector):
-    """ Kafka producer for Agent """
+    """ Kafka producer for Agent. """
 
     bootstrap_servers = [config.KAFKA_BROKER]
 
     def __init__(self, agent):
+        """ Constructor. """
         self.mtc_agent = f"{agent.device_uuid.lower()}-agent:5000"
         self.kafka_producer_uuid = agent.producer_uuid
         super().__init__()
 
 
 class Agent(Base):
-    """
-    MTConnect Agent
-    """
+    """ MTConnect Agent. """
 
     __tablename__ = "mtc_agents"
 
@@ -60,9 +61,7 @@ class Agent(Base):
 
     @hybrid_property
     def top_task(self):
-        """
-        Get the task at the top of the hierarchy
-        """
+        """  Get the task at the top of the hierarchy. """
         client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-agent')
@@ -96,7 +95,7 @@ class Agent(Base):
 
     @hybrid_property
     def node(self):
-        """ Swarm node where agent is deployed """
+        """ Swarm node where agent is deployed. """
         if self.external:
             return f"External agent ({self.agent_ip})"
 
@@ -111,17 +110,17 @@ class Agent(Base):
 
     @hybrid_property
     def device_uuid(self):
-        """ Device UUID handeld by agent """
+        """ Device UUID handeld by agent. """
         return self.uuid.upper().replace('-AGENT', '')
 
     @hybrid_property
     def producer_uuid(self):
-        """ Kafka producer UUID for the agent """
+        """ Kafka producer UUID for the agent. """
         return self.uuid.upper().replace('-AGENT', '-PRODUCER')
 
     @hybrid_property
     def status(self):
-        """ Status of agent """
+        """ Status of agent. """
         if self.external:
             return "External"
 
@@ -135,7 +134,7 @@ class Agent(Base):
             return "Stopped"
 
     def load_device_xml(self):
-        """ Loads device xml model from source based on xml model uri """
+        """ Loads device xml model from source based on xml model uri. """
         xml_model = ""
         try:
             with open_ofa(self.device_xml) as f_remote:
@@ -145,7 +144,7 @@ class Agent(Base):
         return xml_model
 
     def deploy_agent(self):
-        """ Deploy agent on Docker swarm cluster """
+        """ Deploy agent on Docker swarm cluster. """
         client = dal.docker_client
         try:
             with open(config.MTCONNECT_AGENT_CFG_FILE, 'r') as file:
@@ -182,7 +181,7 @@ class Agent(Base):
         register_asset(self.uuid, "MTConnectAgent", service_name)
 
     def deploy_producer(self):
-        """ Deploy Kafka producer on Docker swarm cluster """
+        """ Deploy Kafka producer on Docker swarm cluster. """
         client = dal.docker_client
         if self.external:
             MTC_AGENT = f"{self.agent_ip}:{self.agent_port}"
@@ -207,7 +206,7 @@ class Agent(Base):
         register_asset(self.producer_uuid, "KafkaProducer", service_name)
 
     def start(self, ksql_tables):
-        """ Start agent """
+        """ Start agent. """
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
@@ -219,7 +218,7 @@ class Agent(Base):
         user_notify.success(f"Agent {self.uuid} started successfully")
 
     def stop(self):
-        """ Stop agent """
+        """ Stop agent. """
         if self.external:
             user_notify.fail("This is an external agent. It cannot be started by OpenFactory")
             return
@@ -238,8 +237,7 @@ class Agent(Base):
         deregister_asset(self.uuid)
 
     def attach(self, ksql_tables):
-        """ Attach a Kafka producer to the MTConnect agent """
-
+        """ Attach a Kafka producer to the MTConnect agent. """
         # register asset in OpenFactory
         register_asset(self.device_uuid, "Device")
 
@@ -259,7 +257,7 @@ class Agent(Base):
         self.kafka_producer = AgentKafkaProducer(self)
 
     def detach(self):
-        """ Detach agent by removing producer """
+        """ Detach agent by removing producer. """
         client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-producer')
@@ -275,7 +273,7 @@ class Agent(Base):
         deregister_asset(self.producer_uuid)
 
     def create_adapter(self, adapter_image, cpus_limit=1, cpus_reservation=0.5, environment=[]):
-        """ Create Docker container for adapter """
+        """ Create Docker container for adapter. """
         client = dal.docker_client
         try:
             client.services.create(
@@ -296,7 +294,7 @@ class Agent(Base):
         user_notify.success(f"Adapter {self.device_uuid.lower() + '-adapter'} created successfully")
 
     def shut_down_adapter(self):
-        """ Removes adapter if it is a Docker swarm service """
+        """ Removes adapter if it is a Docker swarm service. """
         client = dal.docker_client
         try:
             service = client.services.get(self.device_uuid.lower() + '-adapter')
@@ -309,7 +307,7 @@ class Agent(Base):
             raise OFAException(err)
 
     def send_unavailable(self):
-        """ Send agent and device unavailable messages to ksqlDB """
+        """ Send agent and device unavailable messages to ksqlDB. """
         ksql = KSQL(config.KSQLDB_URL)
         msg = [
             {
@@ -330,7 +328,7 @@ class Agent(Base):
         ksql.insert_into_stream("DEVICES_STREAM", msg)
 
     def create_ksqldb_tables(self, ksql_tables):
-        """ Create ksqlDB tables related to the agent """
+        """ Create ksqlDB tables related to the agent. """
         if ksql_tables is None:
             return
         ksql = KSQL(config.KSQLDB_URL)
@@ -376,7 +374,7 @@ class Agent(Base):
             user_notify.success((f"ksqlDB table {self.producer_uuid.replace('-', '_')} created successfully"))
 
     def remove_ksqldb_tables(self):
-        """ Remove ksqlDB tables related to the agent """
+        """ Remove ksqlDB tables related to the agent. """
         ksql = KSQL(config.KSQLDB_URL)
 
         # producer table
@@ -399,7 +397,7 @@ class Agent(Base):
         prod.flush()
 
     def create_influxdb_connector(self, influxdb_config, cpus_limit=1, cpus_reservation=0.5):
-        """ Create Docker container for influxDB connector """
+        """ Create Docker container for influxDB connector. """
         client = dal.docker_client
         try:
             client.services.create(
@@ -425,23 +423,20 @@ class Agent(Base):
         user_notify.success(f"Device {self.device_uuid} connected successfully to InfluxDB")
 
     def __repr__(self) -> str:
+        """ Representation as a str. """
         return f"Agent (id={self.id}, uuid={self.uuid})"
 
 
 @event.listens_for(Agent, 'load')
 def agent_load(target, context):
-    """
-    Create kafka_producer if agent service is running
-    """
+    """ Create kafka_producer if agent service is running. """
     if target.status == 'running':
         target.kafka_producer = AgentKafkaProducer(target)
 
 
 @event.listens_for(Agent, 'before_delete')
 def agent_before_delete(mapper, connection, target):
-    """
-    Stop the various services
-    """
+    """ Stop the various services. """
     target.shut_down_adapter()
     target.detach()
     target.stop()

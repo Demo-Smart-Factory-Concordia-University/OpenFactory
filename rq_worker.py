@@ -1,6 +1,4 @@
-"""
-DataFabric RQ worker
-"""
+""" DataFabric RQ worker. """
 from redis import Redis
 from rq import Worker
 from dotenv import load_dotenv
@@ -9,7 +7,7 @@ from openfactory.datafabric.config import Config
 
 
 def rq_worker():
-
+    """ Main function to start the RQ worker. """
     # Setup user notifications
     user_notify.success = lambda msg: user_notify.user.send_notification(msg, "success")
     user_notify.info = lambda msg: user_notify.user.send_notification(msg, "info")

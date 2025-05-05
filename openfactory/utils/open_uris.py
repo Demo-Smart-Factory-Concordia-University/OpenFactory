@@ -1,12 +1,23 @@
+""" Open files from different URIs using fsspec. """
+
 import fsspec
 from requests.exceptions import HTTPError
 from openfactory.exceptions import OFAException
 from openfactory.utils.github_tokenstore import GitHubTokenStore
 
 
-def open_github(path):
+def open_github(path: str) -> fsspec.core.OpenFile:
     """
-    Open a file from GitHub
+    Open a file from GitHub.
+
+    Args:
+        path (str): Path to the file in the format 'repo:owner@/path/to/file'
+
+    Returns:
+        file object: Opened file object
+
+    Raises:
+        OFAException: If the file cannot be found or permission is denied.
     """
     uri = f"github://{path}"
     repo = path.split('@', 1)[0]
@@ -40,9 +51,15 @@ def open_github(path):
     return f
 
 
-def open_ofa(uri):
+def open_ofa(uri) -> fsspec.core.OpenFile:
     """
-    Open file based on URI using fsspec
+    Open file based on URI using fsspec.
+
+    Args:
+        uri (str): URI of the file to open.
+
+    Returns:
+        file object: Opened file object.
     """
     protocol, path = fsspec.core.split_protocol(uri)
 
