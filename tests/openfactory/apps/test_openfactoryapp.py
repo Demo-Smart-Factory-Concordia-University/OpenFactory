@@ -98,6 +98,27 @@ class TestOpenFactoryApp(unittest.TestCase):
             else:
                 self.fail(f"Unexpected attribute_id: {attr_id}")
 
+    @patch('openfactory.apps.ofaapp.configure_prefixed_logger')
+    def test_logger_is_configured_correctly(self, mock_configure_logger):
+        """ Test that logger is configured with correct prefix and level. """
+        mock_logger = MagicMock()
+        mock_configure_logger.return_value = mock_logger
+
+        app = OpenFactoryApp(
+            app_uuid='test-uuid',
+            ksqlClient=self.ksql_mock,
+            bootstrap_servers='mock-bootstrap',
+            loglevel='DEBUG'
+        )
+
+        mock_configure_logger.assert_called_once_with(
+            'test-uuid',
+            prefix='TEST-UUID',
+            level='DEBUG'
+        )
+        self.assertIs(app.logger, mock_logger)
+        mock_logger.info.assert_called_with("Setup OpenFactory App test-uuid")
+
     def test_signal_sigint(self):
         """ Test signal SIGINT """
         app = OpenFactoryApp(app_uuid='init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap')
@@ -149,9 +170,16 @@ class TestOpenFactoryApp(unittest.TestCase):
 
     def test_run_handles_main_loop_exception(self):
         """ Test handling of exception in main_loop """
-        app = OpenFactoryApp(app_uuid='init-uuid', ksqlClient=self.ksql_mock, bootstrap_servers='mock_bootstrap')
+        app = OpenFactoryApp(
+            app_uuid='init-uuid',
+            ksqlClient=self.ksql_mock,
+            bootstrap_servers='mock_bootstrap'
+        )
         app.main_loop = MagicMock(side_effect=Exception("Boom"))
-        with patch('builtins.print') as mock_print:
+
+        with patch.object(app.logger, 'exception') as mock_logger_exception:
             app.run()
-            mock_print.assert_any_call("An error occurred in the main_loop of the app: Boom")
+            mock_logger_exception.assert_called_once()
+            args, kwargs = mock_logger_exception.call_args
+            assert "An error occurred in the main_loop of the app." in args[0]
             self.mock_deregister.assert_called_once()
