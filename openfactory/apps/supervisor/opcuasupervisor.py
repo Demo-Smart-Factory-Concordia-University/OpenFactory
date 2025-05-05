@@ -56,7 +56,8 @@ class OPCUASupervisor(BaseSupervisor):
     RECONNECT_INTERVAL = 10  # Time in seconds to wait before trying to reconnect
 
     def __init__(self, supervisor_uuid: str, device_uuid: str, adapter_ip: str, adapter_port: int,
-                 ksqlClient: KSQLDBClient, bootstrap_servers: str = config.KAFKA_BROKER):
+                 ksqlClient: KSQLDBClient, bootstrap_servers: str = config.KAFKA_BROKER,
+                 loglevel: str = 'INFO'):
         """
         Initialize the OPCUASupervisor.
 
@@ -71,9 +72,11 @@ class OPCUASupervisor(BaseSupervisor):
             adapter_port (int): The port on which the OPC UA adapter is accessible.
             ksqlClient (KSQLDBClient): The KSQL client instance used for querying.
             bootstrap_servers (str): Kafka bootstrap server URL.
+            loglevel (str): Logging level for the supervisor (e.g., 'INFO', 'DEBUG'). Defaults to 'INFO'.
         """
         super().__init__(supervisor_uuid=supervisor_uuid, device_uuid=device_uuid,
-                         ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers)
+                         ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers,
+                         loglevel=loglevel)
 
         self.adapter_ip = adapter_ip
         self.adapter_port = adapter_port
@@ -140,7 +143,7 @@ class OPCUASupervisor(BaseSupervisor):
         print(f"KAFKA_BROKER:    {self.bootstrap_servers}")
         print("--------------------------------------------------")
 
-    def _start_event_loop(self, loop: asyncio.EventLoop) -> None:
+    def _start_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
         """
         Starts the event loop for running asynchronous tasks.
 
@@ -149,7 +152,7 @@ class OPCUASupervisor(BaseSupervisor):
         thread to handle asynchronous operations such as connecting to and monitoring the OPC UA client.
 
         Args:
-            loop (asyncio.EventLoop): The asyncio event loop instance that will be run indefinitely in the background.
+            loop (asyncio.AbstractEventLoop): The asyncio event loop instance that will be run indefinitely in the background.
 
         Notes:
             - This method is important because OPC UA communication (e.g., `opcua_client`) involves asynchronous
@@ -193,16 +196,15 @@ class OPCUASupervisor(BaseSupervisor):
                 ua.Variant(args.strip(), ua.VariantType.String)
             )
         except ua.uaerrors._auto.BadNoMatch:
-            print(f"An unknown method '{cmd.strip()}' was requested")
+            self.logger.warning(f"An unknown method '{cmd.strip()}' was requested")
             ret = "Unknown method"
         except ConnectionError:
-            print("No connection to adapter. Cannot send command.")
+            self.logger.warning("No connection to adapter. Cannot send command.")
             await self.opcua_client.disconnect()
             self.adapter_connection_status = "CLOSED"
             ret = "No connection to OPC UA server"
         except Exception as e:
-            print(f"An unexpected error occurred while connecting to the OPCUA server: {e}")
-            print(f"Error type: {type(e)}")
+            self.logger.exception("An unexpected error occurred while connecting to the OPCUA server.")
             ret = f"Unknown error {e}"
 
         return ret
@@ -262,7 +264,7 @@ class OPCUASupervisor(BaseSupervisor):
         if not self.opcua_adapter:
             return
         methods = await self.opcua_adapter.get_methods()
-        print(f"Exposed methods by supervisor adapter {self.browseName}:")
+        self.logger.info(f"Exposed methods by supervisor adapter {self.browseName}:")
 
         for method_node in methods:
             node_id = method_node.nodeid
@@ -275,9 +277,9 @@ class OPCUASupervisor(BaseSupervisor):
                     "description": description.Text
                 }
                 self.commands.append(command_dict)
-                print(f"   Method: {display_name.Text} ({description.Text})")
-            except Exception as e:
-                print(f"   Failed to get browse name for method {identifier}: {e}")
+                self.logger.info(f"   Method: {display_name.Text} ({description.Text})")
+            except Exception:
+                self.logger.exception(f"   Failed to get browse name for method {identifier}.")
 
     async def _connect_to_adapter(self) -> None:
         """
@@ -305,7 +307,7 @@ class OPCUASupervisor(BaseSupervisor):
             self.idx = await self.opcua_client.get_namespace_index(self.namespace_uri)
             objects = self.opcua_client.get_objects_node()
             self.opcua_adapter = await objects.get_child([f"{self.idx}:{self.browseName}"])
-            print(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
+            self.logger.info(f"Connected to adapter at opc.tcp://{self.adapter_ip}:{self.adapter_port}")
 
             # Get methods of the OPC UA adapter
             await self._fetch_available_commands()
@@ -313,12 +315,12 @@ class OPCUASupervisor(BaseSupervisor):
             self.adapter_connection_status = "ESTABLISHED"
 
         except Exception as e:
-            print(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
+            self.logger.error(f"Failed to connect to adapter at {self.adapter_ip}:{self.adapter_port}: {e}")
             try:
                 await self.opcua_client.disconnect()
-                print("Disconnected from OPC UA server")
-            except Exception as e:
-                print(f"Error during OPC UA disconnection: {e}")
+                self.logger.error("Disconnected from OPC UA server")
+            except Exception:
+                self.logger.exception("Error during OPC UA disconnection.")
             self.adapter_connection_status = "CLOSED"
 
     async def _monitor_adapter(self) -> None:
@@ -331,10 +333,10 @@ class OPCUASupervisor(BaseSupervisor):
         """
         while not self._stop_reconnect:
             if self.adapter_connection_status.value == "CLOSED":
-                print("\nAttempting to reconnect to adapter...")
+                self.logger.info("\nAttempting to reconnect to adapter...")
                 await self._connect_to_adapter()
             await asyncio.sleep(self.RECONNECT_INTERVAL)
-        print("Stopped monitoring connection to OPC UA server")
+        self.logger.info("Stopped monitoring connection to OPC UA server")
 
     def app_event_loop_stopped(self) -> None:
         """
@@ -351,12 +353,12 @@ class OPCUASupervisor(BaseSupervisor):
         self._stop_reconnect = True
         try:
             asyncio.run_coroutine_threadsafe(self.opcua_client.disconnect(), self._event_loop)
-            print("Disconnected from OPC UA server")
-        except Exception as e:
-            print(f"Error during OPC UA disconnection: {e}")
+            self.logger.info("Disconnected from OPC UA server")
+        except Exception:
+            self.logger.exception("Error during OPC UA disconnection.")
 
         super().app_event_loop_stopped()
-        print("Shutdown completed")
+        self.logger.info("Shutdown completed")
 
 
 if __name__ == "__main__":

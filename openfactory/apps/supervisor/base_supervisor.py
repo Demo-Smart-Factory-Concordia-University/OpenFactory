@@ -22,7 +22,8 @@ class BaseSupervisor(OpenFactoryApp):
                  supervisor_uuid: str,
                  device_uuid: str,
                  ksqlClient: 'KSQLDBClient',
-                 bootstrap_servers: str = config.KAFKA_BROKER):
+                 bootstrap_servers: str = config.KAFKA_BROKER,
+                 loglevel: str = 'INFO'):
         """
         Initializes the BaseSupervisor.
 
@@ -31,8 +32,12 @@ class BaseSupervisor(OpenFactoryApp):
             device_uuid (str): UUID of the device that this supervisor monitors or controls.
             ksqlClient (KSQLDBClient): Instance of the KSQLDB client for streaming interaction.
             bootstrap_servers (str): Kafka broker address(es). Defaults to the value from config.
+            loglevel (str): Logging level for the supervisor (e.g., 'INFO', 'DEBUG'). Defaults to 'INFO'.
         """
-        super().__init__(app_uuid=supervisor_uuid, ksqlClient=ksqlClient, bootstrap_servers=bootstrap_servers)
+        super().__init__(app_uuid=supervisor_uuid,
+                         ksqlClient=ksqlClient,
+                         bootstrap_servers=bootstrap_servers,
+                         loglevel=loglevel)
 
         self._device_uuid = device_uuid
 
@@ -89,7 +94,7 @@ class BaseSupervisor(OpenFactoryApp):
                     tag='Method'
                 )
             )
-            print(f"Sent method: [{cmd['command']} | {cmd['description']}]")
+            self.logger.info(f"Sent method: [{cmd['command']} | {cmd['description']}]")
 
     def on_command(self, msg_key: str, msg_value: dict[str, Any]) -> None:
         """
