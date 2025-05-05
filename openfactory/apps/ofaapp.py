@@ -3,9 +3,11 @@
 import os
 import signal
 import time
+from types import FrameType
 from typing import Optional
 from openfactory.utils.assets import deregister_asset
 from openfactory.assets import Asset, AssetAttribute
+from openfactory.setup_logging import configure_prefixed_logger
 import openfactory.config as config
 
 
@@ -13,18 +15,45 @@ class OpenFactoryApp(Asset):
     """
     Generic OpenFactory application.
 
-    Inherits from the `Asset` class and provides specific functionality related to an OpenFactory application, 
-    including managing application-specific attributes and handling termination signals.
+    Inherits from `Asset` and extends it to represent an OpenFactory application with standard metadata,
+    logging, and lifecycle management.
 
-    Attributes:
-        APPLICATION_VERSION (str): The version of the application, fetched from environment variable `APPLICATION_VERSION` or set to 'latest'.
-        APPLICATION_MANUFACTURER (str): The manufacturer of the application, fetched from environment variable `APPLICATION_MANUFACTURER` or set to 'OpenFactory'.
-        APPLICATION_LICENSE (str): The license type for the application, fetched from environment variable `APPLICATION_LICENSE` or set to 'BSD-3-Clause license'.
+    Class Attributes:
+        APPLICATION_VERSION (str): Version string from `APPLICATION_VERSION` env var or 'latest'.
+        APPLICATION_MANUFACTURER (str): Manufacturer from `APPLICATION_MANUFACTURER` or 'OpenFactory'.
+        APPLICATION_LICENSE (str): License string from `APPLICATION_LICENSE` or 'BSD-3-Clause license'.
 
-    Args:
-        app_uuid (str): The UUID of the application (can be overridden by an environment variable `APP_UUID`).
-        ksqlClient (KSQLDBClient): The KSQLDB client used for querying.
-        bootstrap_servers (str): Kafka bootstrap servers (default is fetched from config).
+    Instance Attributes:
+        logger (logging.Logger): Prefixed logger instance configured with the app UUID.
+
+    Example:
+        ```python
+        import time
+        from openfactory.apps import OpenFactoryApp
+        from openfactory.kafka import KSQLDBClient
+
+        class DemoApp(OpenFactoryApp):
+
+            def main_loop(self):
+                # For actual use case, add here your logic of the app
+                print("I don't do anything useful in this example.")
+                counter = 1
+                while True:
+                    print(counter)
+                    counter += 1
+                    time.sleep(2)
+
+            def app_event_loop_stopped(self):
+                # Not absolutely required as it is already done by the `KSQLDBClient` class
+                self.ksql.close()
+
+        app = DemoApp(
+            app_uuid='DEMO-APP',
+            ksqlClient=KSQLDBClient("http://localhost:8088"),
+            bootstrap_servers="localhost:9092"
+        )
+        app.run()
+        ```
     """
 
     # Application version number
@@ -32,10 +61,13 @@ class OpenFactoryApp(Asset):
     APPLICATION_MANUFACTURER = os.getenv('APPLICATION_MANUFACTURER', 'OpenFactory')
     APPLICATION_LICENSE = os.getenv('APPLICATION_LICENSE', 'BSD-3-Clause license')
 
-    def __init__(self, app_uuid: str, ksqlClient, bootstrap_servers: str = config.KAFKA_BROKER):
+    def __init__(self,
+                 app_uuid: str, ksqlClient,
+                 bootstrap_servers: str = config.KAFKA_BROKER,
+                 loglevel: str = 'INFO'):
         """
         Initializes the OpenFactory application.
-        
+
         Fetches the application's UUID from either the argument or the environment variable `APP_UUID`. It also sets up
         attributes for version, manufacturer, and license, and registers signal handlers for termination signals.
 
@@ -43,7 +75,7 @@ class OpenFactoryApp(Asset):
             app_uuid (str): The UUID of the application (overrides the environment variable `APP_UUID` if provided).
             ksqlClient (KSQLDBClient): The KSQL client instance.
             bootstrap_servers (str): Kafka bootstrap server URL, default value is read from `config.KAFKA_BROKER`.
-
+            loglevel (str): Logging level for the app (e.g., 'INFO', 'DEBUG'). Defaults to 'INFO'.
         """
         # get paramters from environment (set if deployed by ofa deployment tool)
         app_uuid = os.getenv('APP_UUID', app_uuid)
@@ -75,6 +107,13 @@ class OpenFactoryApp(Asset):
             )
         )
 
+        # Set up logging
+        self.logger = configure_prefixed_logger(
+            app_uuid,
+            prefix=app_uuid.upper(),
+            level=loglevel)
+        self.logger.info(f"Setup OpenFactory App {app_uuid}")
+
         # Setup signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
@@ -93,7 +132,7 @@ class OpenFactoryApp(Asset):
         """ Called when main loop is stopped. """
         pass
 
-    def signal_handler(self, signum: int, frame: Optional[signal.FrameType]) -> None:
+    def signal_handler(self, signum: int, frame: Optional[FrameType]) -> None:
         """
         Handles SIGINT and SIGTERM signals, gracefully stopping the application.
 
@@ -103,11 +142,11 @@ class OpenFactoryApp(Asset):
 
         Args:
             signum (int): The signal number that was received (e.g., SIGINT, SIGTERM).
-            frame (Optional[signal.FrameType]): The current stack frame when the signal was received.
+            frame (Optional[FrameType]): The current stack frame when the signal was received.
                 This can be used for debugging or inspecting the state of the process.
         """
         signal_name = signal.Signals(signum).name
-        print(f"Received signal {signal_name}, stopping app gracefully ...")
+        self.logger.info(f"Received signal {signal_name}, stopping app gracefully ...")
         deregister_asset(self.asset_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         self.app_event_loop_stopped()
         exit(0)
@@ -142,8 +181,7 @@ class OpenFactoryApp(Asset):
         4. Catch any exceptions that occur and stop the app gracefully.
 
         Raises:
-            Exception: If any exception occurs during the execution of the main loop,
-            it is caught and logged, and the app is stopped.
+            Exception: If any exception occurs during the execution of the main loop, it is caught and logged, and the app is stopped.
         """
         self.welcome_banner()
         self.add_attribute('avail', AssetAttribute(
@@ -151,12 +189,12 @@ class OpenFactoryApp(Asset):
             tag='Availability',
             type='Events'
         ))
-        print("Starting main loop")
+        self.logger.info("Starting main loop")
         try:
             self.main_loop()
 
-        except Exception as e:
-            print(f"An error occurred in the main_loop of the app: {e}")
+        except Exception:
+            self.logger.exception("An error occurred in the main_loop of the app.")
             self.app_event_loop_stopped()
             deregister_asset(self.asset_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
 
@@ -173,7 +211,7 @@ if __name__ == "__main__":
         def main_loop(self):
             """ Main loop. """
             # For actual use case, add here your logic of the app
-            print("I am the main loop of the app.\nI don't do anything usefull in this example.")
+            print("I am the main loop of the app.\nI don't do anything useful in this example.")
             counter = 1
             while True:
                 print(counter)
