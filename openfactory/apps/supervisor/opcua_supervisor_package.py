@@ -1,11 +1,8 @@
+""" OpenFactory Device Command Supervisor using OPC UA to communicate with the device command adapter. """
+
 import os
 from openfactory.apps.supervisor import OPCUASupervisor
 from openfactory.kafka import KSQLDBClient
-
-
-"""
-OpenFactory Device Command Supervisor using OPC UA to communicate with the device command adapter
-"""
 
 supervisor = OPCUASupervisor(
     supervisor_uuid=os.getenv('SUPERVISOR_UUID'),
