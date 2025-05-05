@@ -1,3 +1,5 @@
+""" OpenFactory Adapter, Agent, Supervisor and Device Schema. """
+
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from openfactory.models.user_notifications import user_notify
@@ -6,26 +8,31 @@ import openfactory.config as config
 
 
 class ResourcesDefinition(BaseModel):
+    """ Resources Definition Schema. """
     cpus: float = None
     memory: str = None
 
 
 class Resources(BaseModel):
+    """ Resources Schema. """
     reservations: ResourcesDefinition = None
     limits: ResourcesDefinition = None
 
 
 class Placement(BaseModel):
+    """ Placement Schema. """
     constraints: List[str] = None
 
 
 class Deploy(BaseModel):
+    """ Deploy Schema. """
     replicas: Optional[int] = Field(default=1)
     resources: Resources = None
     placement: Placement = None
 
 
 class Adapter(BaseModel):
+    """ OpenFactory Adapter Schema. """
     ip: str = None
     image: str = None
     port: int
@@ -33,7 +40,19 @@ class Adapter(BaseModel):
     deploy: Optional[Deploy] = None
 
     @model_validator(mode='before')
-    def validate_adapter(cls, values):
+    def validate_adapter(cls, values: Dict) -> Dict:
+        """
+        Validates the adapter configuration.
+
+        Args:
+            values (Dict): Dictionary of values to validate.
+
+        Returns:
+            Dict: Validated values.
+
+        Raises:
+            ValueError: If 'ip' or 'image' is missing or incorrectly defined.
+        """
         ip = values.get('ip')
         image = values.get('image')
         # Either 'ip' or 'image' must be specified, but not both
@@ -43,6 +62,7 @@ class Adapter(BaseModel):
 
 
 class Agent(BaseModel):
+    """ OpenFactory Agent Schema. """
     ip: str = None
     port: int
     device_xml: str = None
@@ -50,7 +70,19 @@ class Agent(BaseModel):
     deploy: Optional[Deploy] = None
 
     @model_validator(mode='before')
-    def validate_agent(cls, values):
+    def validate_agent(cls, values: Dict) -> Dict:
+        """
+        Validates the agent configuration.
+
+        Args:
+            values (Dict): Dictionary of values to validate.
+
+        Returns:
+            Dict: Validated values.
+
+        Raises:
+            ValueError: If 'device_xml' or 'adapter' is missing or incorrectly defined.
+        """
         ip = values.get('ip')
         adapter = values.get('adapter')
         if ip is None:
@@ -67,19 +99,29 @@ class Agent(BaseModel):
 
 
 class Supervisor(BaseModel):
+    """ OpenFactory Supervisor Schema. """
     image: str
     adapter: Adapter
     deploy: Optional[Deploy] = None
 
 
 class InfluxDB(BaseModel):
+    """ InfluxDB configuration. """
     url: str = None
     organisation: str = None
     token: str = None
     bucket: str = None
 
-    def __init__(self, **kwargs):
-        # Initialize the model with provided values
+    def __init__(self, **kwargs: Dict):
+        """
+        Initialize the InfluxDB model.
+
+        Args:
+            **kwargs (Dict): Keyword arguments to initialize the model.
+
+        Raises:
+            ValueError: If 'url' or 'token' is not provided and not defined in the configuration.
+        """
         super().__init__(**kwargs)
 
         # Handle the 'url' fallback logic
@@ -96,13 +138,20 @@ class InfluxDB(BaseModel):
 
 
 class Device(BaseModel):
+    """ OpenFactory Device Schema. """
     uuid: str
     agent: Agent
     supervisor: Optional[Supervisor] = None
     ksql_tables: Optional[List[str]] = None
     influxdb: Optional[InfluxDB] = None
 
-    def __init__(self, **data):
+    def __init__(self, **data: Dict):
+        """
+        Initialize the Device model.
+
+        Args:
+            **data (Dict): Keyword arguments to initialize the model.
+        """
         super().__init__(**data)
         if self.agent.deploy is None:
             # If deploy is not provided, create a default Deploy with replicas=1
@@ -112,7 +161,19 @@ class Device(BaseModel):
             self.agent.deploy.replicas = 1
 
     @field_validator('ksql_tables', mode='before', check_fields=False)
-    def validate_ksql_tables(cls, value):
+    def validate_ksql_tables(cls, value: List[str]) -> List[str]:
+        """
+        Validates the ksql_tables field.
+
+        Args:
+            value (List[str]): List of ksql tables.
+
+        Returns:
+            List[str]: Validated list of ksql tables.
+
+        Raises:
+            ValueError: If the provided ksql tables contain invalid entries.
+        """
         allowed_values = {'device', 'producer', 'agent'}
         if value:
             invalid_entries = set(value) - allowed_values
@@ -123,7 +184,7 @@ class Device(BaseModel):
 
 class DevicesConfig(BaseModel):
     """
-    Schema for OpenFactory devices configurations in yaml files
+    Schema for OpenFactory devices configurations in yaml files.
 
     Usage:
        devices = DevicesConfig(devices=yaml_data['devices'])
@@ -135,7 +196,13 @@ class DevicesConfig(BaseModel):
 
     devices: Dict[str, Device]
 
-    def validate_devices(self):
+    def validate_devices(self) -> None:
+        """
+        Validates the devices configuration.
+
+        Raises:
+            ValueError: If the devices configuration is invalid.
+        """
         for device_name, device_data in self.devices_dict.items():
             if device_data['agent']['ip']:
                 if device_data['agent']['device_xml']:
@@ -153,15 +220,23 @@ class DevicesConfig(BaseModel):
 
     @property
     def devices_dict(self):
-        """ Dictionary with all configured devices """
+        """ Dictionary with all configured devices. """
         return self.model_dump()['devices']
 
 
-def get_devices_from_config_file(devices_yaml_config_file):
+def get_devices_from_config_file(devices_yaml_config_file: str) -> Optional[Dict[str, Device]]:
     """
-    Loads and validates devices configuration from a YAML file
-    Returns dictionary of devices configurations or None in case of errors
-    Side effect: sends user notifications in case of validation errors
+    Loads and validates devices configuration from a YAML file.
+
+    Args:
+        devices_yaml_config_file (str): Path to the YAML configuration file
+
+    Returns:
+        dict: Dictionary of devices configurations or None in case of error
+
+    Raises:
+        ValidationError: If the provided YAML configuration file has an invalid format
+        ValueError: If the provided YAML configuration file has an invalid format
     """
     # load yaml description file
     cfg = load_yaml(devices_yaml_config_file)

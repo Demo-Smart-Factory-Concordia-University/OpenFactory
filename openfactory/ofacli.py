@@ -1,13 +1,5 @@
-import click
-from openfactory.models.user_notifications import user_notify
-import openfactory.ofa as ofa
-from openfactory.docker.docker_access_layer import dal
-from openfactory.ofa.ksqldb import ksql
-from openfactory.kafka.ksql import KSQLDBClientException
-import openfactory.config as config
-
 """
-OpenFactory Command Line Interface
+OpenFactory Command Line Interface.
 
 Usage: ofa [OPTIONS] COMMAND [ARGS]...
 Help: ofa --help
@@ -22,40 +14,48 @@ or (during development)
 > pip install -e .
 """
 
+import click
+from openfactory.models.user_notifications import user_notify
+import openfactory.ofa as ofa
+from openfactory.docker.docker_access_layer import dal
+from openfactory.ofa.ksqldb import ksql
+from openfactory.kafka.ksql import KSQLDBClientException
+import openfactory.config as config
+
 
 @click.group()
 def cli():
-    """ Administrative tool for OpenFactory """
+    """ Administrative tool for OpenFactory. """
     pass
 
 
 @click.group()
 def nodes():
-    """ Manage OpenFactory infrastructure """
+    """ Manage OpenFactory infrastructure. """
     pass
 
 
 @click.group()
 def agent():
-    """ Manage MTConnect agents """
+    """ Manage MTConnect agents. """
     pass
 
 
 @click.group()
 def device():
-    """ Manage MTConnect devices """
+    """ Manage MTConnect devices. """
     pass
 
 
 @click.group()
 def apps():
-    """ Manage OpenFactory applications """
+    """ Manage OpenFactory applications. """
     pass
 
 
 @click.group()
 def asset():
-    """ Manage OpenFactory assets """
+    """ Manage OpenFactory assets. """
     pass
 
 

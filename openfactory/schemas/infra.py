@@ -1,3 +1,5 @@
+""" OpenFactory Infrastructure Schema. """
+
 from typing import Dict, Optional
 from pydantic import BaseModel, Field, RootModel, model_validator, ValidationError
 from ipaddress import IPv4Address
@@ -6,32 +8,50 @@ from openfactory.config import load_yaml
 
 
 class Volume(BaseModel):
+    """ Volume Schema. """
     driver_opts: Optional[Dict[str, str]]
 
 
 class Volumes(RootModel[Dict[str, Optional[Volume]]]):
+    """ Volumes Schema. """
     pass
 
 
 class Node(BaseModel):
+    """ Docker Swarm Node Schema. """
     ip: IPv4Address
     labels: Optional[Dict[str, str]] = None
 
 
 class Managers(RootModel[Dict[str, Node]]):
+    """ Docker Swarm Managers Schema. """
     pass
 
 
 class Workers(RootModel[Dict[str, Node]]):
+    """ Docker Swarm Workers Schema. """
     pass
 
 
 class Nodes(BaseModel):
+    """ Docker Swarm Nodes Schema. """
     managers: Optional[Dict[str, Node]] = None
     workers: Optional[Dict[str, Node]] = None
 
     @model_validator(mode='after')
-    def check_unique_ips(cls, values):
+    def check_unique_ips(cls, values: Dict) -> Dict:
+        """
+        Validates that IP addresses are unique across managers and workers.
+
+        Args:
+            values (Dict): Dictionary of values to validate.
+
+        Returns:
+            Dict: Validated values.
+
+        Raises:
+            ValueError: If IP addresses are not unique.
+        """
         ips = []
 
         # Collect IP addresses from managers
@@ -50,6 +70,7 @@ class Nodes(BaseModel):
 
 
 class IPAMConfig(BaseModel):
+    """ IPAM Configuration Schema. """
     subnet: str  # Subnet in CIDR format
     gateway: Optional[str] = None  # Optional gateway IP address
     ip_range: Optional[str] = Field(None, alias="ip_range")  # Optional IP range
@@ -57,33 +78,42 @@ class IPAMConfig(BaseModel):
 
 
 class IPAM(BaseModel):
+    """ IPAM Schema. """
     config: list[IPAMConfig]
 
 
 class Network(BaseModel):
+    """ Network Schema. """
     name: Optional[str] = None
     ipam: IPAM
 
 
 class Networks(BaseModel):
+    """ Networks Schema. """
     openfactory_network: Network = Field(..., alias="openfactory-network")
     docker_ingress_network: Network = Field(..., alias="docker-ingress-network")
 
 
 class InfrastructureSchema(BaseModel):
-    """
-    Schema of OpenFactory infrastructure
-    """
+    """ Infrastructure Schema. """
     nodes: Nodes
     networks: Optional[Dict[str, Network]] = None
     volumes: Optional[Volumes] = None
 
 
-def get_infrastructure_from_config_file(infra_yaml_config_file):
+def get_infrastructure_from_config_file(infra_yaml_config_file: str) -> Optional[Dict[str, InfrastructureSchema]]:
     """
-    Loads and validates infrastructure configuration from a YAML file
-    Returns dictionary of infrastructure configuration or None in case of errors
-    Side effect: sends user notifications in case of validation errors
+    Loads and validates infrastructure configuration from a YAML file.
+
+    Args:
+        infra_yaml_config_file (str): Path to the YAML configuration file.
+
+    Returns:
+        dict: Dictionary of infrastructure configurations or None in case of errors.
+
+    Raises:
+        ValidationError: If the provided YAML configuration file has an invalid format.
+        ValueError: If the provided YAML configuration file has an invalid format.
     """
     # load yaml description file
     cfg = load_yaml(infra_yaml_config_file)

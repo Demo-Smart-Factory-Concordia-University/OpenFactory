@@ -1,15 +1,28 @@
+""" OpenFactory configuration module. """
+
 import yaml
 import os
 from dotenv import load_dotenv
 from pathlib import Path
 from importlib.metadata import version
+from typing import Any
 
 
-def load_yaml(yaml_file):
+def load_yaml(yaml_file: str) -> Any:
     """
-    Loads a yaml file and parses environment variables
-    """
+    Loads a YAML file and parses it, expanding environment variables.
 
+    Reads a YAML file, expands any environment variables in the content,
+    and loads the parsed data. It also sets the `OPENFACTORY_VERSION` environment variable 
+    to the current version of the OpenFactory package and loads environment variables 
+    from the `.ofaenv` file.
+
+    Args:
+        yaml_file (str): The path to the YAML file to be loaded.
+
+    Returns:
+        Any: The parsed YAML data, which can be of any structure depending on the file contents.
+    """
     # Set the OPENFACTORY_VERSION env variable
     os.environ["OPENFACTORY_VERSION"] = f"v{version('openfactory')}"
 

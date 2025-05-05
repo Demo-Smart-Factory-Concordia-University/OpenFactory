@@ -1,5 +1,6 @@
 """
-Python script to initialize OpenFactory
+Python script to initialize OpenFactory.
+
 Run this script on the OpenFactory Manager Node defined in
 the entry OPENFACTORY_MANAGER_NODE of the OpenFactory
 configuration file openfactory/config/openfactory.yml
@@ -36,12 +37,20 @@ import sys
 import docker
 import docker.types
 import openfactory.config as config
+from typing import Dict
 from openfactory.schemas.infra import get_infrastructure_from_config_file
 
 
-def get_manager_labels(data):
-    """ get the name of the openfactory manager node """
+def get_manager_labels(data: Dict) -> Dict:
+    """
+    Get the name of the openfactory manager node.
 
+    Args:
+        data (dict): The infrastructure configuration data.
+
+    Returns:
+        dict: A dictionary containing the labels for the manager node.
+    """
     # Get IP address of host
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.connect(('8.8.8.8', 80))
@@ -59,8 +68,16 @@ def get_manager_labels(data):
     return {'name': 'ofa_manager'}
 
 
-def ipam_config(network):
-    """ get the IPAM configuration """
+def ipam_config(network: Dict) -> docker.types.IPAMConfig:
+    """
+    Get the IPAM configuration.
+
+    Args:
+        network (dict): The network configuration data.
+
+    Returns:
+        docker.types.IPAMConfig: The IPAM configuration for the network.
+    """
     ipam_pools = []
     if 'ipam' in network and 'config' in network['ipam']:
         for pool in network['ipam']['config']:
@@ -78,8 +95,15 @@ def ipam_config(network):
     return ipam_config
 
 
-def create_volume(client, volume_name, driver_opts):
-    """ create a docker volume """
+def create_volume(client: docker.DockerClient, volume_name: str, driver_opts: Dict) -> None:
+    """
+    Create a docker volume.
+
+    Args:
+        client (docker.DockerClient): The Docker client.
+        volume_name (str): The name of the volume to create.
+        driver_opts (dict): Driver options for the volume.
+    """
     try:
         client.volumes.create(
             name=volume_name,
@@ -91,9 +115,18 @@ def create_volume(client, volume_name, driver_opts):
         print(f"Error creating volume: {e}")
 
 
-def init_infrastructure(networks, manager_labels, volumes):
-    """ Initialize  infrastructure """
+def init_infrastructure(networks: Dict, manager_labels: Dict, volumes: Dict) -> None:
+    """
+    Initialize  infrastructure.
 
+    Args:
+        networks (dict): The network configuration data.
+        manager_labels (dict): The labels for the manager node.
+        volumes (dict): The volume configuration data.
+
+    Raises:
+        SystemExit: If the initialization fails.
+    """
     # setup OPENFACTORY_MANAGER_NODE as the first swarm manager
     client = docker.from_env()
     try:

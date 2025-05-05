@@ -1,10 +1,17 @@
+""" ofa nodes listing command. """
+
 import click
 from datetime import datetime, timezone
 from openfactory.docker.docker_access_layer import dal
 
 
-def print_services(node_id):
-    """ Print information on services running on a node """
+def print_services(node_id: str) -> None:
+    """
+    Print information on services running on a node.
+
+    Args:
+        node_id (str): The ID of the node to check for services.
+    """
     services = dal.docker_client.services.list()
     formatted_lines = []
     for service in services:
@@ -33,8 +40,13 @@ def print_services(node_id):
 @click.option('-v', '--verbose', 'verbose',
               flag_value='verbose', default=False,
               help='Increase verbosity')
-def click_ls(verbose):
-    """ List OpenFactory nodes """
+def click_ls(verbose: bool) -> None:
+    """
+    List OpenFactory nodes.
+
+    Args:
+        verbose (bool): If True, show detailed information about each node.
+    """
     if not verbose:
         print(f"{'Hostname':<12} {'IP Address':<15} {'CPUs':>6} {'RAM (GB)':>8}   {'Role':<10} {'Availability':<15} {'State':<10}")
         print("-" * 80)

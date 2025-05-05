@@ -1,0 +1,7 @@
+[pydocstyle]
+
+# Convention: pep257, google, or numpy
+convention = google
+
+# Ignore specific codes
+add-ignore = D210, D212
