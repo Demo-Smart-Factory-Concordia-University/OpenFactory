@@ -1,9 +1,0 @@
-# Mock for an OpenFactory infrastructure config file
-
-nodes:
-
-  workers:
-    node1:
-      ip: 192.168.123.111
-      labels:
-        type: ofa

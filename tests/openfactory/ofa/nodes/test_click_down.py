@@ -1,25 +1,28 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 import openfactory.ofa as ofa
 
 
-@patch("openfactory.ofa.nodes.down.remove_infrastack")
+@patch("openfactory.ofa.nodes.down.OpenFactoryCluster")
 class TestNodesDown(TestCase):
     """
     Unit tests for ofa.nodes.down
     """
 
-    def test_node_down(self, mock_remove_infrastack):
+    def test_node_down(self, mock_cluster_class):
         """
         Test remove_infrastack called correctly
         """
+        mock_cluster_instance = MagicMock()
+        mock_cluster_class.return_value = mock_cluster_instance
+
         runner = CliRunner()
         config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'mock/infra/base_infra_mock.yml')
         result = runner.invoke(ofa.nodes.click_down, [config_file])
-        mock_remove_infrastack.assert_called_once_with(config_file)
+        mock_cluster_instance.remove_infrastack_from_config_file.assert_called_once_with(config_file)
         self.assertEqual(result.exit_code, 0)
 
     def test_node_down_none_existent_file(self, *args):
