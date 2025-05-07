@@ -2,6 +2,7 @@
 import os
 from openfactory.openfactory import OpenFactory
 from openfactory.openfactory_manager import OpenFactoryManager
+from openfactory.openfactory_cluster import OpenFactoryCluster
 from importlib.metadata import version
 
 
