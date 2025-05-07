@@ -4,6 +4,7 @@ pyyaml
 click
 sqlalchemy
 flake8
+pydocstyle 
 git+https://github.com/rwuthric/PyKSQL.git
 git+https://github.com/rwuthric/python-mtc2kafka.git
 git+https://github.com/Demo-Smart-Factory-Concordia-University/MTCAdapters.git
