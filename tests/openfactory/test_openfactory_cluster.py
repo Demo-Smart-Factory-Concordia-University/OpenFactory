@@ -1,8 +1,9 @@
-from pydantic.networks import IPv4Address
 from unittest import TestCase
 from unittest.mock import patch, Mock, call
-import tests.mocks as mock
+from pydantic.networks import IPv4Address
+from docker.errors import APIError
 
+import tests.mocks as mock
 from openfactory.docker.docker_access_layer import dal
 from openfactory.models.user_notifications import user_notify
 from openfactory import OpenFactoryCluster
@@ -140,6 +141,92 @@ class TestOpenFactoryCluster(TestCase):
 
         mock_create_managers.assert_called_once_with(mock_get_infra.return_value['nodes']['managers'])
         mock_create_workers.assert_called_once_with(mock_get_infra.return_value['nodes']['workers'])
+
+    @patch('openfactory.openfactory_cluster.dal')
+    @patch('openfactory.openfactory_cluster.config')
+    @patch('openfactory.openfactory_cluster.user_notify')
+    def test_remove_workers_success(self, mock_user_notify, mock_config, mock_dal, mock_docker_client):
+        """ Test successful removal of a worker node """
+        cluster = OpenFactoryCluster()
+        mock_config.OPENFACTORY_USER = 'testuser'
+
+        workers = {
+            'worker1': {'ip': '192.168.1.10'}
+        }
+        node_ip_map = {
+            '192.168.1.10': 'node_id_1'
+        }
+
+        # Setup mock node
+        mock_node.attrs = {
+            'Spec': {'Availability': 'active'},
+            'Status': {'Addr': '192.168.1.10'}
+        }
+        mock_node.id = 'node_id_1'
+        mock_dal.docker_client.nodes.get = Mock(return_value=mock_node)
+
+        # Setup mock SSH Docker client
+        mock_ssh_client = Mock()
+        mock_docker_client.return_value = mock_ssh_client
+
+        cluster.remove_workers(workers, node_ip_map)
+
+        # Assert node was drained
+        mock_user_notify.info.assert_any_call('Draining node worker1 ...')
+        mock_node.update.assert_called_once()
+        args, _ = mock_node.update.call_args
+        assert args[0]['Availability'] == 'drain'
+
+        # Assert SSH leave
+        mock_docker_client.assert_called_once_with(base_url='ssh://testuser@192.168.1.10')
+        mock_ssh_client.swarm.leave.assert_called_once()
+
+        # Assert manager removal
+        mock_dal.docker_client.api.remove_node.assert_called_once_with('node_id_1', force=True)
+        mock_user_notify.success.assert_called_once_with('Removed node worker1')
+
+    @patch('openfactory.openfactory_cluster.config')
+    @patch('openfactory.openfactory_cluster.user_notify')
+    @patch('openfactory.openfactory_cluster.docker.DockerClient')
+    def test_remove_workers_missing_ip(self, mock_docker_client, mock_user_notify, mock_config, *args):
+        """ Test worker removal is skipped if IP not in node_ip_map """
+        cluster = OpenFactoryCluster()
+
+        workers = {
+            'worker1': {'ip': '192.168.1.10'}
+        }
+        node_ip_map = {
+            '192.168.1.99': 'node_id_1'
+        }
+
+        cluster.remove_workers(workers, node_ip_map)
+
+        mock_user_notify.info.assert_not_called()
+        mock_user_notify.success.assert_not_called()
+        mock_docker_client.assert_not_called()
+
+    @patch('openfactory.openfactory_cluster.config')
+    @patch('openfactory.openfactory_cluster.user_notify')
+    def test_remove_workers_api_error(self, mock_user_notify, mock_config, mock_docker_client):
+        """ Test APIError during node removal is handled gracefully """
+        cluster = OpenFactoryCluster()
+        mock_config.OPENFACTORY_USER = 'testuser'
+
+        workers = {
+            'worker1': {'ip': '192.168.1.10'}
+        }
+        node_ip_map = {
+            '192.168.1.10': 'node_id_1'
+        }
+
+        # Simulate failure
+        dal.docker_client.nodes.get = Mock(side_effect=APIError("API failed"))
+
+        cluster.remove_workers(workers, node_ip_map)
+
+        mock_user_notify.fail.assert_called()
+        msg = mock_user_notify.fail.call_args[0][0]
+        assert 'Node "worker1" could not be removed' in msg
 
     @patch('openfactory.openfactory_cluster.get_infrastructure_from_config_file')
     @patch("openfactory.openfactory_cluster.config")
