@@ -1,7 +1,7 @@
 """ ofa infrastructure stack tear down command. """
 
 import click
-from openfactory.factories import remove_infrastack
+from openfactory import OpenFactoryCluster
 
 
 @click.command(name='down')
@@ -15,4 +15,5 @@ def click_down(yaml_config_file: str) -> None:
     Args:
         yaml_config_file (str): Path to the YAML configuration file.
     """
-    remove_infrastack(yaml_config_file)
+    ofa = OpenFactoryCluster()
+    ofa.remove_infrastack_from_config_file(yaml_config_file)
