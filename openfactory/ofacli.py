@@ -14,97 +14,39 @@ or (during development)
 > pip install -e .
 """
 
-import click
+from openfactory.ofa.cli import cli
 from openfactory.models.user_notifications import user_notify
-import openfactory.ofa as ofa
 from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.ksqldb import ksql
 from openfactory.kafka.ksql import KSQLDBClientException
 import openfactory.config as Config
 
 
-@click.group()
-def cli():
-    """ Administrative tool for OpenFactory. """
-    pass
+def init_environment() -> bool:
+    """ Setup OpenFactory environment (Docker, ksqlDB, notifications). """
+    user_notify.setup(
+        success_msg=lambda msg: print(f"{Config.OFA_SUCCSESS}{msg}{Config.OFA_END}"),
+        fail_msg=lambda msg: print(f"{Config.OFA_FAIL}{msg}{Config.OFA_END}"),
+        info_msg=print
+    )
+
+    dal.connect()
+
+    try:
+        ksql.connect(Config.KSQLDB_URL)
+    except KSQLDBClientException:
+        user_notify.fail('Failed to connect to ksqlDB server')
+        return False
+
+    return True
 
 
-@click.group()
-def nodes():
-    """ Manage OpenFactory infrastructure. """
-    pass
-
-
-@click.group()
-def agent():
-    """ Manage MTConnect agents. """
-    pass
-
-
-@click.group()
-def config():
-    """ Manage OpenFactory configuration. """
-    pass
-
-
-@click.group()
-def device():
-    """ Manage MTConnect devices. """
-    pass
-
-
-@click.group()
-def apps():
-    """ Manage OpenFactory applications. """
-    pass
-
-
-@click.group()
-def asset():
-    """ Manage OpenFactory assets. """
-    pass
-
-
-cli.add_command(config)
-config.add_command(ofa.config.ls)
-
-cli.add_command(nodes)
-nodes.add_command(ofa.nodes.click_up)
-nodes.add_command(ofa.nodes.click_down)
-nodes.add_command(ofa.nodes.click_ls)
-
-cli.add_command(agent)
-agent.add_command(ofa.agent.ls)
-
-cli.add_command(device)
-device.add_command(ofa.device.click_up)
-device.add_command(ofa.device.click_down)
-device.add_command(ofa.device.click_connect_influxdb)
-
-cli.add_command(apps)
-apps.add_command(ofa.app.click_up)
-apps.add_command(ofa.app.click_down)
-
-cli.add_command(asset)
-asset.add_command(ofa.asset.register)
-asset.add_command(ofa.asset.deregister)
-
-# setup user notifications
-user_notify.setup(success_msg=lambda msg: print(f"{Config.OFA_SUCCSESS}{msg}{Config.OFA_END}"),
-                  fail_msg=lambda msg: print(f"{Config.OFA_FAIL}{msg}{Config.OFA_END}"),
-                  info_msg=print)
-
-# connect to Docker engine
-dal.connect()
-
-# connect to ksqlDB server
-# (disconnect is handled by KSQLDBClient class)
-try:
-    ksql.connect(Config.KSQLDB_URL)
-except KSQLDBClientException:
-    user_notify.fail('Failed to connect to ksqlDB server')
-    exit(1)
+def main():
+    """ Command line interface of OpenFactory. """
+    if not init_environment():
+        exit(1)
+    cli()
 
 
 if __name__ == '__main__':
-    cli()
+    main()
