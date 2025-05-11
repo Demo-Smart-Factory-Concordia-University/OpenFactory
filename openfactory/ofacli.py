@@ -20,7 +20,7 @@ import openfactory.ofa as ofa
 from openfactory.docker.docker_access_layer import dal
 from openfactory.ofa.ksqldb import ksql
 from openfactory.kafka.ksql import KSQLDBClientException
-import openfactory.config as config
+import openfactory.config as Config
 
 
 @click.group()
@@ -42,6 +42,12 @@ def agent():
 
 
 @click.group()
+def config():
+    """ Manage OpenFactory configuration. """
+    pass
+
+
+@click.group()
 def device():
     """ Manage MTConnect devices. """
     pass
@@ -59,7 +65,8 @@ def asset():
     pass
 
 
-cli.add_command(ofa.config)
+cli.add_command(config)
+config.add_command(ofa.config.ls)
 
 cli.add_command(nodes)
 nodes.add_command(ofa.nodes.click_up)
@@ -83,8 +90,8 @@ asset.add_command(ofa.asset.register)
 asset.add_command(ofa.asset.deregister)
 
 # setup user notifications
-user_notify.setup(success_msg=lambda msg: print(f"{config.OFA_SUCCSESS}{msg}{config.OFA_END}"),
-                  fail_msg=lambda msg: print(f"{config.OFA_FAIL}{msg}{config.OFA_END}"),
+user_notify.setup(success_msg=lambda msg: print(f"{Config.OFA_SUCCSESS}{msg}{Config.OFA_END}"),
+                  fail_msg=lambda msg: print(f"{Config.OFA_FAIL}{msg}{Config.OFA_END}"),
                   info_msg=print)
 
 # connect to Docker engine
@@ -93,7 +100,7 @@ dal.connect()
 # connect to ksqlDB server
 # (disconnect is handled by KSQLDBClient class)
 try:
-    ksql.connect(config.KSQLDB_URL)
+    ksql.connect(Config.KSQLDB_URL)
 except KSQLDBClientException:
     user_notify.fail('Failed to connect to ksqlDB server')
     exit(1)

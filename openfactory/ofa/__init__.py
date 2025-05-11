@@ -1,7 +1,7 @@
 """ OpenFactory ofa module. """
 
 # sub-commands
-from openfactory.ofa.show_config import config
+import openfactory.ofa.config as config
 import openfactory.ofa.nodes as nodes
 import openfactory.ofa.agent as agent
 import openfactory.ofa.device as device
