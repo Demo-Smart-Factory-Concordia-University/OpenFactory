@@ -1,0 +1,72 @@
+# Traefik service for OpenFactory
+#
+# Minimal HTTP-only configuration (no TLS)
+#
+# Deployment steps:
+#
+#  1. Define the OPENFACTORY_DOMAIN environment variable.
+#     (Export it or store it in a `.env` file next to this file.)
+#
+#  2. Ensure the following Docker overlay networks exist:
+#     docker network create --driver=overlay --attachable traefik-public
+#
+#  3. Deploy Traefik to the OpenFactory Swarm cluster:
+#     docker stack deploy -c traefik.yml --detach=false traefik
+#
+# Access the Traefik dashboard at:
+#     http://traefik.${OPENFACTORY_DOMAIN}
+#
+# Notes:
+#  - Traefik must be attached to *both*:
+#      - the public network for external access (`traefik-public`)
+#      - the internal OpenFactory service network (`factory-net`)
+#
+#  - The network name of the internal OpenFactory service network 
+#    must match the one defined in:
+#      openfactory/config/openfactory.yml
+
+services:
+  proxy:
+    image: traefik:v3.4
+    command:
+      - "--providers.swarm=true"
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.watch=true"
+      - "--providers.swarm.exposedByDefault=false"
+      - "--providers.swarm.network=factory-net"
+
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      - "--api.dashboard=true"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+    networks:
+      - traefik-public
+      - factory-net
+
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.${OPENFACTORY_DOMAIN}`)"
+        - "traefik.http.routers.traefik.entrypoints=web"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080" 
+
+networks:
+  traefik-public:
+    external: true
+  factory-net:
+    external: true
