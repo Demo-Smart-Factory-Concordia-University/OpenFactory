@@ -8,7 +8,7 @@ The GitHub workflow [kafka_mtc_producer.yml](../../.github/workflows/kafka_mtc_p
 
 The variable `MTCONNECT_PRODUCER_IMAGE` in the OpenFactory configuration file [openfactory.yml](../../openfactory/config/openfactory.yml) points to this image. If the image created from the GitHub workflow is used, this would be:
 ```
-MTCONNECT_PRODUCER_IMAGE: rwuthric/kafka-mtc-producer
+MTCONNECT_PRODUCER_IMAGE: ghcr.io/demo-smart-factory-concordia-university/kafka-mtc-producer
 ```
 
 ## Configuration in an OpenFactory device configuration file
