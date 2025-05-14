@@ -90,6 +90,15 @@ class OpenFactoryManager(OpenFactory):
         service_name = device_uuid.lower() + '-agent'
         agent_uuid = device_uuid.upper() + '-AGENT'
         agent_port = agent['port']
+
+        # configuration for Traefik
+        labels = {
+                "traefik.enable": "true",
+                f"traefik.http.routers.{service_name}.rule": f"Host(`{device_uuid.lower()}.agent.{config.OPENFACTORY_DOMAIN}`)",
+                f"traefik.http.routers.{service_name}.entrypoints": "web",
+                f"traefik.http.services.{service_name}.loadbalancer.server.port": "5000"
+            }
+
         try:
             dal.docker_client.services.create(
                 image=config.MTCONNECT_AGENT_IMAGE,
@@ -103,6 +112,7 @@ class OpenFactoryManager(OpenFactory):
                      f'XML_MODEL={xml_model}',
                      f'AGENT_CFG_FILE={agent_cfg}'],
                 endpoint_spec=docker.types.EndpointSpec(ports={agent_port: 5000}),
+                labels=labels,
                 networks=[config.OPENFACTORY_NETWORK],
                 resources={
                     "Limits": {"NanoCPUs": int(1000000000*cpus_limit)},

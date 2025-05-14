@@ -31,6 +31,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_config.MTCONNECT_AGENT_CFG_FILE = "mock_agent_cfg_file"
         mock_config.MTCONNECT_AGENT_IMAGE = "mock_image"
         mock_config.OPENFACTORY_NETWORK = "mock_network"
+        mock_config.OPENFACTORY_DOMAIN = "mock_domain"
 
         # Mock the content of the agent config file
         mock_open.return_value.__enter__.return_value.read.return_value = "mock agent configuration content"
@@ -93,6 +94,19 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Check that the correct parameters were passed in 'env'
         self.assertIn('env', kwargs)
         self.assertEqual(kwargs['env'], expected_env)
+
+        # Expected labels
+        service_name = device_uuid.lower() + '-agent'
+        expected_labels = {
+            "traefik.enable": "true",
+            f"traefik.http.routers.{service_name}.rule": f"Host(`{device_uuid.lower()}.agent.{mock_config.OPENFACTORY_DOMAIN}`)",
+            f"traefik.http.routers.{service_name}.entrypoints": "web",
+            f"traefik.http.services.{service_name}.loadbalancer.server.port": "5000"
+            }
+
+        # Check that the correct parameters were passed in 'label'
+        self.assertIn('labels', kwargs)
+        self.assertEqual(kwargs['labels'], expected_labels)
 
         # Check that the correct resources were passed
         expected_resources = {
