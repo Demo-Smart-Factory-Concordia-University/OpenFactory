@@ -12,12 +12,11 @@ class TestOpenFactoryManager(unittest.TestCase):
 
     @patch("builtins.open", new_callable=MagicMock)
     @patch("openfactory.openfactory_manager.config")
-    @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.open_ofa")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_mtconnect_agent(self, MockAsset, mock_register_asset, mock_user_notify, mock_open_ofa, mock_dal, mock_config, mock_open):
+    def test_deploy_mtconnect_agent(self, MockAsset, mock_register_asset, mock_user_notify, mock_open_ofa, mock_config, mock_open):
         """
         Test deploy_mtconnect_agent
         """
@@ -37,8 +36,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_open.return_value.__enter__.return_value.read.return_value = "mock agent configuration content"
 
         # Set up mocks
-        mock_client = MagicMock()
-        mock_dal.docker_client = mock_client
+        mock_deployment_strategy = MagicMock()
 
         # Mock reading the XML file
         mock_open_ofa.return_value.__enter__.return_value.read.return_value = "<xml>model</xml>"
@@ -68,14 +66,15 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Call the method to test
         ksqlMock = MagicMock()
-        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
+                                     deployment_strategy=mock_deployment_strategy)
         manager.deploy_mtconnect_agent(device_uuid, device_xml_uri, agent)
 
         # Check that the services.create method was called on the Docker client
-        mock_client.services.create.assert_called_once()
+        mock_deployment_strategy.deploy.assert_called_once()
 
         # Extract the call arguments for the create method
-        args, kwargs = mock_client.services.create.call_args
+        args, kwargs = mock_deployment_strategy.deploy.call_args
 
         # Check image and network
         self.assertEqual(kwargs['image'], mock_config.MTCONNECT_AGENT_IMAGE)
@@ -149,12 +148,11 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with("Agent device-uuid-123-agent deployed successfully")
 
-    @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_kafka_producer(self, MockAsset, mock_register_asset, mock_user_notify, mock_config, mock_dal):
+    def test_deploy_kafka_producer(self, MockAsset, mock_register_asset, mock_user_notify, mock_config):
         """
         Test deploy_kafka_producer
         """
@@ -165,8 +163,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_config.OPENFACTORY_NETWORK = "mock_network"
 
         # Set up mocks
-        mock_client = MagicMock()
-        mock_dal.docker_client = mock_client
+        mock_deployment_strategy = MagicMock()
 
         # Test device dictionary
         device = {
@@ -184,14 +181,16 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Call the method to test
         ksqlMock = MagicMock()
-        manager = OpenFactoryManager(ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
+                                     deployment_strategy=mock_deployment_strategy)
+
         manager.deploy_kafka_producer(device)
 
         # Check that the services.create method was called on the Docker client
-        mock_client.services.create.assert_called_once()
+        mock_deployment_strategy.deploy.assert_called_once()
 
         # Extract the call arguments for the create method
-        args, kwargs = mock_client.services.create.call_args
+        args, kwargs = mock_deployment_strategy.deploy.call_args
 
         # Check service_name, image and network
         self.assertEqual(kwargs['name'], device['uuid'].lower() + '-producer')
@@ -232,12 +231,11 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Ensure the notification method was called
         mock_user_notify.success.assert_called_once_with(f"Kafka producer {device['uuid'].lower()}-producer deployed successfully")
 
-    @patch("openfactory.openfactory_manager.dal")
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
     @patch("openfactory.openfactory_manager.register_asset")
     @patch("openfactory.openfactory_manager.Asset")
-    def test_deploy_device_supervisor(self, mock_Asset, mock_register_asset, mock_user_notify, mock_config, mock_dal):
+    def test_deploy_device_supervisor(self, mock_Asset, mock_register_asset, mock_user_notify, mock_config):
         """
         Test deploy_device_supervisor
         """
@@ -247,8 +245,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_config.KSQLDB_LOG_LEVEL = "MOCK_LOG_LEVEL"
 
         # Set up mocks
-        mock_client = MagicMock()
-        mock_dal.docker_client = mock_client
+        mock_deployment_strategy = MagicMock()
 
         # Test supervisor dictionary
         supervisor = {
@@ -274,14 +271,16 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Call the method to test
         ksqlMock = MagicMock()
         ksqlMock.ksqldb_url = "mock_ksqldb_url"
-        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
+                                     deployment_strategy=mock_deployment_strategy)
+
         manager.deploy_device_supervisor(device_uuid, supervisor)
 
         # Check that the services.create method was called on the Docker client
-        mock_client.services.create.assert_called_once()
+        mock_deployment_strategy.deploy.assert_called_once()
 
         # Extract the call arguments for the create method
-        args, kwargs = mock_client.services.create.call_args
+        args, kwargs = mock_deployment_strategy.deploy.call_args
 
         # Check service_name, image and network
         self.assertEqual(kwargs['name'], device_uuid.lower() + '-supervisor')
@@ -328,10 +327,9 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
 
     @patch("openfactory.openfactory_manager.config")
-    @patch('openfactory.openfactory_manager.dal.docker_client')
     @patch('openfactory.openfactory_manager.register_asset')
     @patch('openfactory.openfactory_manager.user_notify')
-    def test_deploy_openfactory_application_success(self, mock_user_notify, mock_register_asset, mock_docker_client, mock_config):
+    def test_deploy_openfactory_application_success(self, mock_user_notify, mock_register_asset, mock_config):
         """ Test deploy_openfactory_application """
 
         # Mock config values
@@ -340,7 +338,9 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         ksqlMock = MagicMock()
         ksqlMock.ksqldb_url = "mock_ksqldb_url"
-        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        mock_deployment_strategy = MagicMock()
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
+                                     deployment_strategy=mock_deployment_strategy)
 
         application = {
             'uuid': 'test-app',
@@ -352,7 +352,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         manager.deploy_openfactory_application(application)
 
         # Assert
-        mock_docker_client.services.create.assert_called_once_with(
+        mock_deployment_strategy.deploy.assert_called_once_with(
             image='test-image',
             name='test-app',
             mode={"Replicated": {"Replicas": 1}},
@@ -376,9 +376,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_user_notify.success.assert_called_once_with("Application test-app deployed successfully")
 
     @patch("openfactory.openfactory_manager.config")
-    @patch('openfactory.openfactory_manager.dal.docker_client')
     @patch('openfactory.openfactory_manager.user_notify')
-    def test_deploy_openfactory_application_failure(self, mock_user_notify, mock_docker_client, mock_config):
+    def test_deploy_openfactory_application_failure(self, mock_user_notify, mock_config):
         """ Test deploy_openfactory_application when Docker API fails """
 
         # Mock config values
@@ -387,7 +386,9 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         ksqlMock = MagicMock()
         ksqlMock.ksqldb_url = "mock_ksqldb_url"
-        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
+        mock_deployment_strategy = MagicMock()
+        manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
+                                     deployment_strategy=mock_deployment_strategy)
 
         application = {
             'uuid': 'test-app',
@@ -395,13 +396,13 @@ class TestOpenFactoryManager(unittest.TestCase):
             'environment': None
         }
 
-        mock_docker_client.services.create.side_effect = docker.errors.APIError("Mocked Docker API error")
+        mock_deployment_strategy.deploy.side_effect = docker.errors.APIError("Mocked Docker API error")
 
         # Call the method to test
         manager.deploy_openfactory_application(application)
 
         # Assert
-        mock_docker_client.services.create.assert_called_once_with(
+        mock_deployment_strategy.deploy.assert_called_once_with(
             image='test-image',
             name='test-app',
             mode={"Replicated": {"Replicas": 1}},
