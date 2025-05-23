@@ -42,7 +42,7 @@ class TestCLI(unittest.TestCase):
         self.runner.invoke(cli, ['config', 'ls'])
         mock_ls_callback.assert_called_once()
 
-    @patch('openfactory.ofa.agent.ls.callback')
+    @patch('openfactory.ofa.agent.ls.ls.callback')
     def test_agent_ls_invoked(self, mock_agent_ls):
         """ Test ofa agent ls command """
         self.runner.invoke(cli, ['agent', 'ls'])
