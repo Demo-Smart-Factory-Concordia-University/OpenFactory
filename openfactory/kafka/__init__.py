@@ -20,9 +20,7 @@ def delete_consumer_group(kafka_group_id: str, bootstrap_servers: str = config.K
         bootstrap_servers (str): Kafka bootstrap server(s) to connect to.
 
     Raises:
-        kafka.errors.GroupCoordinatorNotAvailableError: If the group coordinator is not available.
-        kafka.errors.UnknownMemberIdError: If the group doesn't exist.
-        Exception: For other unexpected errors during deletion.
+        Exception: For unexpected errors during deletion.
     """
     admin_client = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
     try:
