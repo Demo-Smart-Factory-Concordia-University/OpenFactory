@@ -13,7 +13,7 @@ into the system, along with error handling, user notifications, and resource man
 import docker
 import os
 from fsspec.core import split_protocol
-from typing import Dict
+from typing import Dict, Optional
 
 import openfactory.config as config
 from openfactory import OpenFactory
@@ -24,6 +24,8 @@ from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
 from openfactory.models.user_notifications import user_notify
 from openfactory.utils import get_nested, open_ofa, register_asset, deregister_asset
+from openfactory.kafka.ksql import KSQLDBClient
+from openfactory.openfactory_deploy_strategy import OpenFactoryServiceDeploymentStrategy, SwarmDeploymentStrategy
 
 
 class OpenFactoryManager(OpenFactory):
@@ -32,7 +34,25 @@ class OpenFactoryManager(OpenFactory):
 
     Allows to deploy services on OpenFactory.
     User requires Docker access on the OpenFactory cluster.
+
+    Attributes:
+        deployment_strategy (OpenFactoryServiceDeploymentStrategy): The strategy used to deploy services.
     """
+
+    def __init__(self, ksqlClient: KSQLDBClient,
+                 bootstrap_servers: str = config.KAFKA_BROKER,
+                 deployment_strategy: Optional[OpenFactoryServiceDeploymentStrategy] = None):
+        """
+        Initializes the OpenFactoryManager.
+
+        Args:
+            ksqlClient (KSQLDBClient): The client for interacting with ksqlDB.
+            bootstrap_servers (str, optional): The Kafka bootstrap server address. Defaults to config.KAFKA_BROKER.
+            deployment_strategy (Optional[OpenFactoryServiceDeploymentStrategy], optional):
+                The deployment strategy to use (e.g., Swarm or Local). If not provided, defaults to SwarmDeploymentStrategy.
+        """
+        super().__init__(ksqlClient, bootstrap_servers)
+        self.deployment_strategy = deployment_strategy or SwarmDeploymentStrategy()
 
     def deploy_mtconnect_agent(self, device_uuid: str, device_xml_uri: str, agent: Dict) -> None:
         """
@@ -100,7 +120,7 @@ class OpenFactoryManager(OpenFactory):
             }
 
         try:
-            dal.docker_client.services.create(
+            self.deployment_strategy.deploy(
                 image=config.MTCONNECT_AGENT_IMAGE,
                 command=command,
                 name=service_name,
@@ -111,7 +131,7 @@ class OpenFactoryManager(OpenFactory):
                      f'ADAPTER_PORT={agent["adapter"]["port"]}',
                      f'XML_MODEL={xml_model}',
                      f'AGENT_CFG_FILE={agent_cfg}'],
-                endpoint_spec=docker.types.EndpointSpec(ports={agent_port: 5000}),
+                ports={agent_port: 5000},
                 labels=labels,
                 networks=[config.OPENFACTORY_NETWORK],
                 resources={
@@ -150,8 +170,6 @@ class OpenFactoryManager(OpenFactory):
         Raises:
             OFAException: If the adapter cannot be deployed.
         """
-        client = dal.docker_client
-
         # compute ressources
         cpus_reservation = get_nested(adapter, ['deploy', 'resources', 'reservations', 'cpus'], 0.5)
         cpus_limit = get_nested(adapter, ['deploy', 'resources', 'limits', 'cpus'], 1)
@@ -174,7 +192,7 @@ class OpenFactoryManager(OpenFactory):
 
         # deploy adapter on Docker swarm cluster
         try:
-            client.services.create(
+            self.deployment_strategy.deploy(
                 image=adapter['image'],
                 name=device_uuid.lower() + '-adapter',
                 mode={"Replicated": {"Replicas": 1}},
@@ -225,7 +243,7 @@ class OpenFactoryManager(OpenFactory):
         service_name = device['uuid'].lower() + '-producer'
         producer_uuid = device['uuid'] + '-PRODUCER'
         try:
-            dal.docker_client.services.create(
+            self.deployment_strategy.deploy(
                 image=config.MTCONNECT_PRODUCER_IMAGE,
                 name=service_name,
                 mode={"Replicated": {"Replicas": 1}},
@@ -292,7 +310,7 @@ class OpenFactoryManager(OpenFactory):
                 env.append(f"{var.strip()}={val.strip()}")
 
         try:
-            dal.docker_client.services.create(
+            self.deployment_strategy.deploy(
                 image=supervisor['image'],
                 name=device_uuid.lower() + '-supervisor',
                 mode={"Replicated": {"Replicas": 1}},
@@ -341,7 +359,7 @@ class OpenFactoryManager(OpenFactory):
             env.append(f"KSQLDB_LOG_LEVEL={config.KSQLDB_LOG_LEVEL}")
 
         try:
-            dal.docker_client.services.create(
+            self.deployment_strategy.deploy(
                 image=application['image'],
                 name=application['uuid'].lower(),
                 mode={"Replicated": {"Replicas": 1}},
