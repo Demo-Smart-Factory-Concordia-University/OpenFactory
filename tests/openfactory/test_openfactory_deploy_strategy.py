@@ -46,11 +46,14 @@ class TestLocalDockerDeploymentStrategy(unittest.TestCase):
     Unit tests for class LocalDockerDeploymentStrategy
     """
 
-    @patch("openfactory.openfactory_deploy_strategy.dal.docker_client")
-    def test_local_deploy(self, mock_docker_client):
-        """ Test local Docker deploy method """
+    @patch("openfactory.openfactory_deploy_strategy.docker.from_env")
+    def test_local_deploy(self, mock_from_env):
+        """ Test local Docker deploy method using direct docker.from_env() """
+        mock_docker_client = MagicMock()
         mock_run = MagicMock()
         mock_docker_client.containers.run = mock_run
+        mock_from_env.return_value = mock_docker_client
+
         strategy = LocalDockerDeploymentStrategy()
         strategy.deploy(
             image="test-image",

@@ -94,7 +94,7 @@ class LocalDockerDeploymentStrategy(OpenFactoryServiceDeploymentStrategy):
             - Only the first network in the list is used.
             - `constraints` and `mode` are ignored for local containers.
         """
-        dal.docker_client.containers.run(
+        docker.from_env().containers.run(
             image=image,
             name=name,
             environment=env,
