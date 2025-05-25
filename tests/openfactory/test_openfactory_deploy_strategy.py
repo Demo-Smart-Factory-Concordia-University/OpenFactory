@@ -40,6 +40,18 @@ class TestSwarmDeploymentStrategy(unittest.TestCase):
         self.assertEqual(kwargs["resources"]["Limits"]["NanoCPUs"], 500000000)
         self.assertEqual(kwargs["mode"], {"Replicated": {"Replicas": 2}})
 
+    @patch("openfactory.openfactory_deploy_strategy.dal.docker_client")
+    def test_swarm_remove(self, mock_docker_client):
+        """ Test Docker Swarm remove method """
+        mock_service = MagicMock()
+        mock_docker_client.services.get.return_value = mock_service
+
+        strategy = SwarmDeploymentStrategy()
+        strategy.remove("test-service")
+
+        mock_docker_client.services.get.assert_called_once_with("test-service")
+        mock_service.remove.assert_called_once_with()
+
 
 class TestLocalDockerDeploymentStrategy(unittest.TestCase):
     """
@@ -77,3 +89,17 @@ class TestLocalDockerDeploymentStrategy(unittest.TestCase):
         self.assertEqual(kwargs["network"], "bridge")
         self.assertEqual(kwargs["labels"], {"type": "api"})
         self.assertEqual(kwargs["nano_cpus"], 1000000000)
+
+    @patch("openfactory.openfactory_deploy_strategy.docker.from_env")
+    def test_local_remove(self, mock_from_env):
+        """ Test local Docker remove method using direct docker.from_env() """
+        mock_docker_client = MagicMock()
+        mock_container = MagicMock()
+        mock_docker_client.containers.get.return_value = mock_container
+        mock_from_env.return_value = mock_docker_client
+
+        strategy = LocalDockerDeploymentStrategy()
+        strategy.remove("test-container")
+
+        mock_docker_client.containers.get.assert_called_once_with("test-container")
+        mock_container.remove.assert_called_once_with(force=True)

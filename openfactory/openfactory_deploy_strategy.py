@@ -37,6 +37,16 @@ class OpenFactoryServiceDeploymentStrategy(ABC):
         """
         pass
 
+    @abstractmethod
+    def remove(self, service_name):
+        """
+        Remove a service.
+
+        Args:
+            service_name (str): Service to be removed.
+        """
+        pass
+
 
 class SwarmDeploymentStrategy(OpenFactoryServiceDeploymentStrategy):
     """ Deployment strategy for Docker Swarm mode. """
@@ -69,6 +79,16 @@ class SwarmDeploymentStrategy(OpenFactoryServiceDeploymentStrategy):
             resources=resources,
             mode=mode
         )
+
+    def remove(self, service_name):
+        """
+        Remove a Docker service from a Docker Swarm cluster.
+
+        Args:
+            service_name (str): Docker swarm service to be removed.
+        """
+        service = dal.docker_client.services.get(service_name)
+        service.remove()
 
 
 class LocalDockerDeploymentStrategy(OpenFactoryServiceDeploymentStrategy):
@@ -105,3 +125,18 @@ class LocalDockerDeploymentStrategy(OpenFactoryServiceDeploymentStrategy):
             labels=labels,
             nano_cpus=resources.get("Limits", {}).get("NanoCPUs") if resources else None
         )
+
+    def remove(self, service_name):
+        """
+        Remove a Docker container.
+
+        Args:
+            service_name (str): Docker container to be removed.
+
+        Raises:
+            docker.errors.NotFound: If the container does not exist.
+            docker.errors.APIError: If removal fails due to a Docker API issue.
+        """
+        client = docker.from_env()
+        container = client.containers.get(service_name)
+        container.remove(force=True)

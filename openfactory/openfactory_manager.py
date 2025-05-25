@@ -20,7 +20,6 @@ from openfactory import OpenFactory
 from openfactory.schemas.devices import get_devices_from_config_file
 from openfactory.schemas.apps import get_apps_from_config_file
 from openfactory.assets import Asset, AssetAttribute
-from openfactory.docker.docker_access_layer import dal
 from openfactory.exceptions import OFAException
 from openfactory.models.user_notifications import user_notify
 from openfactory.utils import get_nested, open_ofa, register_asset, deregister_asset
@@ -512,8 +511,7 @@ class OpenFactoryManager(OpenFactory):
         """
         # tear down Adapter
         try:
-            service = dal.docker_client.services.get(device_uuid.lower() + '-adapter')
-            service.remove()
+            self.deployment_strategy.remove(device_uuid.lower() + '-adapter')
             user_notify.success(f"Adapter for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
             # no adapter running as a Docker swarm service
@@ -523,8 +521,7 @@ class OpenFactoryManager(OpenFactory):
 
         # tear down Producer
         try:
-            service = dal.docker_client.services.get(device_uuid.lower() + '-producer')
-            service.remove()
+            self.deployment_strategy.remove(device_uuid.lower() + '-producer')
             deregister_asset(device_uuid + '-PRODUCER', ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"Kafka producer for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
@@ -534,9 +531,7 @@ class OpenFactoryManager(OpenFactory):
 
         # tear down Agent
         try:
-            service = dal.docker_client.services.get(device_uuid.lower() + '-agent')
-            service.remove()
-            # self.send_unavailable()
+            self.deployment_strategy.remove(device_uuid.lower() + '-agent')
             deregister_asset(device_uuid + '-AGENT', ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"MTConnect Agent for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
@@ -547,8 +542,7 @@ class OpenFactoryManager(OpenFactory):
 
         # tear down Supervisor
         try:
-            supervisor_service = dal.docker_client.services.get(device_uuid.lower() + '-supervisor')
-            supervisor_service.remove()
+            self.deployment_strategy.remove(device_uuid.lower() + '-supervisor')
             deregister_asset(f"{device_uuid.upper()}-SUPERVISOR", ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
             user_notify.success(f"Supervisor {device_uuid.upper()}-SUPERVISOR removed successfully")
         except docker.errors.NotFound:
@@ -597,8 +591,7 @@ class OpenFactoryManager(OpenFactory):
         """
         try:
             app = Asset(app_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
-            service = dal.docker_client.services.get(app.DockerService.value)
-            service.remove()
+            self.deployment_strategy.remove(app.DockerService.value)
         except docker.errors.NotFound:
             # the application was not running as a Docker swarm service
             deregister_asset(app_uuid, ksqlClient=self.ksql)
