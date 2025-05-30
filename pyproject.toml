@@ -27,7 +27,7 @@ dependencies = [
     "python-on-whales",
     "rq",
     "PyKSQL @ git+https://github.com/rwuthric/PyKSQL.git",
-    "mtc2kafka @ git+https://github.com/rwuthric/python-mtc2kafka.git"
+    "mtc2kafka @ git+https://github.com/rwuthric/python-mtc2kafka.git",
     "mtcadapters @ git+https://github.com/Demo-Smart-Factory-Concordia-University/MTCAdapters.git"
 ]
 
