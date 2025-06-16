@@ -12,10 +12,10 @@
         </thead>
 
         <tbody>
-            {% for id, value in data.Samples.items() %}
+            {% for sample in data.Samples %}
             <tr>
-                <td>{{ id }}</td>
-                <td>{{ value }}</td>
+                <td>{{ sample.ID }}</td>
+                <td>{{ sample.VALUE }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -34,17 +34,17 @@
         </thead>
 
         <tbody>
-            {% for id, value in data.Events.items() %}
+            {% for event in data.Events %}
             <tr>
-                <td>{{ id }}</td>
+                <td>{{ event.ID }}</td>
                 <td style="
-                        {% if 'avail' in id|lower %}
-                            background-color: {{ value | availability_color }}
-                        {% elif 'connection_status' in id|lower %}
-                            background-color: {{ value | connection_status_color }}
+                        {% if 'avail' in event.ID|lower %}
+                            background-color: {{ event.VALUE | availability_color }}
+                        {% elif 'connection_status' in event.ID|lower %}
+                            background-color: {{ event.VALUE | connection_status_color }}
                         {% endif %}
                     ">
-                    {{ value }}</td>
+                    {{ event.VALUE }}</td>
             </tr>
             {% endfor %}
         </tbody>

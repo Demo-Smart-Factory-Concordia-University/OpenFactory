@@ -240,11 +240,18 @@ class Asset:
         Returns a dictionary mapping attribute IDs to their values.
 
         Returns:
-            Dict[str, Any]: A dictionary where keys are attribute IDs and values are their corresponding sample values.
+            List[Dict[str, Any]]: A list of dictionaries, each containing:
+                - "ID" (str): The attribute ID.
+                - "VALUE" (Any): The value of the sample.
+                - "TAG" (str): The cleaned tag name with placeholders removed.
         """
-        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
+        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
         df = self.ksql.query(query)
-        return {row.ID: row.VALUE for row in df.itertuples()}
+        return [{
+            "ID": row.ID,
+            "VALUE": row.VALUE,
+            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
+            for row in df.itertuples()]
 
     def events(self) -> Dict[str, Any]:
         """
@@ -254,11 +261,18 @@ class Asset:
         Returns a dictionary mapping attribute IDs to their values.
 
         Returns:
-            Dict[str, Any]: A dictionary where keys are event attribute IDs and values are the corresponding values.
+            List[Dict[str, Any]]: A list of dictionaries, each containing:
+                - "ID" (str): The attribute ID.
+                - "VALUE" (Any): The value of the event.
+                - "TAG" (str): The cleaned tag name with placeholders removed.
         """
-        query = f"SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
+        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
         df = self.ksql.query(query)
-        return {row.ID: row.VALUE for row in df.itertuples()}
+        return [{
+            "ID": row.ID,
+            "VALUE": row.VALUE,
+            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
+            for row in df.itertuples()]
 
     def conditions(self) -> List[Dict[str, Any]]:
         """
