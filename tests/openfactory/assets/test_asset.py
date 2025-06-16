@@ -78,34 +78,40 @@ class TestAsset(TestCase):
         """ Test samples() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
-        samples_df = pd.DataFrame({"ID": ["id1"],
-                                   "VALUE": ["val1"]})
+        samples_df = pd.DataFrame({
+            "ID": ["id1"],
+            "VALUE": ["val1"],
+            "TAG": ["{urn:mtconnect.org:MTConnectStreams:2.2}MockedTag"]
+        })
         ksqlMock.query.side_effect = [samples_df]
 
         asset = Asset("uuid-123", ksqlClient=ksqlMock)
         samples = asset.samples()
 
-        self.assertEqual(samples, {'id1': 'val1'})
+        self.assertEqual(samples, [{'ID': 'id1', 'VALUE': 'val1', 'TAG': 'MockedTag'}])
 
-        # Ensure correct query was exectued
-        expected_query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Samples';"
+        # Ensure correct query was executed
+        expected_query = "SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Samples';"
         ksqlMock.query.assert_any_call(expected_query)
 
     def test_events(self, MockAssetProducer):
         """ Test events() """
         ksqlMock = MagicMock()
         ksqlMock.query_to_dataframe = MagicMock()
-        events_df = pd.DataFrame({"ID": ["id2"],
-                                  "VALUE": ["val2"]})
+        events_df = pd.DataFrame({
+            "ID": ["id2"],
+            "VALUE": ["val2"],
+            "TAG": ["{urn:mtconnect.org:MTConnectStreams:2.2}MockedTag"]
+        })
         ksqlMock.query.side_effect = [events_df]
 
         asset = Asset("uuid-123", ksqlClient=ksqlMock)
         events = asset.events()
 
-        self.assertEqual(events, {'id2': 'val2'})
+        self.assertEqual(events, [{'ID': 'id2', 'VALUE': 'val2', 'TAG': 'MockedTag'}])
 
-        # Ensure correct query was exectued
-        expected_query = "SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Events';"
+        # Ensure correct query was executed
+        expected_query = "SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='uuid-123' AND TYPE='Events';"
         ksqlMock.query.assert_any_call(expected_query)
 
     def test_conditions(self, MockAssetProducer):
