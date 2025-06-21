@@ -3,6 +3,7 @@ from unittest import TestCase
 from unittest.mock import patch, MagicMock
 import pandas as pd
 from openfactory.assets import Asset, AssetAttribute
+from openfactory.exceptions import OFAException
 
 
 @patch("openfactory.assets.asset_class.AssetProducer")
@@ -193,6 +194,58 @@ class TestAsset(TestCase):
 
         # Ensure flush() was called
         asset.producer.flush.assert_called_once()
+
+    def test_setattr_non_asset_attribute(self, MockAssetProducer):
+        """ Test setting a non-asset attribute (not in attributes list) """
+        # Mock asset with a single 'temperature' attribute
+        asset = Asset("uuid-123", ksqlClient=MagicMock(), bootstrap_servers="mock_broker")
+        asset.attributes = MagicMock(return_value=["temperature"])
+
+        asset.new_attr = "something"
+        self.assertEqual(asset.new_attr, "something")
+
+    def test_setattr_raises_exception_on_invalid_asset_attribute(self, MockAssetProducer):
+        """ Test setting an AssetAttribute on undefined asset attribute raises exception """
+        # Mock asset with a single 'temperature' attribute
+        asset = Asset("uuid-123", ksqlClient=MagicMock(), bootstrap_servers="mock_broker")
+        asset.attributes = MagicMock(return_value=["temperature"])
+
+        with self.assertRaises(OFAException):
+            asset.invalid_attr = AssetAttribute(
+                value=100,
+                type='Samples',
+                tag='SomeTag')
+
+    def test_setattr_valid_asset_attribute_with_asset_attribute(self, MockAssetProducer):
+        """ Test setting a defined asset attribute with AssetAttribute instance """
+        mock_producer = MockAssetProducer.return_value
+        asset = Asset("uuid-123", ksqlClient=MagicMock(), bootstrap_servers="mock_broker")
+        asset.attributes = MagicMock(return_value=["temperature"])
+
+        attr = AssetAttribute(value=25, tag="Temperature", type="Samples")
+        asset.temperature = attr
+
+        mock_producer.send_asset_attribute.assert_called_once_with("temperature", attr)
+
+    def test_setattr_valid_asset_attribute_with_raw_value(self, MockAssetProducer):
+        """ Test setting a defined asset attribute with a raw value (not an AssetAttribute) """
+        mock_producer = MockAssetProducer.return_value
+        asset = Asset("uuid-123", ksqlClient=MagicMock(), bootstrap_servers="mock_broker")
+        asset.attributes = MagicMock(return_value=["temperature"])
+
+        # Simulate current attribute with metadata
+        current_attr = AssetAttribute(value=10, tag="Temperature", type="Samples")
+        asset.__getattr__ = MagicMock(return_value=current_attr)
+
+        asset.temperature = 30
+
+        mock_producer.send_asset_attribute.assert_called_once()
+        args = mock_producer.send_asset_attribute.call_args[0]
+        self.assertEqual(args[0], "temperature")
+        self.assertIsInstance(args[1], AssetAttribute)
+        self.assertEqual(args[1].value, 30)
+        self.assertEqual(args[1].tag, "Temperature")
+        self.assertEqual(args[1].type, "Samples")
 
     def test_getattr_samples(self, MockAssetProducer):
         """ Test __getattr__ returns float for 'Samples' type """

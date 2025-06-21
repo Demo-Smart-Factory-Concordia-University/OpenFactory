@@ -6,7 +6,7 @@ from flask.views import View
 from flask_login import login_required
 from openfactory import OpenFactory
 from openfactory.exceptions import OFAException
-from openfactory.assets import Asset
+from openfactory.assets import Asset, AssetAttribute
 
 
 class DevicesList(View):
@@ -22,14 +22,34 @@ class DevicesList(View):
         for device in devices:
             try:
                 agent = Asset(device.asset_uuid + '-AGENT', ksqlClient=current_app.ksql)
-                device.agent_avail = agent.agent_avail
+                device.add_attribute('agent_avail',
+                                     AssetAttribute(
+                                         value=agent.agent_avail.value,
+                                         tag='AVAILABILITY',
+                                         type='Events'
+                                         ))
+                device.agent_avail = AssetAttribute(
+                                         value=agent.agent_avail.value,
+                                         tag='AVAILABILITY',
+                                         type='Events'
+                                         )
             except (OFAException, AttributeError):
                 device.agent_avail = "External"
             producer = Asset(device.asset_uuid + '-PRODUCER', ksqlClient=current_app.ksql)
-            device.producer_avail = producer.avail
+            device.add_attribute('producer_avail',
+                                 AssetAttribute(
+                                     value=producer.avail.value,
+                                     tag='AVAILABILITY',
+                                     type='Events'
+                                     ))
             try:
                 supervisor = Asset(device.asset_uuid + '-SUPERVISOR', ksqlClient=current_app.ksql)
-                device.supervisor_avail = supervisor.avail
+                device.add_attribute('supervisor_avail',
+                                     AssetAttribute(
+                                         value=supervisor.avail.value,
+                                         tag='AVAILABILITY',
+                                         type='Events'
+                                         ))
             except (OFAException, AttributeError):
                 device.supervisor_avail = ""
         return render_template("services/devices/devices_list.html",
