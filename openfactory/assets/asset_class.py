@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Union, Literal, List, Dict, Protocol, Any
 import openfactory.config as config
 from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group, KSQLDBClient
+from openfactory.exceptions import OFAException
 
 
 class AssetKafkaMessagesCallback(Protocol):
@@ -380,18 +381,38 @@ class Asset:
         """
         Sets attributes on the Asset object and sends updates to Kafka.
 
-        Overrides the default attribute setting behavior. If the attribute
-        being set is an Asset attribute (as determined by its presence in `self.attributes()`),
-        it sends the updated attribute value to a Kafka topic. If it's not an Asset attribute,
-        it behaves as a regular class attribute setter.
+        Overrides the default attribute setting behavior. If the attribute name
+        exists in the asset's defined attributes (`self.attributes()`), it updates the attribute's
+        value and sends the update to Kafka using the asset's producer.
+
+        If the attribute is **not** a defined Asset attribute:
+        - It is treated as a regular class attribute and set normally.
+        - If the value is an instance of `AssetAttribute`, an exception is raised to prevent
+        accidentally setting asset-specific attributes outside the defined schema.
+
+        If the attribute **is** a defined Asset attribute:
+        - If the value is an `AssetAttribute`, it is sent directly.
+        - If the value is a raw value (e.g., int, str, etc.), it wraps the value in an
+        `AssetAttribute` using the current attribute’s metadata (tag, type) and sends it.
 
         Args:
             name (str): The name of the attribute being set.
-            value (Any): The value to assign to the attribute.
+            value (Any): The value to assign to the attribute. This can be a raw value or an `AssetAttribute`.
+
+        Raises:
+            OFAException: If the attribute is not defined in the asset but the value is an `AssetAttribute`.
+
         """
         # if not an Asset attributes, handle it as a class attribute
         if name not in self.attributes():
+            if isinstance(value, AssetAttribute):
+                raise OFAException(f"The attribute {name} is not defined in the asset {self.asset_uuid}. Use the `add_attribute` method to define a new asset attribute.")
             super().__setattr__(name, value)
+            return
+
+        # check if value is of type AssetAttribute
+        if isinstance(value, AssetAttribute):
+            self.producer.send_asset_attribute(name, value)
             return
 
         # send kafka message
