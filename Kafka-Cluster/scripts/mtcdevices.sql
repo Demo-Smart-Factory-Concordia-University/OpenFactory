@@ -1,5 +1,8 @@
 SET 'auto.offset.reset' = 'earliest';
 
+-- ---------------------------------------------------------------------
+-- Main topology
+
 -- OpenFactory Assets data stream
 CREATE STREAM assets_stream (
         asset_uuid VARCHAR KEY,
@@ -15,17 +18,32 @@ CREATE STREAM assets_stream (
     );
 
 -- OpenFactory Assets data stream with composite key
-CREATE STREAM enriched_assets_stream AS
-  SELECT 
+CREATE STREAM enriched_assets_stream (
+    key VARCHAR KEY,
+    asset_uuid VARCHAR,
+    id VARCHAR,
+    value VARCHAR,
+    type VARCHAR,
+    tag VARCHAR,
+    timestamp VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'enriched_assets_stream_topic',
+    PARTITIONS = 1,
+    VALUE_FORMAT = 'JSON'
+);
+
+-- Populate with data
+INSERT INTO enriched_assets_stream
+SELECT 
+    concat(CAST(asset_uuid AS STRING), '|', CAST(id AS STRING)) AS key,
     asset_uuid,
     id,
-    concat(concat(CAST(asset_uuid AS STRING), '|'), CAST(id AS STRING)) AS key,
     value,
     type,
     tag,
     COALESCE(attributes['timestamp'], 'UNAVAILABLE') AS timestamp
-  FROM assets_stream
-  PARTITION BY asset_uuid;
+FROM assets_stream
+PARTITION BY concat(CAST(asset_uuid AS STRING), '|', CAST(id AS STRING));
 
 -- OpenFactory Assets data table
 CREATE TABLE assets AS
