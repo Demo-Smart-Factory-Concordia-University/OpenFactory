@@ -8,22 +8,28 @@ The script [mtcdevices.sql](mtcdevices.sql) defines various streams, tables and 
 
 ### Main topology
 
-- **`ASSETS_STREAM`**: A stream containing all Kafka messages from the `ofa_assets` topic, which is used by the Kafka producers of the deployed assets in OpenFactory.
-- **`ENRICHED_ASSETS_STREAM`**: A derived stream rekeying `ASSETS_STREAM` with the composite key `ASSET_UUID`|`ID`.
-- **`ASSETS`**: A table listing by asset the current values of each `ID`.
+![Main stream processing topology for deployed assets](main_topology.png)
+* **`ASSETS_STREAM`**: A stream consuming all Kafka messages from the `ofa_assets` topic, produced by deployed OpenFactory assets. The messages are keyed by `asset_uuid`.
+* **`ENRICHED_ASSETS_STREAM`**: A derived stream that **repartitions** `ASSETS_STREAM` using a **composite key** of `asset_uuid|id`. This enables proper per-signal tracking and downstream aggregations. The stream is explicitly defined with a key field and can be configured with a scalable number of partitions.
+* **`ASSETS`**: A materialized table built by grouping `ENRICHED_ASSETS_STREAM` on the composite key. It represents the **latest state per asset signal**, based on the latest Kafka offsets.
 
-The `ASSETS` table represents the current state of all deployed assets in OpenFactory.
+The `ASSETS` table reflects the current values of all deployed assets in OpenFactory, at the level of individual signals (`id`) per asset (`asset_uuid`).
 
-### Topology for the deployed assets in OpenFactory
+**Note**:
+The number of partitions for both `ASSETS_STREAM` and `ENRICHED_ASSETS_STREAM` is currently set to 1 for simplicity.
+This should be adjusted based on the expected workload, number of assets/signals, and deployment scale.
+Increasing partitions improves parallelism, throughput, and fault tolerance in both Kafka and ksqlDB.
 
-![Stream processing topology for deployed assets](assets_type_topology.png)
+### Topology for types of the deployed assets in OpenFactory
+
+![Stream processing topology for assets types](assets_type_topology.png)
 - **`ASSETS_TYPE_STREAM`**: A derived stream that selects only the AssetType entries of `ASSETS_STREAM`.
 - **`ASSETS_TYPE_TOMBSTONES`**: A stream ensuring that any Kafka message in the `ofa_assets` topic (or equivalently in the `ASSETS_STREAM`) with an AssetType value of `delete` produces a ksqlDB tombstone message (i.e., removes its entry from the topology).
 - **`ASSETS_TYPE`**: A table listing the type of assets deployed in OpenFactory.
 
 The `ASSETS_TYPE` lists the type of all assets currently deployed on OpenFactory.
 
-### Topology for the status of the availability of the devices:
+### Topology for the status of the availability of the deployed assets:
 
 ![Stream processing topology for device availability status](assets_avail_stream_topology.png)
 
