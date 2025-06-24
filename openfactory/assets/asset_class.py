@@ -8,7 +8,7 @@ import time
 from confluent_kafka import Producer, KafkaError
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Union, Literal, List, Dict, Protocol, Any
+from typing import Union, Literal, List, Dict, Protocol, Any, Optional
 import openfactory.config as config
 from openfactory.kafka import KafkaAssetConsumer, CaseInsensitiveDict, delete_consumer_group, KSQLDBClient
 from openfactory.exceptions import OFAException
@@ -120,6 +120,45 @@ class AssetProducer(Producer):
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         self.flush()
+
+
+class TypedKafkaConsumer(KafkaAssetConsumer):
+    """
+    Kafka consumer that filters messages based on a specific expected type.
+
+    This subclass of `KafkaAssetConsumer` adds filtering capability by inspecting
+    the 'type' field of incoming messages. If an expected type is provided, only
+    messages matching that type will be passed through; otherwise, all messages
+    are accepted.
+    """
+
+    def __init__(self, expected_type: Optional[str], *args, **kwargs):
+        """
+        Initializes the TypedKafkaConsumer.
+
+        Args:
+            expected_type (Optional[str]): The message type to filter for ('Samples', 'Events', 'Conditions').
+                                           If None, no filtering is applied.
+            *args: Positional arguments passed to the base KafkaAssetConsumer.
+            **kwargs: Keyword arguments passed to the base KafkaAssetConsumer.
+        """
+        self.expected_type = expected_type
+        super().__init__(*args, **kwargs)
+
+    def filter_messages(self, msg_value):
+        """
+        Filters Kafka messages based on the expected type.
+
+        Args:
+            msg_value (dict): The Kafka message value to filter.
+
+        Returns:
+            dict or None: The message if it matches the expected type or if no type filtering is applied;
+                          otherwise, returns None to discard the message.
+        """
+        if not self.expected_type:
+            return msg_value
+        return msg_value if msg_value.get('type') == self.expected_type else None
 
 
 class Asset:
@@ -643,26 +682,100 @@ class Asset:
         delete_consumer_group(kafka_group_id, bootstrap_servers=self.bootstrap_servers)
         return False
 
-    def __consume_messages(self, kafka_group_id: str, on_message: AssetKafkaMessagesCallback) -> None:
+    def __start_kafka_consumer(
+            self,
+            consumer_key: str,
+            kafka_group_id: str,
+            on_message: AssetKafkaMessagesCallback,
+            expected_type: Optional[str] = None
+            ) -> None:
         """
-        Consumes messages from a Kafka topic in a separate thread and calls the `on_message` callback.
+        Starts a Kafka consumer for the asset and begins consuming messages.
 
-        Creates a Kafka consumer instance that listens to messages for the given `kafka_group_id`.
-        When a message is received, the `on_message` callback is invoked. The consumer continues to consume
-        messages in a separate thread until stopped.
+        Initializes a `TypedKafkaConsumer` instance for the specified Kafka consumer group ID and
+        message handler. If an expected message type is provided, the consumer will filter messages
+        by type. The consumer instance is stored as an attribute using the provided `consumer_key`.
 
         Args:
+            consumer_key (str): A unique identifier for the consumer (used to name internal attributes).
             kafka_group_id (str): The Kafka consumer group ID.
-            on_message (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles messages.
+            on_message (AssetKafkaMessagesCallback): Callback function to process received messages.
+                It should accept two arguments: `msg_key` (str) and `msg_value` (dict).
+            expected_type (Optional[str]): The expected message type to filter for (e.g., "Samples").
+                If None, all message types will be accepted.
         """
-        messages_consumer_instance = KafkaAssetConsumer(
+        consumer = TypedKafkaConsumer(
+            expected_type=expected_type,
             consumer_group_id=kafka_group_id,
             asset_uuid=self.asset_uuid,
             on_message=on_message,
             ksqlClient=self.ksql,
-            bootstrap_servers=self.bootstrap_servers)
-        super().__setattr__('_messages_consumer_instance', messages_consumer_instance)
-        self._messages_consumer_instance.consume()
+            bootstrap_servers=self.bootstrap_servers
+        )
+        super().__setattr__(f"_{consumer_key}_consumer_instance", consumer)
+        consumer.consume()
+
+    def __subscribe(
+            self,
+            kind: str,
+            on_message: AssetKafkaMessagesCallback,
+            kafka_group_id: str,
+            expected_type: Optional[str] = None
+            ) -> threading.Thread:
+        """
+        Subscribes to a Kafka topic for a specific message type in a background thread.
+
+        Creates and starts a daemon thread that runs a typed Kafka consumer.
+        The thread and group ID are stored on the instance using the provided `kind`
+        as part of the attribute name. The consumer filters messages by type if `expected_type` is given.
+
+        Args:
+            kind (str): A string identifier used to name internal thread and group ID attributes
+                        ("samples", "events", "conditions", or "messages").
+            on_message (AssetKafkaMessagesCallback): Callback function to handle incoming messages.
+                Should accept two arguments: `msg_key` (str) and `msg_value` (dict).
+            kafka_group_id (str): The Kafka consumer group ID used for the subscription.
+            expected_type (Optional[str]): If provided, the consumer will only process messages
+                where `msg_value["type"] == expected_type`.
+
+        Returns:
+            threading.Thread: The daemon thread running the Kafka consumer.
+        """
+        consumer_thread = threading.Thread(
+            target=self.__start_kafka_consumer,
+            args=(kind, kafka_group_id, on_message, expected_type),
+            daemon=True
+        )
+        super().__setattr__(f"_{kind}_consumer_thread", consumer_thread)
+        super().__setattr__(f"__{kind}_kafka_group_id", kafka_group_id)
+        consumer_thread.start()
+        return consumer_thread
+
+    def __stop_subscription(self, kind: str) -> None:
+        """
+        Stops a Kafka consumer subscription and cleans up associated resources.
+
+        Stops the consumer instance, joins the consumer thread, and deletes
+        the corresponding Kafka consumer group. Internal attributes are looked up dynamically
+        using the provided `kind` identifier.
+
+        Args:
+            kind (str): A string identifier used to locate internal consumer/thread/group ID attributes
+                        ("samples", "events", "conditions", or "messages").
+        """
+        consumer_attr = f"_{kind}_consumer_instance"
+        thread_attr = f"_{kind}_consumer_thread"
+        group_id_attr = f"__{kind}_kafka_group_id"
+
+        if hasattr(self, consumer_attr):
+            getattr(self, consumer_attr).stop()
+        if hasattr(self, thread_attr):
+            getattr(self, thread_attr).join()
+        if hasattr(self, group_id_attr):
+            delete_consumer_group(
+                getattr(self, group_id_attr),
+                bootstrap_servers=self.bootstrap_servers
+            )
 
     def subscribe_to_messages(self, on_message: AssetKafkaMessagesCallback, kafka_group_id: str) -> threading.Thread:
         """
@@ -679,15 +792,7 @@ class Asset:
         Returns:
             threading.Thread: The thread object running the Kafka consumer.
         """
-        messages_consumer_thread = threading.Thread(
-            target=self.__consume_messages,
-            args=(kafka_group_id, on_message),
-            daemon=True
-        )
-        self.__messages_kakfa_group_id = kafka_group_id
-        super().__setattr__('_messages_consumer_thread', messages_consumer_thread)
-        self._messages_consumer_thread.start()
-        return self._messages_consumer_thread
+        return self.__subscribe("messages", on_message, kafka_group_id)
 
     def stop_messages_subscription(self) -> None:
         """
@@ -696,39 +801,7 @@ class Asset:
         If a consumer instance exists, it is stopped and the associated consumer thread joined.
         The consumer group is deleted from Kafka to clean up the subscription.
         """
-        if hasattr(self, "_messages_consumer_instance"):
-            self._messages_consumer_instance.stop()
-        if hasattr(self, "_messages_consumer_thread"):
-            self._messages_consumer_thread.join()
-            delete_consumer_group(self.__messages_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
-
-    def __consume_samples(self, kafka_group_id: str, on_sample: AssetKafkaMessagesCallback) -> None:
-        """
-        Kafka consumer that runs in a separate thread and calls `on_sample`.
-
-        Creates a Kafka consumer instance that listens for 'Samples' messages. When such a message is received,
-        the provided `on_sample` callback is invoked. The consumer continues to listen for messages in a separate thread
-        until stopped.
-
-        Args:
-            kafka_group_id (str): The Kafka consumer group ID.
-            on_sample (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles samples messages.
-        """
-
-        class SamplesConsumer(KafkaAssetConsumer):
-
-            def filter_messages(self, msg_value):
-                """ Filters out Samples. """
-                return msg_value if msg_value['type'] == 'Samples' else None
-
-        samples_consumer_instance = SamplesConsumer(
-            consumer_group_id=kafka_group_id,
-            asset_uuid=self.asset_uuid,
-            on_message=on_sample,
-            ksqlClient=self.ksql,
-            bootstrap_servers=self.bootstrap_servers)
-        super().__setattr__('_samples_consumer_instance', samples_consumer_instance)
-        self._samples_consumer_instance.consume()
+        self.__stop_subscription("messages")
 
     def subscribe_to_samples(self, on_sample: AssetKafkaMessagesCallback, kafka_group_id: str) -> threading.Thread:
         """
@@ -745,15 +818,7 @@ class Asset:
         Returns:
             threading.Thread: The thread object running the Kafka consumer.
         """
-        samples_consumer_thread = threading.Thread(
-            target=self.__consume_samples,
-            args=(kafka_group_id, on_sample),
-            daemon=True
-        )
-        self.__samples_kakfa_group_id = kafka_group_id
-        super().__setattr__('_samples_consumer_thread', samples_consumer_thread)
-        self._samples_consumer_thread.start()
-        return self._samples_consumer_thread
+        return self.__subscribe("samples", on_sample, kafka_group_id, expected_type="Samples")
 
     def stop_samples_subscription(self) -> None:
         """
@@ -762,39 +827,7 @@ class Asset:
         If a consumer instance exists, it is stopped, and the associated consumer thread is joined.
         The consumer group is deleted from Kafka to clean up the subscription.
         """
-        if hasattr(self, "_samples_consumer_instance"):
-            self._samples_consumer_instance.stop()
-        if hasattr(self, "_samples_consumer_thread"):
-            self._samples_consumer_thread.join()
-            delete_consumer_group(self.__samples_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
-
-    def __consume_events(self, kafka_group_id: str, on_event: AssetKafkaMessagesCallback) -> None:
-        """
-        Kafka consumer that runs in a separate thread and calls `on_event`.
-
-        Creates a Kafka consumer instance that listens for 'Events' messages. When such a message is received,
-        the provided `on_event` callback is invoked. The consumer continues to listen for messages in a separate thread
-        until stopped.
-
-        Args:
-            kafka_group_id (str): The Kafka consumer group ID.
-            on_event (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles events messages.
-        """
-
-        class EventsConsumer(KafkaAssetConsumer):
-
-            def filter_messages(self, msg_value):
-                """ Filters out Events. """
-                return msg_value if msg_value['type'] == 'Events' else None
-
-        events_consumer_instance = EventsConsumer(
-            consumer_group_id=kafka_group_id,
-            asset_uuid=self.asset_uuid,
-            on_message=on_event,
-            ksqlClient=self.ksql,
-            bootstrap_servers=self.bootstrap_servers)
-        super().__setattr__('_events_consumer_instance', events_consumer_instance)
-        self._events_consumer_instance.consume()
+        self.__stop_subscription("samples")
 
     def subscribe_to_events(self, on_event: AssetKafkaMessagesCallback, kafka_group_id: str) -> threading.Thread:
         """
@@ -811,15 +844,7 @@ class Asset:
         Returns:
             threading.Thread: The thread object running the Kafka consumer.
         """
-        events_consumer_thread = threading.Thread(
-            target=self.__consume_events,
-            args=(kafka_group_id, on_event),
-            daemon=True
-        )
-        self.__events_kakfa_group_id = kafka_group_id
-        super().__setattr__('_events_consumer_thread', events_consumer_thread)
-        self._events_consumer_thread.start()
-        return self._events_consumer_thread
+        return self.__subscribe("events", on_event, kafka_group_id, expected_type="Events")
 
     def stop_events_subscription(self) -> None:
         """
@@ -828,38 +853,7 @@ class Asset:
         If a consumer instance exists, it is stopped, and the associated consumer thread is joined.
         The consumer group is deleted from Kafka to clean up the subscription.
         """
-        if hasattr(self, "_events_consumer_instance"):
-            self._events_consumer_instance.stop()
-        if hasattr(self, "_events_consumer_thread"):
-            self._events_consumer_thread.join()
-            delete_consumer_group(self.__events_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
-
-    def __consume_conditions(self, kafka_group_id: str, on_condition: AssetKafkaMessagesCallback) -> None:
-        """
-        Kafka consumer that listens for 'Condition' messages and invokes the provided callback.
-
-        A separate thread runs a Kafka consumer that listens for 'Condition' messages related to the asset.
-        The consumer filters the messages to only pass 'Condition' messages to the provided `on_condition` callback.
-
-        Args:
-            kafka_group_id (str): The Kafka consumer group ID to subscribe to.
-            on_condition (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles condition messages.
-        """
-
-        class ConditionsConsumer(KafkaAssetConsumer):
-
-            def filter_messages(self, msg_value):
-                """ Filters out Conditions. """
-                return msg_value if msg_value['type'] == 'Condition' else None
-
-        conditions_consumer_instance = ConditionsConsumer(
-            consumer_group_id=kafka_group_id,
-            asset_uuid=self.asset_uuid,
-            on_message=on_condition,
-            ksqlClient=self.ksql,
-            bootstrap_servers=self.bootstrap_servers)
-        super().__setattr__('_conditions_consumer_instance', conditions_consumer_instance)
-        self._conditions_consumer_instance.consume()
+        self.__stop_subscription("events")
 
     def subscribe_to_conditions(self, on_condition: AssetKafkaMessagesCallback, kafka_group_id: str) -> threading.Thread:
         """
@@ -875,15 +869,7 @@ class Asset:
         Returns:
             threading.Thread: The consumer thread that is now running.
         """
-        conditions_consumer_thread = threading.Thread(
-            target=self.__consume_conditions,
-            args=(kafka_group_id, on_condition),
-            daemon=True
-        )
-        self.__conditions_kakfa_group_id = kafka_group_id
-        super().__setattr__('_conditions_consumer_thread', conditions_consumer_thread)
-        self._conditions_consumer_thread.start()
-        return self._conditions_consumer_thread
+        return self.__subscribe("conditions", on_condition, kafka_group_id, expected_type="Condition")
 
     def stop_conditions_subscription(self) -> None:
         """
@@ -892,11 +878,7 @@ class Asset:
         If a consumer instance exists, it is stopped and the associated consumer thread is joined.
         The consumer group is deleted from Kafka to clean up the subscription.
         """
-        if hasattr(self, "_conditions_consumer_instance"):
-            self._conditions_consumer_instance.stop()
-        if hasattr(self, "_conditions_consumer_thread"):
-            self._conditions_consumer_thread.join()
-            delete_consumer_group(self.__conditions_kakfa_group_id, bootstrap_servers=self.bootstrap_servers)
+        self.__stop_subscription("conditions")
 
 
 if __name__ == "__main__":
