@@ -295,7 +295,6 @@ class Asset:
         Returns sample-type attributes for this asset.
 
         Queries the `assets` table for entries where `TYPE = 'Samples'` for the asset UUID.
-        Returns a dictionary mapping attribute IDs to their values.
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each containing:
@@ -310,7 +309,6 @@ class Asset:
         Returns event-type attributes for this asset.
 
         Queries the `assets` table for entries where `TYPE = 'Events'` for the asset UUID.
-        Returns a dictionary mapping attribute IDs to their values.
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each containing:
@@ -325,7 +323,6 @@ class Asset:
         Returns condition-type attributes for this asset.
 
         Queries the `assets` table for entries where `TYPE = 'Condition'` for the asset UUID.
-        Cleans up the `TAG` field by removing any content in curly braces.
 
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each containing:
@@ -340,7 +337,6 @@ class Asset:
         Returns method-type attributes for this asset.
 
         Queries the `assets` table for entries where `TYPE = 'Method'` for the asset UUID.
-        Returns a dictionary mapping attribute IDs to their method values.
 
         Returns:
             Dict[str, Any]: A dictionary where keys are method attribute IDs and values are the corresponding method values.
@@ -475,22 +471,41 @@ class Asset:
         """
         self.producer.send_asset_attribute(attribute_id, asset_attribute)
 
+    def _get_reference_list(self, direction: str, as_assets: bool = False) -> List[Union[str, 'Asset']]:
+        """
+        Retrieves a list of asset references (UUIDs or Asset objects) in the given direction.
+
+        Args:
+            direction (str): Either 'above' or 'below', indicating reference direction.
+            as_assets (bool): If True, returns Asset instances instead of UUID strings.
+
+        Returns:
+            List[Union[str, Asset]]: List of asset UUIDs or Asset objects.
+        """
+        key = f"{self.asset_uuid}|references_{direction}"
+        query = f"SELECT VALUE FROM assets WHERE key='{key}';"
+        df = self.ksql.query(query)
+
+        if df.empty or not df['VALUE'][0].strip():
+            return []
+
+        uuids = [uuid.strip() for uuid in df['VALUE'][0].split(",")]
+        if as_assets:
+            return [Asset(asset_uuid=uuid, ksqlClient=self.ksql) for uuid in uuids]
+        return uuids
+
     def references_above_uuid(self) -> List[str]:
         """
         Retrieves a list of asset UUIDs of assets above the current asset.
 
-        Queries the `assets` table to retrieve the `VALUE` field associated with the key
-        indicating the assets "above" the current one. If the `VALUE` field is empty or
-        contains only whitespace, an empty list is returned.
+        Queries the `assets` table for the `VALUE` field associated with the key indicating
+        the assets "above" the current one. If the `VALUE` field is empty or contains only
+        whitespace, an empty list is returned. Otherwise, a list of asset UUIDs is returned.
 
         Returns:
             List[str]: A list of asset UUIDs (as strings) that are above the current asset.
         """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = self.ksql.query(query)
-        if df.empty or df['VALUE'][0].strip() == "":
-            return []
-        return [item.strip() for item in df['VALUE'][0].split(',')]
+        return self._get_reference_list(direction="above", as_assets=False)
 
     @property
     def references_above(self) -> List['Asset']:
@@ -505,11 +520,7 @@ class Asset:
         Returns:
             List[Asset]: A list of `Asset` objects that are above the current asset.
         """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = self.ksql.query(query)
-        if df.empty or df['VALUE'][0].strip() == "":
-            return []
-        return [Asset(asset_uuid=asset_uuid.strip(), ksqlClient=self.ksql) for asset_uuid in df['VALUE'][0].split(",")]
+        return self._get_reference_list(direction="above", as_assets=True)
 
     def references_below_uuid(self) -> List[str]:
         """
@@ -522,11 +533,7 @@ class Asset:
         Returns:
             List[str]: A list of asset UUIDs (as strings) that are below the current asset.
         """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = self.ksql.query(query)
-        if df.empty or df['VALUE'][0].strip() == "":
-            return []
-        return [item.strip() for item in df['VALUE'][0].split(',')]
+        return self._get_reference_list(direction="below", as_assets=False)
 
     @property
     def references_below(self) -> List['Asset']:
@@ -541,11 +548,33 @@ class Asset:
         Returns:
             List[Asset]: A list of `Asset` objects that are below the current asset.
         """
-        query = f"SELECT VALUE, TYPE FROM assets WHERE key='{self.asset_uuid}|references_below';"
+        return self._get_reference_list(direction="below", as_assets=True)
+
+    def _add_reference(self, direction: str, new_reference: str) -> None:
+        """
+        Adds a reference to another asset in the specified direction.
+
+        Args:
+            direction (str): Either "above" or "below".
+            new_reference (str): UUID of the asset to add as a reference.
+        """
+        key = f"{self.asset_uuid}|references_{direction}"
+        query = f"SELECT VALUE FROM assets WHERE key='{key}';"
         df = self.ksql.query(query)
+
         if df.empty or df['VALUE'][0].strip() == "":
-            return []
-        return [Asset(asset_uuid=asset_uuid.strip(), ksqlClient=self.ksql) for asset_uuid in df['VALUE'][0].split(",")]
+            references = new_reference
+        else:
+            references = f"{new_reference}, {df['VALUE'][0].strip()}"
+
+        self.producer.send_asset_attribute(
+            f"references_{direction}",
+            AssetAttribute(
+                value=references,
+                tag="AssetsReferences",
+                type="OpenFactory"
+            )
+        )
 
     def add_reference_above(self, above_asset_reference: str) -> None:
         """
@@ -558,20 +587,7 @@ class Asset:
         Args:
             above_asset_reference (str): The asset UUID of the asset above the current one to be added.
         """
-        query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_above';"
-        df = self.ksql.query(query)
-        if df.empty or df['VALUE'][0].strip() == "":
-            references = above_asset_reference
-        else:
-            references = above_asset_reference + ', ' + df['VALUE'][0]
-
-        # set the new references_above attribute
-        self.producer.send_asset_attribute('references_above',
-                                           AssetAttribute(
-                                               value=references,
-                                               tag='AssetsReferences',
-                                               type='OpenFactory'
-                                               ))
+        self._add_reference(direction="above", new_reference=above_asset_reference)
 
     def add_reference_below(self, below_asset_reference: str) -> None:
         """
@@ -584,20 +600,7 @@ class Asset:
         Args:
             below_asset_reference (str): The asset UUID of the asset below the current one to be added.
         """
-        query = f"SELECT VALUE FROM assets WHERE key='{self.asset_uuid}|references_below';"
-        df = self.ksql.query(query)
-        if df.empty or df['VALUE'][0].strip() == "":
-            references = below_asset_reference
-        else:
-            references = below_asset_reference + ', ' + df['VALUE'][0]
-
-        # set the new references_below attribute
-        self.producer.send_asset_attribute('references_below',
-                                           AssetAttribute(
-                                               value=references,
-                                               tag='AssetsReferences',
-                                               type='OpenFactory'
-                                               ))
+        self._add_reference(direction="below", new_reference=below_asset_reference)
 
     def wait_until(self, attribute: str, value: Any, timeout: int = 30, use_ksqlDB: bool = False) -> bool:
         """

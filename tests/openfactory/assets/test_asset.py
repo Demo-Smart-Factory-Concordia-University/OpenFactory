@@ -475,7 +475,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, [])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_above';"
         )
 
     def test_references_above_uuid_no_value(self, MockAssetProducer):
@@ -492,7 +492,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, [])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_above';"
         )
 
     def test_references_above_uuid_with_values(self, MockAssetProducer):
@@ -509,7 +509,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, ["uuid1", "uuid2", "uuid3"])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_above';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_above';"
         )
 
     def test_references_below_uuid_empty_result(self, MockAssetProducer):
@@ -523,7 +523,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, [])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_below';"
         )
 
     def test_references_below_uuid_no_value(self, MockAssetProducer):
@@ -540,7 +540,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, [])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_below';"
         )
 
     def test_references_below_uuid_with_values(self, MockAssetProducer):
@@ -557,7 +557,7 @@ class TestAsset(TestCase):
 
         self.assertEqual(result, ["uuid1", "uuid2", "uuid3"])
         ksqlMock.query.assert_called_once_with(
-            "SELECT VALUE, TYPE FROM assets WHERE key='asset-001|references_below';"
+            "SELECT VALUE FROM assets WHERE key='asset-001|references_below';"
         )
 
     @patch('openfactory.assets.asset_class.KafkaAssetConsumer')
