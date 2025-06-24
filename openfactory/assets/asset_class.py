@@ -233,6 +233,24 @@ class Asset:
         df = self.ksql.query(query)
         return df.ID.tolist()
 
+    def _get_attributes_by_type(self, attr_type: str) -> List[Dict[str, Any]]:
+        """
+        Generic method to get attributes from the assets table by TYPE.
+
+        Args:
+            attr_type (str): The type of the asset attribute ('Samples', 'Events', 'Condition').
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries containing 'ID', 'VALUE', and cleaned 'TAG'.
+        """
+        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='{attr_type}';"
+        df = self.ksql.query(query)
+        return [{
+            "ID": row.ID,
+            "VALUE": row.VALUE,
+            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()
+        } for row in df.itertuples()]
+
     def samples(self) -> Dict[str, Any]:
         """
         Returns sample-type attributes for this asset.
@@ -246,13 +264,7 @@ class Asset:
                 - "VALUE" (Any): The value of the sample.
                 - "TAG" (str): The cleaned tag name with placeholders removed.
         """
-        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Samples';"
-        df = self.ksql.query(query)
-        return [{
-            "ID": row.ID,
-            "VALUE": row.VALUE,
-            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
-            for row in df.itertuples()]
+        return self._get_attributes_by_type('Samples')
 
     def events(self) -> Dict[str, Any]:
         """
@@ -267,13 +279,7 @@ class Asset:
                 - "VALUE" (Any): The value of the event.
                 - "TAG" (str): The cleaned tag name with placeholders removed.
         """
-        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Events';"
-        df = self.ksql.query(query)
-        return [{
-            "ID": row.ID,
-            "VALUE": row.VALUE,
-            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
-            for row in df.itertuples()]
+        return self._get_attributes_by_type('Events')
 
     def conditions(self) -> List[Dict[str, Any]]:
         """
@@ -288,13 +294,7 @@ class Asset:
                 - "VALUE" (Any): The value of the condition.
                 - "TAG" (str): The cleaned tag name with placeholders removed.
         """
-        query = f"SELECT ID, VALUE, TAG, TYPE FROM assets WHERE ASSET_UUID='{self.asset_uuid}' AND TYPE='Condition';"
-        df = self.ksql.query(query)
-        return [{
-            "ID": row.ID,
-            "VALUE": row.VALUE,
-            "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()}
-            for row in df.itertuples()]
+        return self._get_attributes_by_type('Condition')
 
     def methods(self) -> Dict[str, Any]:
         """
