@@ -251,7 +251,7 @@ class Asset:
             "TAG": re.sub(r'\{.*?\}', '', row.TAG).strip()
         } for row in df.itertuples()]
 
-    def samples(self) -> Dict[str, Any]:
+    def samples(self) -> List[Dict[str, Any]]:
         """
         Returns sample-type attributes for this asset.
 
@@ -266,7 +266,7 @@ class Asset:
         """
         return self._get_attributes_by_type('Samples')
 
-    def events(self) -> Dict[str, Any]:
+    def events(self) -> List[Dict[str, Any]]:
         """
         Returns event-type attributes for this asset.
 
