@@ -42,7 +42,7 @@ class TestCLI(unittest.TestCase):
         self.runner.invoke(cli, ['config', 'ls'])
         mock_ls_callback.assert_called_once()
 
-    @patch('openfactory.ofa.agent.ls.ls.callback')
+    @patch('openfactory.ofa.agent.ls.callback')
     def test_agent_ls_invoked(self, mock_agent_ls):
         """ Test ofa agent ls command """
         self.runner.invoke(cli, ['agent', 'ls'])
@@ -88,7 +88,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         mock_apps_down.assert_called_once_with(path='dummy.yml', dry_run=False)
 
-    @patch('openfactory.ofa.asset.register.register.callback')
+    @patch('openfactory.ofa.asset.register.callback')
     def test_asset_register_invoked(self, mock_register_callback):
         """ Test ofa asset register command """
         result = self.runner.invoke(cli, ['asset', 'register', 'uuid-123', 'robot'])
@@ -100,7 +100,7 @@ class TestCLI(unittest.TestCase):
             docker_service=''
         )
 
-    @patch('openfactory.ofa.asset.register.register.callback')
+    @patch('openfactory.ofa.asset.register.callback')
     def test_asset_register_with_docker_service(self, mock_register_callback):
         """ Test ofa asset register command with docker service """
         result = self.runner.invoke(cli, [
@@ -114,7 +114,7 @@ class TestCLI(unittest.TestCase):
             docker_service='my_service'
         )
 
-    @patch('openfactory.ofa.asset.deregister.deregister.callback')
+    @patch('openfactory.ofa.asset.deregister.callback')
     def test_asset_deregister_invoked(self, mock_deregister_callback):
         """ Test ofa asset deregister command """
         result = self.runner.invoke(cli, ['asset', 'deregister', 'uuid-123'])
