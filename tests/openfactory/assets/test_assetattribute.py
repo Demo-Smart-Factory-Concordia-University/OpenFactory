@@ -1,9 +1,12 @@
 import unittest
 from datetime import datetime, timezone
-from openfactory.assets.asset_class import AssetAttribute
+from openfactory.assets.utils import AssetAttribute
 
 
 class TestAssetAttribute(unittest.TestCase):
+    """
+    Test class AssetAttribute
+    """
 
     def test_create_with_defaults(self):
         """ Test creating an AssetAttribute with default timestamp """

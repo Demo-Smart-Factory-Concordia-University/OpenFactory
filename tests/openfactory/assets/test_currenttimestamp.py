@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timezone
-from openfactory.assets.asset_class import current_timestamp
+from openfactory.assets.utils import current_timestamp
 
 
 class TestCurrentTimestamp(unittest.TestCase):
