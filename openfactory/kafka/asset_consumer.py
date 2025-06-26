@@ -1,10 +1,10 @@
-""" Kafka consumer for OpenFactory's ASSETS_STREAM. """
+""" Kafka consumer for the OpenFactory stream ASSETS_STREAM. """
 
 import json
 import threading
 import traceback
 from confluent_kafka import Consumer, KafkaError
-from openfactory.kafka import CaseInsensitiveDict
+from openfactory.kafka.case_insensitive_dict import CaseInsensitiveDict
 import openfactory.config as config
 from openfactory.kafka.ksql import KSQLDBClient
 from openfactory.kafka.kafka_logger import kafka_logger
@@ -46,6 +46,7 @@ class KafkaAssetConsumer:
     """
 
     consumer_timeout = 0.1
+    KSQL_ASSET_STREAM = 'ASSETS_STREAM'
 
     def __init__(
         self,
@@ -66,7 +67,7 @@ class KafkaAssetConsumer:
             bootstrap_servers (str): Kafka bootstrap servers (default from config).
         """
         self.ksql = ksqlClient
-        self.topic = self.ksql.get_kafka_topic('ASSETS_STREAM')
+        self.topic = self.ksql.get_kafka_topic(self.KSQL_ASSET_STREAM)
         self.bootstrap_servers = bootstrap_servers
         self.group_id = consumer_group_id
         self.key = asset_uuid
