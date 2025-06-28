@@ -14,7 +14,7 @@ class TestOpenFactoryApp(unittest.TestCase):
         self.ksql_mock = MagicMock()
 
         # Patch AssetProducer
-        self.asset_producer_patcher = patch("openfactory.assets.asset_class.AssetProducer")
+        self.asset_producer_patcher = patch("openfactory.assets.asset_base.AssetProducer")
         self.MockAssetProducer = self.asset_producer_patcher.start()
         self.addCleanup(self.asset_producer_patcher.stop)
 

@@ -3,7 +3,8 @@
 import json
 from confluent_kafka import Producer
 from typing import Union, Optional
-from openfactory.kafka import KSQLDBClient, KafkaAssetConsumer
+from openfactory.kafka.ksql import KSQLDBClient
+from openfactory.kafka.asset_consumer import KafkaAssetConsumer
 from openfactory.assets.utils import AssetAttribute
 import openfactory.config as config
 

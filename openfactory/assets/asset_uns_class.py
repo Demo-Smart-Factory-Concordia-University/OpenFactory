@@ -1,33 +1,35 @@
-""" OpenFactory Assets class. """
+""" OpenFactory AssetUNS class. """
 
-import time
 from typing import Union, List
 import openfactory.config as config
 from openfactory.assets.asset_base import BaseAsset
-from openfactory.kafka import KafkaAssetConsumer, KSQLDBClient
+from openfactory.kafka import KafkaAssetUNSConsumer
 
 
-class Asset(BaseAsset):
+class AssetUNS(BaseAsset):
     """
-    Represents an OpenFactory asset with Kafka integration.
+    Represents an OpenFactory asset using the UNS identifier.
 
     This class encapsulates asset metadata and a Kafka producer responsible for sending asset data.
-    It uses the ksqlDB topology based on the ASSETS_STREAM stream to handle asset data.
+    It uses the ksqlDB topology based on the ASSETS_STREAM_UNS stream to handle asset data.
 
     Attributes:
-        asset_uuid (str): Unique identifier of the asset.
+        KSQL_ASSET_TABLE (str): Name of ksqlDB table of asset states (`assets_uns`)
+        KSQL_ASSET_ID (str): ksqlDB ID used to identify the asset (`uns_id`) in the KSQL_ASSET_TABLE
+        ASSET_ID (str): value of the identifer of the asset (uns_id) used in the KSQL_ASSET_TABLE
         ksql (KSQLDBClient): Client for interacting with ksqlDB.
         bootstrap_servers (str): Kafka bootstrap server address.
+        ASSET_CONSUMER_CLASS (KafkaAssetUNSConsumer): Kafka consumer class for reading messages from Asset strean.
         producer (AssetProducer): Kafka producer instance for sending asset messages.
 
     Example usage:
     ```python
     import time
-    from openfactory.assets import Asset
+    from openfactory.assets import AssetUNS
     from openfactory.kafka import KSQLDBClient
 
     ksql = KSQLDBClient('http://localhost:8088')
-    cnc = Asset('PROVER3018', ksqlClient=ksql)
+    cnc = AssetUNS('cnc-003', ksqlClient=ksql)
 
     # list samples
     print(cnc.samples())
@@ -70,23 +72,22 @@ class Asset(BaseAsset):
         print("Consumers stopped")
     finally:
         ksql.close()
-    ```
     """
 
-    KSQL_ASSET_TABLE = 'assets'
-    KSQL_ASSET_ID = 'asset_uuid'
-    ASSET_CONSUMER_CLASS = KafkaAssetConsumer
+    KSQL_ASSET_TABLE = 'assets_uns'
+    KSQL_ASSET_ID = 'uns_id'
+    ASSET_CONSUMER_CLASS = KafkaAssetUNSConsumer
 
-    def __init__(self, asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, uns_id, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
         """
         Initializes the Asset with metadata and a Kafka producer.
 
         Args:
-            asset_uuid (str): UUID identifier of the asset.
+            uns_id (str): UNS identifier of the asset.
             ksqlClient (KSQLDBClient): Client for interacting with ksqlDB.
             bootstrap_servers (str): Kafka bootstrap server address. Defaults to config setting.
         """
-        object.__setattr__(self, 'ASSET_ID', asset_uuid)
+        object.__setattr__(self, 'ASSET_ID', uns_id)
         super().__init__(ksqlClient, bootstrap_servers)
 
     @property
@@ -97,9 +98,13 @@ class Asset(BaseAsset):
         Returns:
             str: The asset's UUID.
         """
-        return self.ASSET_ID
+        query = f"SELECT asset_uuid FROM asset_to_uns_map WHERE {self.KSQL_ASSET_ID}='{self.ASSET_ID}';"
+        df = self.ksql.query(query)
+        if df.empty:
+            return None
+        return df['ASSET_UUID'][0]
 
-    def _get_reference_list(self, direction: str, as_assets: bool = False) -> List[Union[str, 'Asset']]:
+    def _get_reference_list(self, direction: str, as_assets: bool = False) -> List[Union[str, 'AssetUNS']]:
         """
         Retrieves a list of asset references (UUIDs or AssetUNS objects) in the given direction.
 
@@ -110,68 +115,14 @@ class Asset(BaseAsset):
         Returns:
             List: List of asset UUIDs or AssetUNS objects.
         """
-        key = f"{self.asset_uuid}|references_{direction}"
-        query = f"SELECT VALUE FROM assets WHERE key='{key}';"
+        key = f"{self.ASSET_ID}|references_{direction}"
+        query = f"SELECT VALUE FROM {self.KSQL_ASSET_TABLE} WHERE key='{key}';"
         df = self.ksql.query(query)
 
         if df.empty or not df['VALUE'][0].strip():
             return []
 
-        uuids = [uuid.strip() for uuid in df['VALUE'][0].split(",")]
+        uns_ids = [uns_id.strip() for uns_id in df['VALUE'][0].split(",")]
         if as_assets:
-            return [Asset(asset_uuid=uuid, ksqlClient=self.ksql) for uuid in uuids]
-        return uuids
-
-
-if __name__ == "__main__":
-
-    # Example usage of Asset
-    ksql = KSQLDBClient(config.KSQLDB_URL)
-    cnc = Asset('PROVER3018', ksqlClient=ksql)
-
-    # list samples
-    print(cnc.samples())
-    print(cnc.Zact.value)
-    print(cnc.Zact.type)
-    print(cnc.Zact.timestamp)
-
-    # redefine some values
-    cnc.Zact = 10.0
-    print(cnc.Zact.value)
-
-    # subscriptions
-    def on_messages(msg_key, msg_value):
-        """ Callback to process received messages. """
-        print(f"[Message] [{msg_key}] {msg_value}")
-
-    def on_sample(msg_key, msg_value):
-        """ Callback to process received samples. """
-        print(f"[Sample] [{msg_key}] {msg_value}")
-
-    def on_event(msg_key, msg_value):
-        """ Callback to process received events. """
-        print(f"[Event] [{msg_key}] {msg_value}")
-
-    def on_condition(msg_key, msg_value):
-        """ Callback to process received conditions. """
-        print(f"[Condition] [{msg_key}] {msg_value}")
-
-    cnc.subscribe_to_messages(on_messages, 'demo_messages_group')
-    cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
-    cnc.subscribe_to_events(on_event, 'demo_events_group')
-    cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
-
-    # run a main loop while subscriptions remain active
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Stopping consumer threads ...")
-        cnc.stop_messages_subscription()
-        cnc.stop_samples_subscription()
-        cnc.stop_events_subscription()
-        cnc.stop_conditions_subscription()
-        print("Consumers stopped")
-    finally:
-        ksql.close()
-        print("Closed conection to ksqlDB server")
+            return [AssetUNS(uns_id, ksqlClient=self.ksql) for uns_id in uns_ids]
+        return uns_ids

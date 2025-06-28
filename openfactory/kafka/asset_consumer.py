@@ -34,8 +34,8 @@ class KafkaAssetConsumer:
                 return None
 
     consumer = PROVER3018_EventsConsumer(
-        consumer_group_id="demo_ofa_assets_consumer_group",
         asset_uuid="PROVER3018",
+        consumer_group_id="demo_ofa_assets_consumer_group",
         on_message=on_message,
         ksqlClient=KSQLDBClient('http://localhost:8088'),
         bootstrap_servers="localhost:9092"
@@ -50,8 +50,8 @@ class KafkaAssetConsumer:
 
     def __init__(
         self,
-        consumer_group_id: str,
         asset_uuid: str,
+        consumer_group_id: str,
         on_message: callable,
         ksqlClient: KSQLDBClient,
         bootstrap_servers: str = config.KAFKA_BROKER
@@ -60,8 +60,8 @@ class KafkaAssetConsumer:
         Initialize the Kafka consumer.
 
         Args:
-            consumer_group_id (str): Kafka consumer group ID.
             asset_uuid (str): UUID of the asset to filter messages by.
+            consumer_group_id (str): Kafka consumer group ID.
             on_message (Callable): Callback to process each valid message.
             ksqlClient (KSQLDBClient): Client object to get Kafka topic information.
             bootstrap_servers (str): Kafka bootstrap servers (default from config).
@@ -180,8 +180,8 @@ if __name__ == "__main__":
                 return None
 
     consumer = PROVER3018_EventsConsumer(
-        consumer_group_id="demo_ofa_assets_consumer_group",
         asset_uuid="PROVER3018",
+        consumer_group_id="demo_ofa_assets_consumer_group",
         on_message=on_message,
         ksqlClient=ksql,
         bootstrap_servers="localhost:9092"

@@ -1,6 +1,7 @@
 """ Kafka consumer for the OpenFactory  stream ASSETS_STREAM_UNS. """
 
 from openfactory.kafka import KafkaAssetConsumer
+from openfactory.kafka.ksql import KSQLDBClient
 import openfactory.config as config
 
 
@@ -14,18 +15,25 @@ class KafkaAssetUNSConsumer(KafkaAssetConsumer):
 
     KSQL_ASSET_STREAM = 'ASSETS_STREAM_UNS'
 
-    def __init__(self, consumer_group_id, asset_uns_id, on_message, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(
+            self,
+            asset_uns_id: str,
+            consumer_group_id: str,
+            on_message: callable,
+            ksqlClient: KSQLDBClient,
+            bootstrap_servers: str = config.KAFKA_BROKER
+            ):
         """
         Initialize the Kafka consumer.
 
         Args:
-            consumer_group_id (str): Kafka consumer group ID.
             asset_uns_id (str): UNS_ID of the asset to filter messages by.
+            consumer_group_id (str): Kafka consumer group ID.
             on_message (Callable): Callback to process each valid message.
             ksqlClient (KSQLDBClient): Client object to get Kafka topic information.
             bootstrap_servers (str): Kafka bootstrap servers (default from config).
         """
-        super().__init__(consumer_group_id, asset_uns_id, on_message, ksqlClient, bootstrap_servers)
+        super().__init__(asset_uns_id, consumer_group_id, on_message, ksqlClient, bootstrap_servers)
 
 
 if __name__ == "__main__":
@@ -63,8 +71,8 @@ if __name__ == "__main__":
                 return None
 
     consumer = CNC_EventsConsumer(
-        consumer_group_id="demo_ofa_assets_uns_consumer_group",
         asset_uns_id="cnc",
+        consumer_group_id="demo_ofa_assets_uns_consumer_group",
         on_message=on_message,
         ksqlClient=ksql,
         bootstrap_servers="localhost:9092"
