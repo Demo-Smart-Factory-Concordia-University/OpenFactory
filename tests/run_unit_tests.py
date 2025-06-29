@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 
+# Add project root to sys.path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
@@ -15,4 +16,7 @@ test_suite = test_loader.discover(
 
 # Run the tests
 test_runner = unittest.TextTestRunner(verbosity=2)
-test_runner.run(test_suite)
+result = test_runner.run(test_suite)
+
+# Exit with non-zero code if any test failed
+sys.exit(not result.wasSuccessful())
