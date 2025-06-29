@@ -156,7 +156,7 @@ class OpenFactoryManager(OpenFactory):
                                 tag='NetworkPort'
                             ))
 
-        user_notify.success(f"Agent {device_uuid.lower()}-agent deployed successfully")
+        user_notify.success(f"Agent {agent_uuid} deployed successfully")
 
     def deploy_mtconnect_adapter(self, device_uuid: str, adapter: Dict) -> None:
         """
@@ -240,7 +240,7 @@ class OpenFactoryManager(OpenFactory):
             MTC_AGENT = f"http://{device['uuid'].lower()}-agent:5000"
 
         service_name = device['uuid'].lower() + '-producer'
-        producer_uuid = device['uuid'] + '-PRODUCER'
+        producer_uuid = device['uuid'].upper() + '-PRODUCER'
         try:
             self.deployment_strategy.deploy(
                 image=config.MTCONNECT_PRODUCER_IMAGE,
@@ -267,7 +267,7 @@ class OpenFactoryManager(OpenFactory):
         producer = Asset(producer_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         producer.add_reference_above(device['uuid'])
 
-        user_notify.success(f"Kafka producer {service_name} deployed successfully")
+        user_notify.success(f"Kafka producer {producer_uuid} deployed successfully")
 
     def deploy_device_supervisor(self, device_uuid: str, supervisor: Dict) -> None:
         """
@@ -331,7 +331,7 @@ class OpenFactoryManager(OpenFactory):
         supervisor = Asset(supervisor_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         supervisor.add_reference_above(device_uuid)
 
-        user_notify.success(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
+        user_notify.success(f"Supervisor {supervisor_uuid} deployed successfully")
 
     def deploy_openfactory_application(self, application: Dict) -> None:
         """
@@ -544,7 +544,7 @@ class OpenFactoryManager(OpenFactory):
         try:
             self.deployment_strategy.remove(device_uuid.lower() + '-supervisor')
             deregister_asset(f"{device_uuid.upper()}-SUPERVISOR", ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
-            user_notify.success(f"Supervisor {device_uuid.upper()}-SUPERVISOR removed successfully")
+            user_notify.success(f"Supervisor for device {device_uuid} shut down successfully")
         except docker.errors.NotFound:
             # no supervisor
             pass
@@ -552,7 +552,7 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(err)
 
         deregister_asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
-        user_notify.success(f"{device_uuid} shut down successfully")
+        user_notify.success(f"Device {device_uuid} shut down successfully")
 
     def shut_down_devices_from_config_file(self, yaml_config_file: str) -> None:
         """

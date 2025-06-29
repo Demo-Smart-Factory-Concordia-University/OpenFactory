@@ -146,7 +146,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         self.assertEqual(attr_value.tag, 'NetworkPort')
 
         # Ensure the notification method was called
-        mock_user_notify.success.assert_called_once_with("Agent device-uuid-123-agent deployed successfully")
+        mock_user_notify.success.assert_called_once_with("Agent DEVICE-UUID-123-AGENT deployed successfully")
 
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
@@ -200,7 +200,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Expected environment variables (env)
         expected_env = [
             f'KAFKA_BROKER={mock_config.KAFKA_BROKER}',
-            f'KAFKA_PRODUCER_UUID={device["uuid"]}-PRODUCER',
+            f'KAFKA_PRODUCER_UUID={device["uuid"].upper()}-PRODUCER',
             f'MTC_AGENT=http://{device["uuid"].lower()}-agent:5000'
         ]
 
@@ -222,14 +222,14 @@ class TestOpenFactoryManager(unittest.TestCase):
         self.assertEqual(kwargs['constraints'], expected_constraints)
 
         # Ensure register_asset was called
-        mock_register_asset.assert_called_once_with(device['uuid'] + '-PRODUCER',
+        mock_register_asset.assert_called_once_with(device['uuid'].upper() + '-PRODUCER',
                                                     'KafkaProducer',
                                                     ksqlClient=ksqlMock,
                                                     bootstrap_servers='mokded_bootstrap_servers',
                                                     docker_service=device['uuid'].lower() + '-producer')
 
         # Ensure the notification method was called
-        mock_user_notify.success.assert_called_once_with(f"Kafka producer {device['uuid'].lower()}-producer deployed successfully")
+        mock_user_notify.success.assert_called_once_with(f"Kafka producer {device['uuid'].upper()}-PRODUCER deployed successfully")
 
     @patch("openfactory.openfactory_manager.config")
     @patch("openfactory.openfactory_manager.user_notify")
@@ -324,7 +324,7 @@ class TestOpenFactoryManager(unittest.TestCase):
                                                     docker_service=device_uuid.lower() + '-supervisor')
 
         # Ensure the notification method was called
-        mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.lower()}-supervisor deployed successfully")
+        mock_user_notify.success.assert_called_once_with(f"Supervisor {device_uuid.upper()}-SUPERVISOR deployed successfully")
 
     @patch("openfactory.openfactory_manager.config")
     @patch('openfactory.openfactory_manager.register_asset')
@@ -597,8 +597,8 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_user_notify.success.assert_any_call(f"Adapter for device {device_uuid} shut down successfully")
         mock_user_notify.success.assert_any_call(f"Kafka producer for device {device_uuid} shut down successfully")
         mock_user_notify.success.assert_any_call(f"MTConnect Agent for device {device_uuid} shut down successfully")
-        mock_user_notify.success.assert_any_call(f"Supervisor {device_uuid.upper()}-SUPERVISOR removed successfully")
-        mock_user_notify.success.assert_any_call(f"{device_uuid} shut down successfully")
+        mock_user_notify.success.assert_any_call(f"Supervisor for device {device_uuid} shut down successfully")
+        mock_user_notify.success.assert_any_call(f"Device {device_uuid} shut down successfully")
 
         # Ensure deregister_asset was called for all services
         mock_deregister_asset.assert_any_call(device_uuid + '-PRODUCER', ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers')
