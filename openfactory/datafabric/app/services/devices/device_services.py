@@ -19,7 +19,7 @@ class DeviceServicesList(ServicesListView):
         Get services from all assets linked below the device
         """
         device = Asset(self.device_uuid, ksqlClient=current_app.ksql)
-        return [asset.DockerService.value for asset in device.references_below]
+        return [asset.DockerService.value for asset in device.references_below()]
 
     def fetch_data(self, device_uuid):
         """ Fetch data from devices table `"""
