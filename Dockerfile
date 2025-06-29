@@ -5,7 +5,7 @@
 # docker run --network factory-net --rm -it ofa/ofa bash
 
 
-FROM python:3.10
+FROM python:3.12
 
 # Build arguments
 ARG UNAME=ofauser
