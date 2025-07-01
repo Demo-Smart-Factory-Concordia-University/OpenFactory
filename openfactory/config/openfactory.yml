@@ -1,7 +1,21 @@
 # OpenFactory configuration
 
+# ---------------------------------------------------------------------------
+# General configurations
+
 # OpenFactory Version
-OPENFACTORY_VERSION: ${OPENFACTORY_VERSION}
+OPENFACTORY_UNS_SCHEMA: ${OPENFACTORY_UNS_SCHEMA}
+
+# OpenFactory Log Level
+OPENFACTORY_LOG_LEVEL: INFO
+KSQLDB_LOG_LEVEL: WARNING
+KAFKA_LOG_LEVEL: WARNING
+
+# OpenFactory UNS definiton
+OPENFACTORY_UNS_TEMPLATE: ${OPENFACTORY_UNS_TEMPLATE}
+
+# ---------------------------------------------------------------------------
+# OpenFactory cluster configurations
 
 # OpenFactory User
 OPENFACTORY_USER: openfactory
@@ -23,13 +37,11 @@ OPENFACTORY_NETWORK: factory-net
 # Traefik configurations
 OPENFACTORY_DOMAIN: ${OPENFACTORY_DOMAIN}
 
-# OpenFactory Log Level
-OPENFACTORY_LOG_LEVEL: INFO
-KSQLDB_LOG_LEVEL: WARNING
-KAFKA_LOG_LEVEL: WARNING
-
 # OpenFactory Database
 SQL_ALCHEMY_CONN: ${SQL_ALCHEMY_CONN}
+
+# ---------------------------------------------------------------------------
+# Kafka related configurations
 
 # Kafka-Cluster
 # Comma-separated list of broker addresses (hostnames or IPs) with ports
@@ -39,12 +51,16 @@ KAFKA_BROKER: ${KAFKA_BROKER}
 # ksqlDB server URL
 KSQLDB_URL: ${KSQLDB_URL}
 
+# ---------------------------------------------------------------------------
 # Docker Images
+
 MTCONNECT_AGENT_IMAGE: ghcr.io/demo-smart-factory-concordia-university/mtcagent:v2.5.0.4
 MTCONNECT_PRODUCER_IMAGE: ghcr.io/demo-smart-factory-concordia-university/kafka-mtc-producer:${OPENFACTORY_VERSION}
 INFLUXDB_CONNECTOR_IMAGE: ghcr.io/demo-smart-factory-concordia-university/influxdb_connector:latest
 
-# InfluxDB
+# ---------------------------------------------------------------------------
+# InfluxDB related configurations
+
 INFLUXDB_URL: ${INFLUXDB_URL}
 INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
 

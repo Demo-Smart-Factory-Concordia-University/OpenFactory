@@ -145,6 +145,10 @@ class Device(BaseModel):
     ksql_tables: Optional[List[str]] = None
     influxdb: Optional[InfluxDB] = None
 
+    model_config = {
+        "extra": "ignore"
+    }
+
     def __init__(self, **data: Dict):
         """
         Initialize the Device model.
