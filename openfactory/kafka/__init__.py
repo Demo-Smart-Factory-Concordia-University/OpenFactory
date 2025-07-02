@@ -5,6 +5,7 @@ from openfactory.kafka.case_insensitive_dict import CaseInsensitiveDict
 from openfactory.kafka.asset_consumer import KafkaAssetConsumer
 from openfactory.kafka.asset_uns_consumer import KafkaAssetUNSConsumer
 from openfactory.kafka.commands_consumer import KafkaCommandsConsumer
+from openfactory.kafka.asset_producer import AssetProducer
 from openfactory.kafka.ksql import KSQLDBClient
 from openfactory.kafka.kafka_logger import kafka_logger
 import openfactory.config as config
