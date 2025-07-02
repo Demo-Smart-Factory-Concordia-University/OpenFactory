@@ -1,10 +1,9 @@
-""" OpenFactory Assets Kafka Producers / Consumers. """
+""" OpenFactory Assets Kafka Producers. """
 
 import json
 from confluent_kafka import Producer
-from typing import Union, Optional
+from typing import Union
 from openfactory.kafka.ksql import KSQLDBClient
-from openfactory.kafka.asset_consumer import KafkaAssetConsumer
 from openfactory.assets.utils import AssetAttribute
 import openfactory.config as config
 
@@ -58,42 +57,3 @@ class AssetProducer(Producer):
                      key=self.asset_uuid,
                      value=json.dumps(msg))
         self.flush()
-
-
-class TypedKafkaConsumer(KafkaAssetConsumer):
-    """
-    Kafka consumer that filters messages based on a specific expected type.
-
-    This subclass of `KafkaAssetConsumer` adds filtering capability by inspecting
-    the 'type' field of incoming messages. If an expected type is provided, only
-    messages matching that type will be passed through; otherwise, all messages
-    are accepted.
-    """
-
-    def __init__(self, expected_type: Optional[str], *args, **kwargs):
-        """
-        Initializes the TypedKafkaConsumer.
-
-        Args:
-            expected_type (Optional[str]): The message type to filter for ('Samples', 'Events', 'Conditions').
-                                           If None, no filtering is applied.
-            *args: Positional arguments passed to the base KafkaAssetConsumer.
-            **kwargs: Keyword arguments passed to the base KafkaAssetConsumer.
-        """
-        self.expected_type = expected_type
-        super().__init__(*args, **kwargs)
-
-    def filter_messages(self, msg_value):
-        """
-        Filters Kafka messages based on the expected type.
-
-        Args:
-            msg_value (dict): The Kafka message value to filter.
-
-        Returns:
-            dict or None: The message if it matches the expected type or if no type filtering is applied;
-                          otherwise, returns None to discard the message.
-        """
-        if not self.expected_type:
-            return msg_value
-        return msg_value if msg_value.get('type') == self.expected_type else None

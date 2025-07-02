@@ -1,7 +1,7 @@
 """ Asset registration and deregistration in OpenFactory. """
 
 from openfactory.assets.utils import AssetAttribute
-from openfactory.assets.kafka import AssetProducer
+from openfactory.kafka import AssetProducer
 from openfactory.kafka.ksql import KSQLDBClient
 import openfactory.config as config
 

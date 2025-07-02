@@ -1,7 +1,7 @@
 import unittest
 import json
 from unittest.mock import MagicMock
-from openfactory.assets.kafka import AssetProducer
+from openfactory.kafka import AssetProducer
 
 
 class MockAssetAttribute:

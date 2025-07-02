@@ -10,7 +10,7 @@ from confluent_kafka import KafkaError
 import openfactory.config as config
 from openfactory.exceptions import OFAException
 from openfactory.kafka import KSQLDBClient, KafkaAssetConsumer, KafkaAssetUNSConsumer, CaseInsensitiveDict, delete_consumer_group
-from openfactory.assets.kafka import AssetProducer
+from openfactory.kafka import AssetProducer
 from openfactory.assets.utils import AssetAttribute
 
 
