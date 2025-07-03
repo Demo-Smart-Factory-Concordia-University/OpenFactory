@@ -33,6 +33,7 @@ nitpick_ignore = [
 
 
 templates_path = ['_templates']
+html_css_files = ['custom.css']
 exclude_patterns = []
 
 html_theme = 'pydata_sphinx_theme'
