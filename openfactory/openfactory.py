@@ -36,7 +36,7 @@ class OpenFactory:
         Get list of asset UUIDs deployed on OpenFactory.
 
         Returns:
-            List[str]: UUIDs of all assets.
+            List[str]: UUIDs of all deployed assets.
         """
         query = "SELECT ASSET_UUID FROM assets_type;"
         df = self.ksql.query(query)
@@ -47,26 +47,26 @@ class OpenFactory:
         Get list of Asset objects deployed on OpenFactory.
 
         Returns:
-            List[Asset]: Asset instances.
+            List[Asset]: Deployed Asset instances.
         """
         return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.assets_uuid()]
 
     def assets_availability(self) -> DataFrame:
         """
-        Get availability data for all assets.
+        Get availability data for all deployed assets.
 
         Returns:
-            pandas.DataFrame: Availability data.
+            DataFrame: Availability data of deployed assets.
         """
         query = "SELECT * FROM assets_avail;"
         return self.ksql.query(query)
 
     def assets_docker_services(self) -> DataFrame:
         """
-        Get Docker services associated with all assets.
+        Get Docker services associated with all deployed assets.
 
         Returns:
-            pandas.DataFrame: Docker services data.
+            DataFrame: Docker services data of deployed assets.
         """
         query = "SELECT * FROM docker_services;"
         return self.ksql.query(query)
@@ -76,7 +76,7 @@ class OpenFactory:
         Get UUIDs of all devices deployed on OpenFactory.
 
         Returns:
-            List[str]: UUIDs of device-type assets.
+            List[str]: UUIDs of deployed device-type assets.
         """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Device';"
         df = self.ksql.query(query)
@@ -84,19 +84,19 @@ class OpenFactory:
 
     def devices(self) -> List[Asset]:
         """
-        Get Asset objects corresponding to devices.
+        Get Asset objects corresponding to deployed devices.
 
         Returns:
-            List[Asset]: Device assets.
+            List[Asset]: Deployed device-type assets.
         """
         return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.devices_uuid()]
 
     def agents_uuid(self) -> List[str]:
         """
-        Get UUIDs of MTConnect agents.
+        Get UUIDs of deployed MTConnect agents.
 
         Returns:
-            List[str]: UUIDs of MTConnect agents.
+            List[str]: UUIDs of deployed MTConnect agents.
         """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'MTConnectAgent';"
         df = self.ksql.query(query)
@@ -104,19 +104,19 @@ class OpenFactory:
 
     def agents(self) -> List[Asset]:
         """
-        Get Asset objects corresponding to MTConnect agents.
+        Get `Asset` objects corresponding to deployed MTConnect agents.
 
         Returns:
-            List[Asset]: MTConnect agent assets.
+            List[Asset]: Deployed MTConnect agent assets.
         """
         return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.agents_uuid()]
 
     def producers_uuid(self) -> List[str]:
         """
-        Get UUIDs of Kafka producers.
+        Get UUIDs of deployed Kafka producers.
 
         Returns:
-            List[str]: UUIDs of Kafka producer assets.
+            List[str]: UUIDs of deployed Kafka producer assets.
         """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'KafkaProducer';"
         df = self.ksql.query(query)
@@ -124,7 +124,7 @@ class OpenFactory:
 
     def producers(self) -> List[Asset]:
         """
-        Get Asset objects corresponding to Kafka producers.
+        Get Asset objects corresponding to deployed Kafka producers.
 
         Returns:
             List[Asset]: Kafka producer assets.
@@ -133,10 +133,10 @@ class OpenFactory:
 
     def supervisors_uuid(self) -> List[str]:
         """
-        Get UUIDs of Supervisors.
+        Get UUIDs of deployed Supervisors.
 
         Returns:
-            List[str]: UUIDs of Supervisor assets.
+            List[str]: UUIDs of deployed supervisor-type assets.
         """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'Supervisor';"
         df = self.ksql.query(query)
@@ -144,19 +144,19 @@ class OpenFactory:
 
     def supervisors(self) -> List[Asset]:
         """
-        Get Asset objects corresponding to Supervisors.
+        Get Asset objects corresponding to deployed Supervisors.
 
         Returns:
-            List[Asset]: Supervisor assets.
+            List[Asset]: Deployed supervisor-type assets.
         """
         return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.supervisors_uuid()]
 
     def applications_uuid(self) -> List[str]:
         """
-        Get UUIDs of OpenFactory applications.
+        Get UUIDs of deployed OpenFactory applications.
 
         Returns:
-            List[str]: UUIDs of OpenFactory application assets.
+            List[str]: UUIDs of deployed OpenFactory application-type assets.
         """
         query = "SELECT ASSET_UUID FROM assets_type WHERE TYPE = 'OpenFactoryApp';"
         df = self.ksql.query(query)
@@ -164,9 +164,9 @@ class OpenFactory:
 
     def applications(self) -> List[Asset]:
         """
-        Get Asset objects corresponding to OpenFactory applications.
+        Get Asset objects corresponding to deployed OpenFactory applications.
 
         Returns:
-            List[Asset]: OpenFactory application assets.
+            List[Asset]: Deployed OpenFactory application-type assets.
         """
         return [Asset(uuid, self.ksql, self.bootstrap_servers) for uuid in self.applications_uuid()]

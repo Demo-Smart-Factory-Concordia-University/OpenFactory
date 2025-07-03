@@ -17,8 +17,10 @@ class OpenFactoryCluster():
     OpenFactory Cluster Manager.
 
     Allows to manage the OpenFactory cluster.
-    User requires Docker access on all nodes of the OpenFactory cluster
-    and ssh access to all nodes using the config.OPENFACTORY_USER.
+
+    Important:
+        User requires Docker access on all nodes of the OpenFactory cluster
+        and ssh access to all nodes using the config.OPENFACTORY_USER.
     """
 
     def add_label(self, node_name: str, node_details: Dict[str, Any]) -> None:
@@ -31,9 +33,12 @@ class OpenFactoryCluster():
 
         Args:
             node_name (str): The name to assign as a label to the Docker node.
-            node_details (Dict[str, Any]): A dictionary containing the IP address of the node
-                                           under the 'ip' key and optionally additional labels
-                                           under the 'labels' key.
+            node_details (Dict): Dictionary  with required 'ip' and optional 'labels' keys.
+
+        Example:
+            .. code-block:: python
+
+                self.add_label("node-3", {"ip": "10.0.0.5", "labels": {"plant": "Plant-A", "role": "stream-apps"}})
         """
         node = None
         for n in dal.docker_client.nodes.list():
@@ -55,14 +60,22 @@ class OpenFactoryCluster():
         """
         Creates Docker Swarm manager nodes from a given configuration.
 
-        For each manager node specified in the input dictionary, this function connects via SSH,
-        checks if the node is already part of a Swarm, and if not, joins it to the Swarm as a manager.
-        It also assigns appropriate labels to the node and notifies the user of success or failure.
+        For each manager node in the input dictionary, connects via SSH, checks swarm membership,
+        joins as a manager if needed, applies labels, and reports success or failure.
 
         Args:
-            managers (Dict[str, Dict[str, Any]]): A dictionary where keys are manager names and values
-                are dictionaries containing at least the 'ip' key, and optionally a 'labels' key for node labels.
+            managers (Dict): Dictionary with manager names as keys and values as dicts with required 'ip' and optional 'labels'.
+
+        Example:
+            .. code-block:: python
+
+                managers = {
+                    "manager1": {"ip": "10.0.0.10", "labels": {"role": "primary"}},
+                    "manager2": {"ip": "10.0.0.11"}
+                }
+                self.create_managers(managers)
         """
+
         for manager, details in managers.items():
             try:
                 ip = details['ip']
@@ -81,14 +94,22 @@ class OpenFactoryCluster():
         """
         Creates Docker Swarm worker nodes from a given configuration.
 
-        For each worker node specified in the input dictionary, this function connects via SSH,
-        checks if the node is already part of a Swarm, and if not, joins it as a worker. It then
-        assigns appropriate labels.
+        Connects via SSH to each worker node, checks swarm membership, joins if needed,
+        and applies labels.
 
         Args:
-            workers (Dict[str, Dict[str, Any]]): A dictionary where keys are worker names and values
-                are dictionaries containing at least the 'ip' key, and optionally a 'labels' key for node labels.
+            workers (Dict): Dictionary with worker names as keys and values as dicts with required 'ip' and optional 'labels'.
+
+        Example:
+            .. code-block:: python
+
+                workers = {
+                    "worker1": {"ip": "10.0.0.20", "labels": {"role": "compute"}},
+                    "worker2": {"ip": "10.0.0.21"}
+                }
+                self.create_workers(workers)
         """
+
         for worker, details in workers.items():
             try:
                 ip = details['ip']
@@ -111,8 +132,7 @@ class OpenFactoryCluster():
         including manager and worker nodes, and provisions them using Docker Swarm.
 
         Args:
-            stack_config_file (str): Path to the YAML configuration file
-                describing the infrastructure stack.
+            stack_config_file (str): Path to the YAML configuration file describing the infrastructure stack.
         """
         infra = get_infrastructure_from_config_file(stack_config_file)
 
@@ -126,15 +146,25 @@ class OpenFactoryCluster():
         """
         Removes worker nodes from the Docker Swarm cluster.
 
-        This function:
-        1. Drains each worker node by setting its availability to 'drain'.
-        2. Remotely connects to the node and removes it from the Swarm.
-        3. Removes the node from the cluster via the manager node.
+        Drains each worker node, connects remotely to remove it from the Swarm,
+        and removes the node from the cluster manager.
 
         Args:
-            workers (Dict[str, Dict[str, Any]]): A dictionary where keys are worker names and values
-                contain node details including the 'ip' key.
-            node_ip_map (Dict[str, str]): A mapping of IP addresses to Docker node IDs.
+            workers (Dict): Dictionary with worker names as keys and values containing node details with required 'ip'.
+            node_ip_map (Dict): Mapping from node IP addresses to Docker node IDs.
+
+        Example:
+            .. code-block:: python
+
+                workers = {
+                    "worker1": {"ip": "10.0.0.20"},
+                    "worker2": {"ip": "10.0.0.21"}
+                }
+                node_ip_map = {
+                    "10.0.0.20": "node_id_123",
+                    "10.0.0.21": "node_id_456"
+                }
+                self.remove_workers(workers, node_ip_map)
         """
         for name, details in workers.items():
             try:

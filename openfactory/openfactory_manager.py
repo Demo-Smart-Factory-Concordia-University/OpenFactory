@@ -32,7 +32,9 @@ class OpenFactoryManager(OpenFactory):
     OpenFactory Manager API.
 
     Allows to deploy services on OpenFactory.
-    User requires Docker access on the OpenFactory cluster.
+
+    Important:
+        User requires Docker access on the OpenFactory cluster.
 
     Attributes:
         deployment_strategy (OpenFactoryServiceDeploymentStrategy): The strategy used to deploy services.
@@ -46,8 +48,8 @@ class OpenFactoryManager(OpenFactory):
 
         Args:
             ksqlClient (KSQLDBClient): The client for interacting with ksqlDB.
-            bootstrap_servers (str, optional): The Kafka bootstrap server address. Defaults to config.KAFKA_BROKER.
-            deployment_strategy (Optional[OpenFactoryServiceDeploymentStrategy], optional):
+            bootstrap_servers (str): The Kafka bootstrap server address. Defaults to config.KAFKA_BROKER.
+            deployment_strategy (Optional[OpenFactoryServiceDeploymentStrategy]):
                 The deployment strategy to use (e.g., Swarm or Local). If not provided, defaults to SwarmDeploymentStrategy.
         """
         super().__init__(ksqlClient, bootstrap_servers)

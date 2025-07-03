@@ -1,4 +1,5 @@
 # Documentation generation requirements
 sphinx
 myst-parser
-sphinx-rtd-theme
+pydata-sphinx-theme
+sphinx-autodoc-typehints

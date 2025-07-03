@@ -1,0 +1,4 @@
+OpenFactoryCluster
+==================
+
+.. autoclass:: openfactory.OpenFactoryCluster

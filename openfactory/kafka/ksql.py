@@ -20,18 +20,18 @@ class KSQLDBClient:
     """
     ksqlDB client used by OpenFactory.
 
-    Example:
-    ```python
-    from openfactory.kafka import KSQLDBClient
+    Example usage:
+        .. code-block:: python
 
-    ksql = KSQLDBClient('http://localhost:8088')
-    print('Info:   ', ksql.info())
-    print('Streams:', ksql.streams())
-    print('Tables: ', ksql.tables())
-    df = ksql.query("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Samples';")
-    print(df)
-    ksql.close()
-    ```
+            from openfactory.kafka import KSQLDBClient
+
+            ksql = KSQLDBClient('http://localhost:8088')
+            print('Info:   ', ksql.info())
+            print('Streams:', ksql.streams())
+            print('Tables: ', ksql.tables())
+            df = ksql.query("SELECT ID, VALUE, TYPE FROM assets WHERE ASSET_UUID='PROVER3018' AND TYPE='Samples';")
+            print(df)
+            ksql.close()
     """
 
     def __init__(
@@ -47,10 +47,10 @@ class KSQLDBClient:
 
         Args:
             ksqldb_url (str): URL of the ksqlDB server.
-            max_retries (int, optional): Number of retry attempts on network failure. Defaults to 3.
-            retry_delay (float, optional): Seconds to wait between retries. Defaults to 2.0.
-            timeout (float, optional): Request timeout in seconds. Defaults to 10.0.
-            loglevel (str, optional): Logging level for the client. Defaults to Config.KSQLDB_LOG_LEVEL.
+            max_retries (int): Number of retry attempts on network failure. Defaults to 3.
+            retry_delay (float): Seconds to wait between retries. Defaults to 2.0.
+            timeout (float): Request timeout in seconds. Defaults to 10.0.
+            loglevel (str): Logging level for the client. Defaults to Config.KSQLDB_LOG_LEVEL.
         """
         self.ksqldb_url = ksqldb_url.rstrip("/")
         self.max_retries = max_retries
@@ -98,10 +98,10 @@ class KSQLDBClient:
         Args:
             method (str): HTTP method to use (e.g., "GET", "POST").
             path (str): Endpoint path to be appended to the base URL.
-            json_payload (dict, optional): JSON data to send in the request body. Defaults to None.
-            stream (bool, optional): Whether to use streaming for the response. Defaults to False.
-            headers (dict, optional): Optional headers to include in the request. Defaults to None.
-            content (bytes, optional): Raw byte content to send in the request body. Defaults to None.
+            json_payload (dict): JSON data to send in the request body. Defaults to None.
+            stream (bool): Whether to use streaming for the response. Defaults to False.
+            headers (dict): Optional headers to include in the request. Defaults to None.
+            content (bytes): Raw byte content to send in the request body. Defaults to None.
 
         Returns:
             httpx.Response: The HTTP response object.
@@ -203,7 +203,7 @@ class KSQLDBClient:
             ksql (str): The KSQL pull query string to execute.
 
         Returns:
-            pd.DataFrame: A DataFrame containing the query result rows and columns.
+            pandas.DataFrame: A DataFrame containing the query result rows and columns.
 
         Raises:
             KSQLDBClientException: If the server returns a non-200 or malformed response.
@@ -324,9 +324,9 @@ class KSQLDBClient:
         such as closing resources.
 
         Args:
-            exc_type (type, optional): The exception type, if an exception was raised.
-            exc_val (BaseException, optional): The exception instance, if an exception was raised.
-            exc_tb (traceback, optional): The traceback object, if an exception was raised.
+            exc_type (type): The exception type, if an exception was raised.
+            exc_val (BaseException): The exception instance, if an exception was raised.
+            exc_tb (traceback): The traceback object, if an exception was raised.
         """
         self.close()
 

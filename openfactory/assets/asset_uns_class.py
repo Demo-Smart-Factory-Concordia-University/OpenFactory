@@ -8,70 +8,74 @@ from openfactory.kafka import KafkaAssetUNSConsumer
 
 class AssetUNS(BaseAsset):
     """
-    Represents an OpenFactory asset using the UNS identifier.
+    Represents an OpenFactory Asset using the UNS identifier.
 
-    This class encapsulates asset metadata and a Kafka producer responsible for sending asset data.
-    It uses the ksqlDB topology based on the ASSETS_STREAM_UNS stream to handle asset data.
+    This class encapsulates Asset metadata and a Kafka producer responsible for sending Asset data.
+    It uses the ksqlDB topology based on the `ASSETS_STREAM_UNS` stream to handle Asset data.
+
+    Note:
+        All write operations to the asset take place in the `assets` stream.
 
     Attributes:
-        KSQL_ASSET_TABLE (str): Name of ksqlDB table of asset states (`assets_uns`)
-        KSQL_ASSET_ID (str): ksqlDB ID used to identify the asset (`uns_id`) in the KSQL_ASSET_TABLE
-        ASSET_ID (str): value of the identifer of the asset (uns_id) used in the KSQL_ASSET_TABLE
+        KSQL_ASSET_TABLE (str): Name of ksqlDB table of Asset states (`assets_uns`)
+        KSQL_ASSET_ID (str): ksqlDB ID used to identify the Asset (`uns_id`) in the KSQL_ASSET_TABLE
+        ASSET_ID (str): value of the identifer of the Asset (uns_id) used in the KSQL_ASSET_TABLE
         ksql (KSQLDBClient): Client for interacting with ksqlDB.
         bootstrap_servers (str): Kafka bootstrap server address.
         ASSET_CONSUMER_CLASS (KafkaAssetUNSConsumer): Kafka consumer class for reading messages from Asset strean.
-        producer (AssetProducer): Kafka producer instance for sending asset messages.
+        producer (AssetProducer): Kafka producer instance for sending Asset messages.
 
     Example usage:
-    ```python
-    import time
-    from openfactory.assets import AssetUNS
-    from openfactory.kafka import KSQLDBClient
+        .. code-block:: python
 
-    ksql = KSQLDBClient('http://localhost:8088')
-    cnc = AssetUNS('cnc-003', ksqlClient=ksql)
+            import time
+            from openfactory.assets import AssetUNS
+            from openfactory.kafka import KSQLDBClient
 
-    # list samples
-    print(cnc.samples())
-    print(cnc.Zact.value)
-    print(cnc.Zact.type)
-    print(cnc.Zact.timestamp)
+            ksql = KSQLDBClient('http://localhost:8088')
+            cnc = AssetUNS('cnc-003', ksqlClient=ksql)
 
-    # redefine an attribute value
-    cnc.Zact = 10.0
-    print(cnc.Zact.value)
+            # list samples
+            print(cnc.samples())
+            print(cnc.Zact.value)
+            print(cnc.Zact.type)
+            print(cnc.Zact.timestamp)
 
-    # callbacks for subscriptions
-    def on_messages(msg_key, msg_value):
-        print(f"[Message] [{msg_key}] {msg_value}")
+            # redefine an attribute value
+            cnc.Zact = 10.0
+            print(cnc.Zact.value)
 
-    def on_sample(msg_key, msg_value):
-        print(f"[Sample] [{msg_key}] {msg_value}")
+            # callbacks for subscriptions
+            def on_messages(msg_key, msg_value):
+                print(f"[Message] [{msg_key}] {msg_value}")
 
-    def on_event(msg_key, msg_value):
-        print(f"[Event] [{msg_key}] {msg_value}")
+            def on_sample(msg_key, msg_value):
+                print(f"[Sample] [{msg_key}] {msg_value}")
 
-    def on_condition(msg_key, msg_value):
-        print(f"[Condition] [{msg_key}] {msg_value}")
+            def on_event(msg_key, msg_value):
+                print(f"[Event] [{msg_key}] {msg_value}")
 
-    cnc.subscribe_to_messages(on_messages, 'demo_messages_group')
-    cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
-    cnc.subscribe_to_events(on_event, 'demo_events_group')
-    cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
+            def on_condition(msg_key, msg_value):
+                print(f"[Condition] [{msg_key}] {msg_value}")
 
-    # run a main loop while subscriptions remain active
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Stopping consumer threads ...")
-        cnc.stop_messages_subscription()
-        cnc.stop_samples_subscription()
-        cnc.stop_events_subscription()
-        cnc.stop_conditions_subscription()
-        print("Consumers stopped")
-    finally:
-        ksql.close()
+            cnc.subscribe_to_messages(on_messages, 'demo_messages_group')
+            cnc.subscribe_to_samples(on_sample, 'demo_samples_group')
+            cnc.subscribe_to_events(on_event, 'demo_events_group')
+            cnc.subscribe_to_conditions(on_condition, 'demo_conditions_group')
+
+            # run a main loop while subscriptions remain active
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("Stopping consumer threads ...")
+                cnc.stop_messages_subscription()
+                cnc.stop_samples_subscription()
+                cnc.stop_events_subscription()
+                cnc.stop_conditions_subscription()
+                print("Consumers stopped")
+            finally:
+                ksql.close()
     """
 
     KSQL_ASSET_TABLE = 'assets_uns'
