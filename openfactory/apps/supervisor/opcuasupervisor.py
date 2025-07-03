@@ -18,22 +18,22 @@ class OPCUASupervisor(BaseSupervisor):
     adapter. It connects to the device command adapter via OPC UA, monitors the connection, and processes incoming
     commands for the associated device.
 
-    Class Attributes:
+    Attributes:
         namespace_uri (str): The namespace URI for the OPC UA server.
         browseName (str): The browse name used to access the device in the OPC UA server.
         RECONNECT_INTERVAL (int): The interval (in seconds) to wait before attempting to reconnect to the adapter in case of a failure.
 
-    Instance Attributes:
-        adapter_ip (str): The IP address of the OPC UA adapter.
-        adapter_port (int): The port of the OPC UA adapter.
-        opcua_client (Client): The OPC UA client instance used for connecting to the adapter.
-        idx (int or None): The index of the namespace in the OPC UA server.
-        opcua_adapter (optional): A reference to the OPC UA adapter (for internal use).
-        _stop_reconnect (bool): A flag to stop reconnecting to the adapter once the supervisor is stopped.
-        _event_loop (asyncio.EventLoop): The event loop used to run asynchronous operations related to the adapter connection.
+        adapter_ip (str): Instance attribute - The IP address of the OPC UA adapter.
+        adapter_port (int): Instance attribute - The port of the OPC UA adapter.
+        opcua_client (asyncua.Client): Instance attribute - The OPC UA client instance used for connecting to the adapter.
+        idx (int or None): Instance attribute - The index of the namespace in the OPC UA server.
+        opcua_adapter (str): Instance attribute - A reference to the OPC UA adapter (for internal use).
+        _stop_reconnect (bool): Instance attribute - A flag to stop reconnecting to the adapter once the supervisor is stopped.
+        _event_loop (asyncio.EventLoop): Instance attribute - The event loop used to run asynchronous operations related to the adapter connection.
 
-    Example:
-        ```python
+    Example usage:
+        .. code-block:: python
+
             from openfactory.apps.supervisor import OPCUASupervisor
             from openfactory.kafka import KSQLDBClient
 
@@ -47,7 +47,6 @@ class OPCUASupervisor(BaseSupervisor):
             )
 
             supervisor.run()
-        ```
     """
 
     namespace_uri = os.getenv('NAMESPACE_URI', 'demofactory')
@@ -218,10 +217,16 @@ class OPCUASupervisor(BaseSupervisor):
         command on the OPC UA server in the event loop.
 
         Args:
-            msg_key (str): The key of the Kafka message, typically used for identifying the source of the command.
-            msg_value (dict): The payload of the command message with two keys:
-                            - 'CMD': The command to be executed (string).
-                            - 'ARGS': The arguments for the command, provided as a space-separated string.
+            msg_key (str): The key of the Kafka message, typically identifying the source of the command.
+            msg_value (dict): Dictionary with required keys 'CMD' (command string) and 'ARGS' (space-separated args).
+
+        Example:
+            .. code-block:: python
+
+                self.on_command(
+                    "DEVICE-456",
+                    {"CMD": "start", "ARGS": "--verbose --timeout 5"}
+                )
         """
         cmd = msg_value['CMD']
         args = msg_value['ARGS']

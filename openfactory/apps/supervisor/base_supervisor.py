@@ -1,7 +1,7 @@
 """ OpenFactory Base Supervisor. """
 
 from typing import Any
-from openfactory.kafka import KafkaCommandsConsumer
+from openfactory.kafka import KafkaCommandsConsumer, KSQLDBClient
 from openfactory.assets import Asset, AssetAttribute
 from openfactory.apps import OpenFactoryApp
 import openfactory.config as config
@@ -14,14 +14,14 @@ class BaseSupervisor(OpenFactoryApp):
     Extends `OpenFactoryApp` to represent a supervisor that monitors or manages a specific device.
     It registers the device UUID it supervises as an asset attribute.
 
-    Class Attributes:
+    Attributes:
         _device_uuid (str): The UUID of the device being supervised.
     """
 
     def __init__(self,
                  supervisor_uuid: str,
                  device_uuid: str,
-                 ksqlClient: 'KSQLDBClient',
+                 ksqlClient: KSQLDBClient,
                  bootstrap_servers: str = config.KAFKA_BROKER,
                  loglevel: str = 'INFO'):
         """
@@ -60,11 +60,13 @@ class BaseSupervisor(OpenFactoryApp):
         Returns:
             List[str]: A list of command names as strings.
 
-        Example:
-            [
-                {'command': 'start_device', 'description': 'Starts the device'},
-                {'command': 'stop_device', 'description': 'Stops the device'}
-            ]
+        Example return value:
+            .. code-block:: json
+
+                [
+                    {"command": "start_device", "description": "Starts the device"},
+                    {"command": "stop_device", "description": "Stops the device"}
+                ]
 
         Raises:
             NotImplementedError: If the method is not implemented by the subclass.
@@ -105,12 +107,18 @@ class BaseSupervisor(OpenFactoryApp):
 
         Args:
             msg_key (str): The key of the Kafka message (asset_uuid of the target Asset).
-            msg_value (dict): The command payload, containing:
-                - 'CMD': A string representing the command to be executed.
-                - 'ARGS': A string with space-separated arguments for the command.
+            msg_value (dict): Dictionary with required keys 'CMD' (command string) and 'ARGS' (space-separated args).
 
         Raises:
             NotImplementedError: If the method is not overridden in a subclass.
+
+        Example:
+            .. code-block:: python
+
+                self.on_command(
+                    "DEVICE-123",
+                    {"CMD": "reset", "ARGS": "--force --timeout 10"}
+                )
         """
         raise NotImplementedError("You must implement the 'on_command' method.")
 

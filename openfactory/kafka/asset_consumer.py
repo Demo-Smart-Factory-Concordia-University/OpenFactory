@@ -17,32 +17,32 @@ class KafkaAssetConsumer:
     Consumes messages for an Asset with UUID asset_uuid
     Messages are filtered by key, and optionally via the `filter_messages` method.
 
-    Example:
-    ```python
-    from openfactory.kafka import KafkaAssetConsumer, KSQLDBClient
+    Example usage:
+        .. code-block:: python
 
-    def on_message(msg_key, msg_value):
-        print(f"[{msg_key}] {msg_value}")
+            from openfactory.kafka import KafkaAssetConsumer, KSQLDBClient
 
-    class PROVER3018_EventsConsumer(KafkaAssetConsumer):
+            def on_message(msg_key, msg_value):
+                print(f"[{msg_key}] {msg_value}")
 
-        def filter_messages(self, msg_value):
-            # filter Events messages
-            if msg_value['type'] == 'Events':
-                return msg_value
-            else:
-                return None
+            class PROVER3018_EventsConsumer(KafkaAssetConsumer):
 
-    consumer = PROVER3018_EventsConsumer(
-        asset_uuid="PROVER3018",
-        consumer_group_id="demo_ofa_assets_consumer_group",
-        on_message=on_message,
-        ksqlClient=KSQLDBClient('http://localhost:8088'),
-        bootstrap_servers="localhost:9092"
-    )
+                def filter_messages(self, msg_value):
+                    # filter Events messages
+                    if msg_value['type'] == 'Events':
+                        return msg_value
+                    else:
+                        return None
 
-    consumer.consume()
-    ```
+            consumer = PROVER3018_EventsConsumer(
+                asset_uuid="PROVER3018",
+                consumer_group_id="demo_ofa_assets_consumer_group",
+                on_message=on_message,
+                ksqlClient=KSQLDBClient('http://localhost:8088'),
+                bootstrap_servers="localhost:9092"
+            )
+
+            consumer.consume()
     """
 
     consumer_timeout = 0.1

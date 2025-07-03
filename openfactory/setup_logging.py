@@ -1,7 +1,7 @@
 """
 Logging setup for OpenFactory.
 
-This module provides a custom logging setup for the OpenFactory application.
+This module provides a custom logging setup for OpenFactory.
 """
 
 import logging

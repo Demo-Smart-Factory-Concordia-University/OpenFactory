@@ -9,8 +9,7 @@ from typing import Protocol, Literal, List, Dict, Any, Union, Callable, Self, Op
 from confluent_kafka import KafkaError
 import openfactory.config as config
 from openfactory.exceptions import OFAException
-from openfactory.kafka import KSQLDBClient, KafkaAssetConsumer, KafkaAssetUNSConsumer, CaseInsensitiveDict, delete_consumer_group
-from openfactory.kafka import AssetProducer
+from openfactory.kafka import KSQLDBClient, KafkaAssetConsumer, KafkaAssetUNSConsumer, AssetProducer, CaseInsensitiveDict, delete_consumer_group
 from openfactory.assets.utils import AssetAttribute
 
 
@@ -31,9 +30,15 @@ class BaseAsset:
     """
     Base class for OpenFactory Assets.
 
-    From this class, two classes are derived (Asset and AssetUNS) for actual usage.
+    Warning:
+        This is an abstract class not intented to be used.
+        From this class, two classes are derived (`Asset` and `AssetUNS`) for actual usage.
 
-    All write operations to the asset take place in the `assets` stream.
+    It can interact with the Kafka topic of the OpenFactory assets or the ksqlDB streams
+    and state tables.
+
+    Note:
+        All write operations to the asset take place in the `assets` stream.
 
     Attributes:
         KSQL_ASSET_TABLE (str): Name of ksqlDB table of asset states (`assets` or `assets_uns`)
@@ -78,8 +83,9 @@ class BaseAsset:
         """
         Returns the asset UUID.
 
-        This property must be implemented by subclasses. It is expected to return
-        the current asset UUID dynamically, based on runtime state.
+        Important:
+            This property must be implemented by subclasses. It is expected to return
+            the current asset UUID dynamically, based on runtime state.
 
         Returns:
             str: The asset's UUID.
@@ -111,7 +117,7 @@ class BaseAsset:
         """
         Returns all non-'Method' attribute IDs associated with this asset.
 
-        Queries KSQL_ASSET_TABLE for all attribute IDs of the asset where the type is not 'Method'.
+        Queries `KSQL_ASSET_TABLE` for all attribute IDs of the asset where the type is not 'Method'.
 
         Returns:
             List[str]: A list of attribute IDs.
@@ -122,7 +128,7 @@ class BaseAsset:
 
     def _get_attributes_by_type(self, attr_type: str) -> List[Dict[str, Any]]:
         """
-        Generic method to retrieve all attributes from the KSQL_ASSET_TABLE of a given TYPE.
+        Generic method to retrieve all attributes from the `KSQL_ASSET_TABLE` of a given TYPE.
 
         Args:
             attr_type (str): The type of the asset attribute ('Samples', 'Events', 'Condition').
@@ -178,7 +184,7 @@ class BaseAsset:
         """
         Returns method-type attributes for this asset.
 
-        Queries KSQL_ASSET_TABLE for entries where `TYPE = 'Method'` for the asset.
+        Queries `KSQL_ASSET_TABLE` for entries where `TYPE = 'Method'` for the asset.
 
         Returns:
             Dict: A dictionary where keys are method attribute IDs and values are the corresponding method values.
@@ -196,7 +202,7 @@ class BaseAsset:
 
         Args:
             method (str): The name of the method to be executed.
-            args (str, optional): Arguments for the method, if any. Defaults to an empty string.
+            args (str): Arguments for the method, if any. Defaults to an empty string.
         """
         msg = {
             "CMD": method,
@@ -319,7 +325,8 @@ class BaseAsset:
         """
         Retrieves a list of asset-references (identifiers or asset objects) in the given direction.
 
-        This method must be implemented by subclasses.
+        Important:
+            This method must be implemented by subclasses.
 
         Args:
             direction (str): Either 'above' or 'below', indicating reference direction.
@@ -420,11 +427,21 @@ class BaseAsset:
         Monitors either the Kafka topic or ksqlDB to check if the attribute value matches the expected value.
         The method will return `True` if the value is found within the given timeout, and `False` if the timeout is reached.
 
+        Attention:
+            Using ksqlDB introduces slightly higher latency due to internal stream processing
+            and state materialization, but it is significantly more efficient for the Kafka cluster,
+            especially when multiple consumers are involved.
+
+            Direct Kafka topic consumption offers lower latency but requires reading and filtering
+            all messages, which increases load on the brokers and duplicates work across consumers.
+
+            Whenever possible, prefer `use_ksqlDB=True` to reduce resource usage and improve scalability.
+
         Args:
             attribute (str): The attribute of the asset to monitor.
             value (Any): The value to wait for the attribute to match.
-            timeout (int, optional): The maximum time to wait, in seconds. Default is 30 seconds.
-            use_ksqlDB (bool, optional): If `True`, uses ksqlDB instead of Kafka topic to check the attribute value. Default is `False`.
+            timeout (int): The maximum time to wait, in seconds. Default is 30 seconds.
+            use_ksqlDB (bool): If `True`, uses ksqlDB instead of Kafka topic to check the attribute value. Default is `False`.
 
         Returns:
             bool: `True` if the attribute value matches the expected value within the timeout, `False` otherwise.
@@ -613,9 +630,16 @@ class BaseAsset:
         """
         Subscribes to asset messages and starts a consumer thread.
 
-        Initiates a Kafka consumer in a separate thread to listen for messages related to the asset.
-        When a message is received, the provided `on_message` callback is called. The consumer thread runs
-        as a daemon and listens for messages until stopped.
+        This method creates and starts a Kafka consumer thread that listens for messages
+        related to the asset. The provided callback is invoked for each received message.
+
+        Warning:
+            A Kafka consumer is used to subscribe to the kafka Assets topic.
+            Direct Kafka topic consumption offers lower latency but requires reading and filtering all messages,
+            from all Assets deployed on the cluster, which increases load on the brokers and duplicates work across consumers.
+
+            Whenever possible, a loop reading from asset attributes (which queries a ksqlDB table) should be prefered
+            if the design allows for it. Alternatively consider deploying a stream processing topology.
 
         Args:
             on_message (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles messages.
@@ -639,9 +663,16 @@ class BaseAsset:
         """
         Subscribes to 'Samples' messages and starts a consumer thread.
 
-        Initiates a Kafka consumer in a separate thread to listen for 'Samples' messages related to the asset.
-        When a 'Samples' message is received, the provided `on_sample` callback is invoked. The consumer thread
-        runs as a daemon and listens for messages until stopped.
+        This method creates and starts a Kafka consumer thread that listens for 'Samples' messages
+        related to the asset. The provided callback is invoked for each received sample.
+
+        Warning:
+            A Kafka consumer is used to subscribe to the kafka Assets topic.
+            Direct Kafka topic consumption offers lower latency but requires reading and filtering all messages,
+            from all Assets deployed on the cluster, which increases load on the brokers and duplicates work across consumers.
+
+            Whenever possible, a loop reading from asset attributes (which queries a ksqlDB table) should be prefered
+            if the design allows for it. Alternatively consider deploying a stream processing topology.
 
         Args:
             on_sample (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles samples messages.
@@ -665,9 +696,16 @@ class BaseAsset:
         """
         Subscribes to 'Events' messages and starts a consumer thread.
 
-        Initiates a Kafka consumer in a separate thread to listen for 'Events' messages related to the asset.
-        When an 'Events' message is received, the provided `on_event` callback is invoked. The consumer thread
-        runs as a daemon and listens for messages until stopped.
+        This method creates and starts a Kafka consumer thread that listens for 'Events' messages
+        related to the asset. The provided callback is invoked for each received event.
+
+        Warning:
+            A Kafka consumer is used to subscribe to the kafka Assets topic.
+            Direct Kafka topic consumption offers lower latency but requires reading and filtering all messages,
+            from all Assets deployed on the cluster, which increases load on the brokers and duplicates work across consumers.
+
+            Whenever possible, a loop reading from asset attributes (which queries a ksqlDB table) should be prefered
+            if the design allows for it. Alternatively consider deploying a stream processing topology.
 
         Args:
             on_event (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles event messages.
@@ -692,7 +730,15 @@ class BaseAsset:
         Subscribes to 'Condition' messages and starts a consumer in a separate thread.
 
         This method creates and starts a Kafka consumer thread that listens for 'Condition' messages
-        related to the asset. The provided callback is invoked for each received message.
+        related to the asset. The provided callback is invoked for each received condition.
+
+        Warning:
+            A Kafka consumer is used to subscribe to the kafka Assets topic.
+            Direct Kafka topic consumption offers lower latency but requires reading and filtering all messages,
+            from all Assets deployed on the cluster, which increases load on the brokers and duplicates work across consumers.
+
+            Whenever possible, a loop reading from asset attributes (which queries a ksqlDB table) should be prefered
+            if the design allows for it. Alternatively consider deploying a stream processing topology.
 
         Args:
             on_condition (AssetKafkaMessagesCallback): Callable that takes (msg_key: str, msg_value: dict) and handles condition messages.

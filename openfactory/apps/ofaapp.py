@@ -18,42 +18,40 @@ class OpenFactoryApp(Asset):
     Inherits from `Asset` and extends it to represent an OpenFactory application with standard metadata,
     logging, and lifecycle management.
 
-    Class Attributes:
-        APPLICATION_VERSION (str): Version string from `APPLICATION_VERSION` env var or 'latest'.
-        APPLICATION_MANUFACTURER (str): Manufacturer from `APPLICATION_MANUFACTURER` or 'OpenFactory'.
-        APPLICATION_LICENSE (str): License string from `APPLICATION_LICENSE` or 'BSD-3-Clause license'.
+    Attributes:
+        APPLICATION_VERSION (str): Class attribute. Version string from `APPLICATION_VERSION` env var or 'latest'.
+        APPLICATION_MANUFACTURER (str): Class attribute. Manufacturer from `APPLICATION_MANUFACTURER` or 'OpenFactory'.
+        APPLICATION_LICENSE (str): Class attribute. License string from `APPLICATION_LICENSE` or 'BSD-3-Clause license'.
+        logger (logging.Logger): Instance attribute. Prefixed logger instance configured with the app UUID.
 
-    Instance Attributes:
-        logger (logging.Logger): Prefixed logger instance configured with the app UUID.
+    Example usage:
+        .. code-block:: python
 
-    Example:
-        ```python
-        import time
-        from openfactory.apps import OpenFactoryApp
-        from openfactory.kafka import KSQLDBClient
+            import time
+            from openfactory.apps import OpenFactoryApp
+            from openfactory.kafka import KSQLDBClient
 
-        class DemoApp(OpenFactoryApp):
+            class DemoApp(OpenFactoryApp):
 
-            def main_loop(self):
-                # For actual use case, add here your logic of the app
-                print("I don't do anything useful in this example.")
-                counter = 1
-                while True:
-                    print(counter)
-                    counter += 1
-                    time.sleep(2)
+                def main_loop(self):
+                    # For actual use case, add here your logic of the app
+                    print("I don't do anything useful in this example.")
+                    counter = 1
+                    while True:
+                        print(counter)
+                        counter += 1
+                        time.sleep(2)
 
-            def app_event_loop_stopped(self):
-                # Not absolutely required as it is already done by the `KSQLDBClient` class
-                self.ksql.close()
+                def app_event_loop_stopped(self):
+                    # Not absolutely required as it is already done by the `KSQLDBClient` class
+                    self.ksql.close()
 
-        app = DemoApp(
-            app_uuid='DEMO-APP',
-            ksqlClient=KSQLDBClient("http://localhost:8088"),
-            bootstrap_servers="localhost:9092"
-        )
-        app.run()
-        ```
+            app = DemoApp(
+                app_uuid='DEMO-APP',
+                ksqlClient=KSQLDBClient("http://localhost:8088"),
+                bootstrap_servers="localhost:9092"
+            )
+            app.run()
     """
 
     # Application version number
@@ -142,8 +140,7 @@ class OpenFactoryApp(Asset):
 
         Args:
             signum (int): The signal number that was received (e.g., SIGINT, SIGTERM).
-            frame (Optional[FrameType]): The current stack frame when the signal was received.
-                This can be used for debugging or inspecting the state of the process.
+            frame (Optional): The current stack frame when the signal was received.
         """
         signal_name = signal.Signals(signum).name
         self.logger.info(f"Received signal {signal_name}, stopping app gracefully ...")
@@ -175,9 +172,13 @@ class OpenFactoryApp(Asset):
         main loop, the error is caught, and the app is gracefully stopped.
 
         The following steps are performed:
+
         1. Display the welcome banner.
-        2. Add the 'avail' attribute with 'AVAILABLE' value.
+
+        2. Add the `avail` attribute with 'AVAILABLE' value.
+
         3. Start the main loop.
+
         4. Catch any exceptions that occur and stop the app gracefully.
 
         Raises:

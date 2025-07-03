@@ -18,24 +18,24 @@ class KafkaCommandsConsumer:
     A user-provided callback (`on_command`) is called when a valid message is received.
     You can override `filter_messages` to apply custom filtering on received messages.
 
-    Example:
-    ```python
-    from openfactory.kafka import KafkaCommandsConsumer, KSQLDBClient
+    Example usage:
+        .. code-block:: python
 
-    def on_command(msg_key, msg_value):
-        # Callback to process received messages.
-        print(f"[{msg_key}] {msg_value}")
+            from openfactory.kafka import KafkaCommandsConsumer, KSQLDBClient
 
-    consumer = KafkaCommandsConsumer(
-        consumer_group_id="demo_ofa_commands_consumer_group",
-        asset_uuid="PROVER3018",
-        on_command=on_command,
-        ksqlClient=KSQLDBClient('http://localhost:8088'),
-        bootstrap_servers="localhost:9092"
-    )
+            def on_command(msg_key, msg_value):
+                # Callback to process received messages.
+                print(f"[{msg_key}] {msg_value}")
 
-    consumer.consume()
-    ```
+            consumer = KafkaCommandsConsumer(
+                consumer_group_id="demo_ofa_commands_consumer_group",
+                asset_uuid="PROVER3018",
+                on_command=on_command,
+                ksqlClient=KSQLDBClient('http://localhost:8088'),
+                bootstrap_servers="localhost:9092"
+            )
+
+            consumer.consume()
     """
 
     consumer_timeout = 0.1

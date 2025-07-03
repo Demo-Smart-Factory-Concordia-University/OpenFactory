@@ -1,0 +1,4 @@
+OpenFactoryManager
+==================
+
+.. autoclass:: openfactory.OpenFactoryManager
