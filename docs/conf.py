@@ -13,6 +13,8 @@ extensions = [
     'myst_parser',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
+    'pydata_sphinx_theme',
+    'sphinx_design',
 ]
 
 napoleon_google_docstring = True
@@ -31,10 +33,10 @@ nitpick_ignore = [
     ('py:class', 'cimpl.Producer'),
 ]
 
-
 templates_path = ['_templates']
 html_css_files = ['custom.css']
 exclude_patterns = []
+master_doc = "index"
 
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
@@ -65,7 +67,6 @@ html_context = {
 }
 
 html_show_sourcelink = False
-
 
 autodoc_default_options = {
     'members': True,                # Include all documented class/module members
