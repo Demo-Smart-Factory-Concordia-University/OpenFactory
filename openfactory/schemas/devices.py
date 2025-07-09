@@ -1,4 +1,4 @@
-""" OpenFactory Adapter, Agent, Supervisor and Device Schema. """
+""" Pydantic schemas for validating OpenFactory OpenFactory Adapter, Agent, Supervisor and Device definitions. """
 
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
@@ -189,14 +189,22 @@ class Device(BaseModel):
 
 class DevicesConfig(BaseModel):
     """
-    Schema for OpenFactory devices configurations in yaml files.
+    Schema for OpenFactory device configurations loaded from YAML files.
 
-    Usage:
-       devices = DevicesConfig(devices=yaml_data['devices'])
-    or:
-       devices = DevicesConfig(**yaml_data)
+    This schema validates the structure of device configurations.
 
-    Will raise an error if yaml_data does not follow the expected schema
+    Example usage:
+        .. code-block:: python
+
+            devices = DevicesConfig(devices=yaml_data['devices'])
+            # or
+            devices = DevicesConfig(**yaml_data)
+
+    Args:
+        devices (dict): Dictionary of device configurations.
+
+    Raises:
+        pydantic.ValidationError: If the input data does not conform to the expected schema.
     """
 
     devices: Dict[str, Device]
@@ -231,24 +239,22 @@ class DevicesConfig(BaseModel):
 
 def get_devices_from_config_file(devices_yaml_config_file: str, uns_schema: UNSSchema) -> Optional[Dict[str, Device]]:
     """
-    Load, validate, and enrich with UNS data device configurations from a YAML file.
+    Load, validate, and enrich device configurations from a YAML file using UNS metadata.
 
-    This function reads a YAML configuration file that defines a collection of devices,
-    validates its structure using the `DevicesConfig` model, and augments each device
-    entry with corresponding UNS (Unified Namespace) metadata extracted using the provided schema.
+    This function reads a YAML file containing device definitions, validates its content
+    using the :class:`DevicesConfig` Pydantic model, and augments each validated device entry
+    with Unified Namespace (UNS) metadata derived from the provided schema.
 
     Args:
-        devices_yaml_config_file (str): Path to the YAML configuration file
-        uns_schema (UNSSchema): An instance of the UNS schema used to generate the UNS metadata
+        devices_yaml_config_file (str): Path to the YAML file defining device configurations.
+        uns_schema (UNSSchema): Schema instance used to extract and validate UNS metadata
+                                for each device.
 
     Returns:
-        dict: Dictionary of devices configurations or None in case of error
+        Optional[Dict[str, Device]]: A dictionary of validated and enriched device configurations,
+                                     or `None` if validation fails.
 
-    Raises:
-        ValidationError: If the provided YAML configuration file has an invalid format
-        ValueError: If the provided YAML configuration file has an invalid format
-
-    Notes:
+    Note:
         In case of validation errors, user notifications will be triggered and `None` will be returned.
     """
     # load yaml description file

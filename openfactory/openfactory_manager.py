@@ -378,16 +378,30 @@ class OpenFactoryManager(OpenFactory):
 
     def deploy_devices_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Deploy OpenFactory devices based on a yaml configuration file.
+        Deploy OpenFactory devices from a YAML configuration file.
+
+        This method loads and validates the UNS schema, parses the device configurations
+        from the specified YAML file, and deploys each device that is not already deployed.
+
+        Deployment includes registering the device asset, deploying the MTConnect agent,
+        Kafka producer, KSQLDB tables (if defined), and device supervisor (if defined).
 
         Args:
-            yaml_config_file (str): Path to the yaml configuration file.
+            yaml_config_file (str): Path to the YAML configuration file containing device definitions.
 
-        Raises:
-            OFAException: If the device cannot be deployed.
+        Note:
+            - If the UNS schema is invalid, a failure notification will be triggered, and deployment will abort early.
+            - If device configurations fail to load or validate, deployment will abort early after notifying the user.
+            - Deployment skips devices that are already deployed.
         """
         # load UNS schema and yaml description file
-        uns_schema = UNSSchema(schema_yaml_file=config.OPENFACTORY_UNS_SCHEMA)
+        try:
+            uns_schema = UNSSchema(schema_yaml_file=config.OPENFACTORY_UNS_SCHEMA)
+        except ValueError as e:
+            user_notify.fail(f"The UNS schema '{config.OPENFACTORY_UNS_SCHEMA}' is invalid: {e}")
+            return
+
+        # load devices
         devices = get_devices_from_config_file(yaml_config_file, uns_schema)
         if devices is None:
             return
@@ -429,16 +443,28 @@ class OpenFactoryManager(OpenFactory):
 
     def deploy_apps_from_config_file(self, yaml_config_file: str) -> None:
         """
-        Deploy OpenFactory applications based on a yaml configuration file.
+        Deploy OpenFactory applications from a YAML configuration file.
+
+        This method loads and validates the UNS schema, parses the application
+        configurations from the specified YAML file, and deploys each application
+        that is not already deployed.
 
         Args:
-            yaml_config_file (str): Path to the yaml configuration file.
+            yaml_config_file (str): Path to the YAML configuration file containing application definitions.
 
-        Raises:
-            OFAException: If the application cannot be deployed.
+        Note:
+            - If the UNS schema is invalid, a failure notification will be triggered, and deployment will abort early.
+            - If application configurations fail to load or validate, deployment will abort early after notifying the user.
+            - Deployment skips applications that are already deployed.
         """
         # load UNS schema and yaml description file
-        uns_schema = UNSSchema(schema_yaml_file=config.OPENFACTORY_UNS_SCHEMA)
+        try:
+            uns_schema = UNSSchema(schema_yaml_file=config.OPENFACTORY_UNS_SCHEMA)
+        except ValueError as e:
+            user_notify.fail(f"The UNS schema '{config.OPENFACTORY_UNS_SCHEMA}' is invalid: {e}")
+            return
+
+        # load apps
         apps = get_apps_from_config_file(yaml_config_file, uns_schema)
         if apps is None:
             return

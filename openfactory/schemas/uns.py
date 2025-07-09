@@ -10,6 +10,8 @@ import openfactory.config as config
 
 # --- Internal models for validation ---
 
+#: Represents allowed constraints for UNS schema fields.
+#: Can be "ANY", a specific string, or a list of allowed strings.
 ConstraintType = Union[Literal["ANY"], str, List[str]]
 
 
@@ -77,9 +79,12 @@ class UNSSchemaModel(BaseModel):
         Validates `uns_template`.
 
         Validates that the `uns_template`:
-            - Contains a recognizable separator character.
-            - Ends with the 'attribute' field.
-            - References only fields defined in the `namespace_structure`.
+
+        - Contains a recognizable separator character.
+
+        - Ends with the 'attribute' field.
+
+        - References only fields defined in the `namespace_structure`.
 
         Returns:
             UNSSchemaModel: The validated instance.
@@ -128,37 +133,47 @@ class UNSSchema:
     """
     Represents and validates the Unified Namespace (UNS) schema.
 
-    This class loads a schema definition from a YAML file, validates it with Pydantic,
-    and provides methods to extract, validate, and generate UNS paths for OpenFactory assets.
+    This class loads a schema definition from a YAML file, validates it using
+    the :class:`UNSSchemaModel` Pydantic model, and provides methods to extract,
+    validate, and generate UNS paths for OpenFactory assets.
 
     Attributes:
         separator (str): The character used to separate fields in the UNS template.
-        template_fields (List[str]): The list of fields in the UNS template including 'attribute'.
-        allowed_values (Dict[str, ConstraintType]): Mapping of UNS level names to their constraints.
+        template_fields (List[str]): Fields extracted from the UNS template, including 'attribute'.
+        allowed_values (Dict[str, :py:data:`openfactory.schemas.uns.ConstraintType`]):
+            Mapping of UNS level names to their allowed values and constraints.
+
+    Note:
+        The validation is performed by the :class:`UNSSchemaModel`. Any schema format or constraint errors
+        will be reported as part of the standard Pydantic validation error output.
     """
 
     def __init__(self, schema_yaml_file: str = config.OPENFACTORY_UNS_SCHEMA):
         """
-        Initializes the UNS schema from a YAML file.
+        Initializes the UNS schema from a YAML file by loading and validating it.
 
         Args:
-            schema_yaml_file (str): UNS schema YAML file including path.
+            schema_yaml_file (str): Path to the UNS schema YAML file.
 
         Raises:
-            pydantic.ValidationError: If the schema fails Pydantic validation.
+            ValueError: If the schema content does not conform to the expected UNS schema model.
         """
+
         with open_ofa(schema_yaml_file) as f:
             raw = yaml.safe_load(f)
 
         # Validate using Pydantic model
-        model = UNSSchemaModel(**raw)
+        try:
+            model = UNSSchemaModel(**raw)
+        except ValueError as e:
+            raise ValueError(f"Invalid UNS schema: {e}") from e
 
         # Template fields and separator
         self.separator = re.search(r"\W", model.uns_template).group(0)
         self.template_fields = model.uns_template.split(self.separator)
 
         # Build constraints from validated structure
-        self.allowed_values: Dict[str, ConstraintType] = {
+        self.allowed_values = {
             item.key(): item.value() for item in model.namespace_structure
         }
 
@@ -167,10 +182,14 @@ class UNSSchema:
         Extracts all UNS hierarchy fields for an asset, based on the template and schema.
 
         This includes:
+
         - Constant fields (e.g., "inc": "OpenFactory") defined in the schema.
           If the asset defines them with a different value, an error is raised.
+
         - Constrained fields (e.g., from an enum list or "ANY") that are expected from the asset dictionary.
+
         - Excludes the final "attribute" field from the UNS path.
+
         - If the "asset" field is not provided explicitly, it is populated from the "uuid" field of the asset.
 
         Args:

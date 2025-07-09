@@ -1,4 +1,4 @@
-""" OpenFactory Infrastructure Schema. """
+""" Pydantic schemas for validating OpenFactory infrastructure configuration files. """
 
 from typing import Dict, Optional
 from pydantic import BaseModel, Field, RootModel, model_validator, ValidationError
@@ -103,17 +103,21 @@ class InfrastructureSchema(BaseModel):
 
 def get_infrastructure_from_config_file(infra_yaml_config_file: str) -> Optional[Dict[str, InfrastructureSchema]]:
     """
-    Loads and validates infrastructure configuration from a YAML file.
+    Load and validate infrastructure configuration from a YAML file.
+
+    This function reads a YAML file containing infrastructure configuration,
+    validates its content using the :class:`InfrastructureSchema` Pydantic model,
+    and returns the parsed data as a dictionary.
 
     Args:
-        infra_yaml_config_file (str): Path to the YAML configuration file.
+        infra_yaml_config_file (str): Path to the YAML file defining the infrastructure configuration.
 
     Returns:
-        dict: Dictionary of infrastructure configurations or None in case of errors.
+        Optional[Dict[str, InfrastructureSchema]]: A dictionary of validated infrastructure configuration data,
+                                                   or `None` if validation fails.
 
-    Raises:
-        ValidationError: If the provided YAML configuration file has an invalid format.
-        ValueError: If the provided YAML configuration file has an invalid format.
+    Note:
+        In case of validation errors, user notifications will be triggered and `None` will be returned.
     """
     # load yaml description file
     cfg = load_yaml(infra_yaml_config_file)

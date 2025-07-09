@@ -1,4 +1,4 @@
-""" OpenFactory Application Schema. """
+""" Pydantic schemas for validating OpenFactory Application definitions. """
 
 from pydantic import BaseModel, Field, ValidationError
 from typing import List, Dict, Optional
@@ -30,24 +30,22 @@ class OpenFactoryAppsConfig(BaseModel):
 
 def get_apps_from_config_file(apps_yaml_config_file: str, uns_schema: UNSSchema) -> Optional[Dict[str, OpenFactoryApp]]:
     """
-    Load, validate, and enrich with UNS data OpenFactory application configurations from a YAML file.
+    Load, validate, and enrich OpenFactory application configurations from a YAML file using UNS metadata.
 
-    This function reads a YAML configuration file that defines a collection of OpenFactory applications,
-    validates its structure using the `DevicesConfig` model, and augments each device
-    entry with corresponding UNS (Unified Namespace) metadata extracted using the provided schema.
+    This function reads a YAML file containing OpenFactory application definitions, validates its content
+    using the :class:`OpenFactoryAppsConfig` Pydantic model, and augments each validated application entry
+    with Unified Namespace (UNS) metadata derived from the provided schema.
 
     Args:
-        apps_yaml_config_file (str): Path to the YAML configuration file.
-        uns_schema (UNSSchema): An instance of the UNS schema used to generate the UNS metadata
+        apps_yaml_config_file (str): Path to the YAML file defining application configurations.
+        uns_schema (UNSSchema): Schema instance used to extract and validate UNS metadata
+                                for each application.
 
     Returns:
-        dict: Dictionary of apps configurations or None in case of errors.
+        Optional[Dict[str, OpenFactoryApp]]: A dictionary of validated and enriched application configurations,
+                                             or `None` if validation fails.
 
-    Raises:
-        ValidationError: If the provided YAML configuration file has an invalid format.
-        ValueError: If the provided YAML configuration file has an invalid format.
-
-    Notes:
+    Note:
         In case of validation errors, user notifications will be triggered and `None` will be returned.
     """
     # load yaml description file
