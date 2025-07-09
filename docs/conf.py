@@ -31,6 +31,12 @@ nitpick_ignore = [
     ('py:exc', 'docker.errors.NotFound'),
     ('py:class', 'asyncua.Client'),
     ('py:class', 'cimpl.Producer'),
+    ('py:class', 'pydantic.main.BaseModel'),
+    ('py:class', 'pydantic.root_model.RootModel[Dict[str, Node]]'),
+    ('py:class', 'pydantic.root_model.RootModel[Dict[str, Union[Volume, NoneType]]]'),
+    ('py:class', 'pydantic.root_model.RootModel[Dict[str, Optional[Volume]]]'),
+    ('py:class', "pydantic.root_model.RootModel[Dict[str, Union[Literal['ANY'], str, List[str]]]]"),
+    ('py:exc', 'pydantic.ValidationError'), 
 ]
 
 templates_path = ['_templates']
