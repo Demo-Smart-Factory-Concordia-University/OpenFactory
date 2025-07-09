@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from openfactory.models.user_notifications import user_notify
 from openfactory.config import load_yaml
+from openfactory.schemas.uns import UNSSchema
 import openfactory.config as config
 
 
@@ -228,12 +229,17 @@ class DevicesConfig(BaseModel):
         return self.model_dump()['devices']
 
 
-def get_devices_from_config_file(devices_yaml_config_file: str) -> Optional[Dict[str, Device]]:
+def get_devices_from_config_file(devices_yaml_config_file: str, uns_schema: UNSSchema) -> Optional[Dict[str, Device]]:
     """
-    Loads and validates devices configuration from a YAML file.
+    Load, validate, and enrich with UNS data device configurations from a YAML file.
+
+    This function reads a YAML configuration file that defines a collection of devices,
+    validates its structure using the `DevicesConfig` model, and augments each device
+    entry with corresponding UNS (Unified Namespace) metadata extracted using the provided schema.
 
     Args:
         devices_yaml_config_file (str): Path to the YAML configuration file
+        uns_schema (UNSSchema): An instance of the UNS schema used to generate the UNS metadata
 
     Returns:
         dict: Dictionary of devices configurations or None in case of error
@@ -241,6 +247,9 @@ def get_devices_from_config_file(devices_yaml_config_file: str) -> Optional[Dict
     Raises:
         ValidationError: If the provided YAML configuration file has an invalid format
         ValueError: If the provided YAML configuration file has an invalid format
+
+    Notes:
+        In case of validation errors, user notifications will be triggered and `None` will be returned.
     """
     # load yaml description file
     cfg = load_yaml(devices_yaml_config_file)
@@ -255,4 +264,16 @@ def get_devices_from_config_file(devices_yaml_config_file: str) -> Optional[Dict
     except ValueError as err:
         user_notify.fail(f"Provided YAML configuration file has invalid format\n{err}")
         return None
-    return devices_cfg.devices_dict
+
+    # inject UNS data into the validated devices configurations
+    devices = devices_cfg.devices_dict
+    for device_name, raw_device_data in cfg['devices'].items():
+        uns_fields = uns_schema.extract_uns_fields(raw_device_data)
+        uns_schema.validate_uns_fields(device_name, uns_fields)
+        uns_id = uns_schema.generate_uns_path(uns_fields)
+
+        devices[device_name]["uns"] = {
+            "levels": uns_fields,
+            "uns_id": uns_id,
+        }
+    return devices
