@@ -24,6 +24,7 @@ napoleon_use_rtype = False
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'fsspec': ('https://filesystem-spec.readthedocs.io/en/latest/', None),
 }
 
 nitpick_ignore = [

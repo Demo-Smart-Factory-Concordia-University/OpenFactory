@@ -9,4 +9,5 @@ API Reference
    apps/index
    kafka/index
    schemas/index
+   utils/index
    exceptions
