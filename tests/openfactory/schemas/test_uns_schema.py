@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import yaml
 import os
+from unittest import mock
 from openfactory.schemas.uns import UNSSchema
 
 
@@ -32,6 +33,14 @@ class TestUNSSchema(unittest.TestCase):
 
     def tearDown(self):
         os.remove(self.temp_file.name)
+
+    def test_schema_model_validation_error_is_caught(self):
+        """ Test that UNSSchema catches ValueError from UNSSchemaModel and re-raises it """
+        with mock.patch("openfactory.schemas.uns.UNSSchemaModel", side_effect=ValueError("Mocked error")):
+            with self.assertRaises(ValueError) as cm:
+                UNSSchema(schema_yaml_file=self.temp_file.name)
+            self.assertIn("Invalid UNS schema", str(cm.exception))
+            self.assertIsInstance(cm.exception.__cause__, ValueError)
 
     def test_extract_uns_fields_valid(self):
         """ Test extract_uns_fields """
