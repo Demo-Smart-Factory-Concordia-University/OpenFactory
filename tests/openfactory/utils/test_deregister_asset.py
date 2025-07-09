@@ -1,4 +1,5 @@
 import unittest
+import json
 from unittest.mock import patch, MagicMock
 from openfactory.utils import deregister_asset
 from openfactory.assets import AssetAttribute
@@ -59,3 +60,36 @@ class TestDeregisterAsset(unittest.TestCase):
 
         # Ensure flush was called
         mock_producer_instance.flush.assert_called_once()
+
+    @patch("openfactory.utils.assets.AssetProducer")
+    @patch("openfactory.utils.assets.now_iso_to_epoch_millis")
+    def test_deregister_asset_removes_uns_map(self, mock_now, MockAssetProducer):
+        """ Test that UNS map tombstone message is produced correctly """
+        mock_producer_instance = MagicMock()
+        MockAssetProducer.return_value = mock_producer_instance
+
+        # Mocked timestamp
+        mock_now.return_value = 1720000000000
+
+        asset_uuid = "mocked-uuid"
+        expected_topic = "mocked_uns_map_topic"
+
+        mock_ksql_client = MagicMock()
+        mock_ksql_client.get_kafka_topic.return_value = expected_topic
+
+        # Call function
+        deregister_asset(asset_uuid, mock_ksql_client)
+
+        # Assert get_kafka_topic was called correctly
+        mock_ksql_client.get_kafka_topic.assert_any_call("asset_to_uns_map_raw")
+
+        # Assert UNS map removal message was produced
+        mock_producer_instance.produce.assert_any_call(
+            topic=expected_topic,
+            key=asset_uuid,
+            value=json.dumps({
+                "asset_uuid": asset_uuid,
+                "uns_id": None,
+                "updated_at": 1720000000000
+            })
+        )
