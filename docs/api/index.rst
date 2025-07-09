@@ -8,4 +8,5 @@ API Reference
    assets/index
    apps/index
    kafka/index
+   schemas/index
    exceptions
