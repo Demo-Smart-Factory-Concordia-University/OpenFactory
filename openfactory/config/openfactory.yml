@@ -4,7 +4,7 @@
 # General configurations
 
 # OpenFactory Version
-OPENFACTORY_UNS_SCHEMA: ${OPENFACTORY_UNS_SCHEMA}
+OPENFACTORY_VERSION: ${OPENFACTORY_VERSION}
 
 # OpenFactory Log Level
 OPENFACTORY_LOG_LEVEL: INFO
@@ -12,7 +12,7 @@ KSQLDB_LOG_LEVEL: WARNING
 KAFKA_LOG_LEVEL: WARNING
 
 # OpenFactory UNS definiton
-OPENFACTORY_UNS_TEMPLATE: ${OPENFACTORY_UNS_TEMPLATE}
+OPENFACTORY_UNS_SCHEMA: ${OPENFACTORY_UNS_SCHEMA}
 
 # ---------------------------------------------------------------------------
 # OpenFactory cluster configurations
