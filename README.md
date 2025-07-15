@@ -16,7 +16,7 @@
 
 ## Overview
 
-![Data Flow OpenFactory](docs/img/DataFlow.png)
+![Data Flow OpenFactory](docs_md/img/DataFlow.png)
 The architecture supporting *OpenFactory* is organized into five distinct layers, with *OpenFactory* taking care of the first three:
 
 1. **Perception Layer**: This foundational layer consists of devices such as sensors and manufacturing equipment that collect data from and send commands to the physical environment.
@@ -34,7 +34,7 @@ The architecture supporting *OpenFactory* is organized into five distinct layers
 
 ## Architecture
 
-![Data Flow OpenFactory](docs/img/OFAArchitecture.png)
+![Data Flow OpenFactory](docs_md/img/OFAArchitecture.png)
 *OpenFactory* employs a microservices architecture orchestrated by Docker Swarm, where various microservices required for device integration are automatically created and deployed based on YAML configurations. Key components include:
 
 - **Adapters**: Facilitate data and commands compatibility between devices.
@@ -44,7 +44,7 @@ The architecture supporting *OpenFactory* is organized into five distinct layers
 - **ksqlDB**: Provides real-time stream processing, enabling users to query and manipulate data dynamically for actionable insights.
 - **Docker Swarm**: Coordinates and manages microservices across the cluster for optimal performance.
 
-A detailed description of the OpenFactory architecture can be found [here](./docs/architecture/architecture.md).
+A detailed description of the OpenFactory architecture can be found [here](./docs_md/architecture/architecture.md).
 
 ## Scalability
 
@@ -108,4 +108,4 @@ Please note:
 - Contributions must align with the project's **non-commercial licensing model**.
 - Organizations or individuals intending to use the project in **commercial contexts** must initiate a licensing discussion prior to contributing code.
 
-For guidelines on contributing, refer to [CONTRIBUTOR.md](CONTRIBUTOR.md).
+For guidelines on contributing, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
