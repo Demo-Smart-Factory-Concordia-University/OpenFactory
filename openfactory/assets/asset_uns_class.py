@@ -3,7 +3,7 @@
 from typing import Union, List
 import openfactory.config as config
 from openfactory.assets.asset_base import BaseAsset
-from openfactory.kafka import KafkaAssetUNSConsumer
+from openfactory.kafka import KafkaAssetUNSConsumer, KSQLDBClient
 
 
 class AssetUNS(BaseAsset):
@@ -82,7 +82,8 @@ class AssetUNS(BaseAsset):
     KSQL_ASSET_ID = 'uns_id'
     ASSET_CONSUMER_CLASS = KafkaAssetUNSConsumer
 
-    def __init__(self, uns_id, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, uns_id: str,
+                 ksqlClient: KSQLDBClient, bootstrap_servers: str = config.KAFKA_BROKER) -> None:
         """
         Initializes the Asset with metadata and a Kafka producer.
 

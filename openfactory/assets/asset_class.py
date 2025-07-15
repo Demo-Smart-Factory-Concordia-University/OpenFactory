@@ -77,7 +77,8 @@ class Asset(BaseAsset):
     KSQL_ASSET_ID = 'asset_uuid'
     ASSET_CONSUMER_CLASS = KafkaAssetConsumer
 
-    def __init__(self, asset_uuid, ksqlClient, bootstrap_servers=config.KAFKA_BROKER):
+    def __init__(self, asset_uuid: str,
+                 ksqlClient: KSQLDBClient, bootstrap_servers: str = config.KAFKA_BROKER) -> None:
         """
         Initializes the Asset with metadata and a Kafka producer.
 
