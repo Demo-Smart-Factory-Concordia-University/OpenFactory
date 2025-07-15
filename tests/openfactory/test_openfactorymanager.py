@@ -127,7 +127,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Ensure register_asset was called
         mock_register_asset.assert_called_once_with(device_uuid + '-AGENT',
-                                                    uns_id=None,
+                                                    uns=None,
                                                     asset_type="MTConnectAgent",
                                                     ksqlClient=ksqlMock,
                                                     bootstrap_servers='mokded_bootstrap_servers',
@@ -224,7 +224,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Ensure register_asset was called
         mock_register_asset.assert_called_once_with(device['uuid'].upper() + '-PRODUCER',
-                                                    uns_id=None,
+                                                    uns=None,
                                                     asset_type='KafkaProducer',
                                                     ksqlClient=ksqlMock,
                                                     bootstrap_servers='mokded_bootstrap_servers',
@@ -321,7 +321,7 @@ class TestOpenFactoryManager(unittest.TestCase):
 
         # Ensure register_asset was called
         mock_register_asset.assert_called_once_with(device_uuid + '-SUPERVISOR',
-                                                    uns_id=None,
+                                                    uns=None,
                                                     asset_type='Supervisor',
                                                     ksqlClient=ksqlMock,
                                                     bootstrap_servers='mokded_bootstrap_servers',
@@ -346,9 +346,10 @@ class TestOpenFactoryManager(unittest.TestCase):
         manager = OpenFactoryManager(ksqlClient=ksqlMock, bootstrap_servers='mokded_bootstrap_servers',
                                      deployment_strategy=mock_deployment_strategy)
 
+        uns = {"uns_id": "some/mocked/path"}
         application = {
             'uuid': 'test-app',
-            "uns": {"uns_id": "some/mocked/path"},
+            "uns": uns,
             'image': 'test-image',
             'environment': ['VAR1=value1', 'VAR2=value2', 'KSQLDB_LOG_LEVEL=MOCK_USER_LOG_LEVEL']
         }
@@ -374,7 +375,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         )
         mock_register_asset.assert_called_once_with(
             'test-app',
-            uns_id='some/mocked/path',
+            uns=uns,
             asset_type='OpenFactoryApp',
             ksqlClient=manager.ksql,
             bootstrap_servers='mokded_bootstrap_servers',
@@ -472,6 +473,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         mock_path.dirname.return_value = "/mock/path"
         mock_path.join.return_value = "/mock/path/device.xml"
         mock_split_protocol.return_value = (None, None)
+        uns = {"uns_id": "some/mocked/path"}
         mock_get_devices.return_value = {
             "Device1": {
                 "uuid": "device-uuid-1",
@@ -481,7 +483,7 @@ class TestOpenFactoryManager(unittest.TestCase):
                 },
                 "ksql_tables": None,
                 "supervisor": "MockSupervisor",
-                "uns": {"uns_id": "some/mocked/path"}
+                "uns": uns
             }
         }
         mock_uns_instance = MagicMock()
@@ -502,7 +504,7 @@ class TestOpenFactoryManager(unittest.TestCase):
         # Assertions
         mock_get_devices.assert_called_once_with("mock_config.yaml", mock_uns_instance)
         mock_register_asset.assert_called_once_with("device-uuid-1",
-                                                    uns_id="some/mocked/path",
+                                                    uns=uns,
                                                     asset_type="Device",
                                                     ksqlClient=manager.ksql,
                                                     docker_service="")
