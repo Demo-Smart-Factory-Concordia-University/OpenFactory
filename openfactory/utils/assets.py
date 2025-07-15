@@ -1,6 +1,7 @@
 """ Asset registration and deregistration in OpenFactory. """
 
 import json
+from typing import Dict
 from datetime import datetime, timezone
 from openfactory.assets.utils import AssetAttribute
 from openfactory.kafka import AssetProducer
@@ -19,14 +20,14 @@ def now_iso_to_epoch_millis() -> int:
     return int(now.timestamp() * 1000)
 
 
-def register_asset(asset_uuid: str, uns_id: str, asset_type: str,
+def register_asset(asset_uuid: str, uns: Dict, asset_type: str,
                    ksqlClient: KSQLDBClient, bootstrap_servers: str = config.KAFKA_BROKER, docker_service=""):
     """
     Register an asset in OpenFactory.
 
     Args:
         asset_uuid (str): UUID of the asset.
-        uns_id (str): UNS ID of the asset.
+        uns (dict): UNS data with 'levels' (a dict of hierarchy levels) and 'uns_id' (UNS id as a string).
         asset_type (str): Type of the asset.
         ksqlClient: (KSQLDBClient) KSQL client for executing queries.
         bootstrap_servers (str): Kafka bootstrap server address.
@@ -51,17 +52,24 @@ def register_asset(asset_uuid: str, uns_id: str, asset_type: str,
             AssetAttribute(value="", type="OpenFactory", tag="AssetsReferences")
         )
 
-    # Set UNS map
-    producer.produce(
-        topic=ksqlClient.get_kafka_topic('asset_to_uns_map_raw'),
-        key=asset_uuid.encode('utf-8'),
-        value=json.dumps({
-            'ASSET_UUID': asset_uuid,
-            'UNS_ID': uns_id,
-            'UPDATED_AT': now_iso_to_epoch_millis()
-        })
-    )
-    producer.flush()
+    if uns:
+        # Set UNS levels
+        for level_name, level_value in uns['levels'].items():
+            producer.send_asset_attribute(
+                level_name,
+                AssetAttribute(value=level_value, type="OpenFactory", tag="UNSLevel")
+            )
+        # Set UNS map
+        producer.produce(
+            topic=ksqlClient.get_kafka_topic('asset_to_uns_map_raw'),
+            key=asset_uuid.encode('utf-8'),
+            value=json.dumps({
+                'ASSET_UUID': asset_uuid,
+                'UNS_ID': uns['uns_id'],
+                'UPDATED_AT': now_iso_to_epoch_millis()
+            })
+        )
+        producer.flush()
 
 
 def deregister_asset(asset_uuid: str,

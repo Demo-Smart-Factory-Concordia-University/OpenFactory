@@ -20,64 +20,57 @@ class TestRegisterAsset(unittest.TestCase):
 
         # Inputs
         asset_uuid = "1234-ABCD"
-        uns_id = "mocked/uns/path/id"
         asset_type = "Device"
         mock_ksql_client = MagicMock()
         bootstrap_servers = "kafka-broker:9092"
         docker_service = "robot-controller"
 
         # Call the function
-        register_asset(asset_uuid, uns_id, asset_type,
+        register_asset(asset_uuid, None, asset_type,
                        mock_ksql_client, bootstrap_servers, docker_service)
 
         # Check that AssetProducer is instantiated correctly
         MockAssetProducer.assert_called_once_with(asset_uuid, mock_ksql_client, bootstrap_servers)
 
-        # Check that send_asset_attribute is called four times with correct AssetAttribute values
         calls = mock_producer_instance.send_asset_attribute.call_args_list
+
+        # We expect 4 fixed calls
         self.assertEqual(len(calls), 4)
 
-        # Check contents of the first call
-        asset_type_call = calls[0]
-        self.assertEqual(asset_type_call[0][0], "AssetType")
-        self.assertIsInstance(asset_type_call[0][1], AssetAttribute)
-        self.assertEqual(asset_type_call[0][1].value, asset_type)
-        self.assertEqual(asset_type_call[0][1].type, "OpenFactory")
-        self.assertEqual(asset_type_call[0][1].tag, "AssetType")
+        # Verify fixed attribute calls
+        expected_fixed_attributes = [
+            ("AssetType", asset_type, "AssetType"),
+            ("DockerService", docker_service, "DockerService"),
+            ("references_below", "", "AssetsReferences"),
+            ("references_above", "", "AssetsReferences")
+        ]
 
-        # Check contents of the second call
-        docker_service_call = calls[1]
-        self.assertEqual(docker_service_call[0][0], "DockerService")
-        self.assertIsInstance(docker_service_call[0][1], AssetAttribute)
-        self.assertEqual(docker_service_call[0][1].value, docker_service)
-        self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
-        self.assertEqual(docker_service_call[0][1].tag, "DockerService")
-
-        # Check contents of the third call
-        docker_service_call = calls[2]
-        self.assertEqual(docker_service_call[0][0], "references_below")
-        self.assertIsInstance(docker_service_call[0][1], AssetAttribute)
-        self.assertEqual(docker_service_call[0][1].value, "")
-        self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
-        self.assertEqual(docker_service_call[0][1].tag, "AssetsReferences")
-
-        # Check contents of the fourth call
-        docker_service_call = calls[3]
-        self.assertEqual(docker_service_call[0][0], "references_above")
-        self.assertIsInstance(docker_service_call[0][1], AssetAttribute)
-        self.assertEqual(docker_service_call[0][1].value, "")
-        self.assertEqual(docker_service_call[0][1].type, "OpenFactory")
-        self.assertEqual(docker_service_call[0][1].tag, "AssetsReferences")
+        for i, (key, value, tag) in enumerate(expected_fixed_attributes):
+            call = calls[i]
+            self.assertEqual(call[0][0], key)
+            attr = call[0][1]
+            self.assertIsInstance(attr, AssetAttribute)
+            self.assertEqual(attr.value, value)
+            self.assertEqual(attr.type, "OpenFactory")
+            self.assertEqual(attr.tag, tag)
 
     @patch("openfactory.utils.assets.AssetProducer")
     def test_register_asset_sets_uns_mapping(self, MockAssetProducer):
-        """ Test that UNS mapping is produced correctly """
+        """ Test that UNS mapping is set correctly """
         mock_producer = MagicMock()
         MockAssetProducer.return_value = mock_producer
 
         # Inputs
         asset_uuid = "1234-ABCD"
-        uns_id = "mocked/uns/path"
+        uns = {
+            "levels": {
+                "inc": "OpenFactory",
+                "area": "Machining",
+                "workcenter": "WC002",
+                "asset": "cnc"
+            },
+            "uns_id": "OpenFactory/Machining/WC002/cnc"
+        }
         asset_type = "Device"
         bootstrap_servers = "kafka-broker:9092"
         docker_service = "mocked_service"
@@ -89,7 +82,7 @@ class TestRegisterAsset(unittest.TestCase):
 
         # Patch now_iso_to_epoch_millis to return a fixed timestamp
         with patch("openfactory.utils.assets.now_iso_to_epoch_millis", return_value=1761338400000):
-            register_asset(asset_uuid, uns_id, asset_type, mock_ksql_client, bootstrap_servers, docker_service)
+            register_asset(asset_uuid, uns, asset_type, mock_ksql_client, bootstrap_servers, docker_service)
 
         # Ensure get_kafka_topic was called with the correct table name
         mock_ksql_client.get_kafka_topic.assert_any_call("asset_to_uns_map_raw")
@@ -100,7 +93,7 @@ class TestRegisterAsset(unittest.TestCase):
             key=asset_uuid.encode("utf-8"),
             value=json.dumps({
                 "ASSET_UUID": asset_uuid,
-                "UNS_ID": uns_id,
+                "UNS_ID": uns["uns_id"],
                 "UPDATED_AT": 1761338400000
             })
         )

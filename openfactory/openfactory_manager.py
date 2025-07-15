@@ -146,7 +146,7 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(err)
 
         # register agent in OpenFactory
-        register_asset(agent_uuid, uns_id=None, asset_type="MTConnectAgent",
+        register_asset(agent_uuid, uns=None, asset_type="MTConnectAgent",
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=service_name)
         device = Asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         device.add_reference_below(agent_uuid)
@@ -263,7 +263,7 @@ class OpenFactoryManager(OpenFactory):
             raise OFAException(f"Producer {service_name} could not be created\n{err}")
 
         # register producer in OpenFactory
-        register_asset(producer_uuid, uns_id=None, asset_type="KafkaProducer",
+        register_asset(producer_uuid, uns=None, asset_type="KafkaProducer",
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=service_name)
         dev = Asset(device['uuid'], ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         dev.add_reference_below(producer_uuid)
@@ -327,7 +327,7 @@ class OpenFactoryManager(OpenFactory):
         except docker.errors.APIError as err:
             user_notify.fail(f"Supervisor {device_uuid.lower()}-supervisor could not be deployed\n{err}")
             return
-        register_asset(supervisor_uuid, uns_id=None, asset_type='Supervisor',
+        register_asset(supervisor_uuid, uns=None, asset_type='Supervisor',
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=device_uuid.lower() + '-supervisor')
         device = Asset(device_uuid, ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers)
         device.add_reference_below(supervisor_uuid)
@@ -372,7 +372,7 @@ class OpenFactoryManager(OpenFactory):
             user_notify.fail(f"Application {application['uuid']} could not be deployed\n{err}")
             return
 
-        register_asset(application['uuid'], uns_id=application['uns']['uns_id'], asset_type='OpenFactoryApp',
+        register_asset(application['uuid'], uns=application['uns'], asset_type='OpenFactoryApp',
                        ksqlClient=self.ksql, bootstrap_servers=self.bootstrap_servers, docker_service=application['uuid'].lower())
         user_notify.success(f"Application {application['uuid']} deployed successfully")
 
@@ -422,7 +422,7 @@ class OpenFactoryManager(OpenFactory):
                     if not os.path.isabs(device_xml_uri):
                         device_xml_uri = os.path.join(os.path.dirname(yaml_config_file), device_xml_uri)
 
-            register_asset(device['uuid'], uns_id=device['uns']['uns_id'], asset_type="Device",
+            register_asset(device['uuid'], uns=device['uns'], asset_type="Device",
                            ksqlClient=self.ksql, docker_service="")
 
             self.deploy_mtconnect_agent(device_uuid=device['uuid'],
