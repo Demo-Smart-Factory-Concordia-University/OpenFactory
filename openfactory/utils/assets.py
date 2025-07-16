@@ -66,6 +66,7 @@ def register_asset(asset_uuid: str, uns: Dict, asset_type: str,
             value=json.dumps({
                 'ASSET_UUID': asset_uuid,
                 'UNS_ID': uns['uns_id'],
+                'UNS_LEVELS': uns['levels'],
                 'UPDATED_AT': now_iso_to_epoch_millis()
             })
         )
@@ -114,6 +115,7 @@ def deregister_asset(asset_uuid: str,
         value=json.dumps({
             'asset_uuid': asset_uuid,
             'uns_id': None,
+            'uns_levels': None,
             'updated_at': now_iso_to_epoch_millis()
         })
     )

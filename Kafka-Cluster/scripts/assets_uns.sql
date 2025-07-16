@@ -5,6 +5,7 @@
 CREATE TABLE asset_to_uns_map_raw (
     asset_uuid VARCHAR PRIMARY KEY,
     uns_id VARCHAR,
+    uns_levels MAP<VARCHAR, VARCHAR>,
     updated_at TIMESTAMP
 ) WITH (
     KAFKA_TOPIC = 'asset_to_uns_map_topic',
