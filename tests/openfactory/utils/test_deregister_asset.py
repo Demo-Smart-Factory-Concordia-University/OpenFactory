@@ -90,6 +90,7 @@ class TestDeregisterAsset(unittest.TestCase):
             value=json.dumps({
                 "asset_uuid": asset_uuid,
                 "uns_id": None,
+                "uns_levels": None,
                 "updated_at": 1720000000000
             })
         )

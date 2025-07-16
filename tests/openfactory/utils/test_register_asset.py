@@ -94,6 +94,7 @@ class TestRegisterAsset(unittest.TestCase):
             value=json.dumps({
                 "ASSET_UUID": asset_uuid,
                 "UNS_ID": uns["uns_id"],
+                "UNS_LEVELS": uns["levels"],
                 "UPDATED_AT": 1761338400000
             })
         )
