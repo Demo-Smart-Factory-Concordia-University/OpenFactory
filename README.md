@@ -4,7 +4,15 @@
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen)](https://openfactory-doc.readthedocs.io/en/latest/index.html)
 
 
-**OpenFactory** aims to streamline the integration of manufacturing devices into a cohesive data processing ecosystem, enabling efficient data streaming to Kafka for analysis and decision-making and sending back commands to devices to execute actionable items. It is a distributed cluster designed for seamless integration of manufacturing devices, providing an adaptable infrastructure to interface both MTConnect-enabled and retrofitted devices, using adapters when necessary.
+## What is OpenFactory?
+
+> **OpenFactory** is a deployment and coordination platform for the physical world.
+>
+> It brings DevOps thinking to manufacturing — making the real world **versionable**, **testable**, **programmable**, and **connected at scale**.
+
+It is designed for large-scale, low-latency coordination, with the goal of managing thousands of assets and handling millions of events per second through Kafka-powered data pipelines.
+
+👉 [Read the full OpenFactory Manifesto](docs/MANIFESTO.md)
 
 ## Key Features
 
@@ -15,6 +23,10 @@
 - **Flexible Deployment Options**: Deploy *OpenFactory* on-premises, in the cloud, or in a hybrid configuration to meet operational needs.
 
 ## Overview
+
+**OpenFactory** aims to streamline the integration of manufacturing devices into a cohesive data processing ecosystem, enabling efficient data streaming to Kafka for analysis and decision-making, and sending back commands to devices to execute actionable items.
+
+It is a distributed cluster designed for seamless integration of manufacturing devices, providing an adaptable infrastructure to interface both MTConnect-enabled and retrofitted devices using adapters when necessary.
 
 ![Data Flow OpenFactory](docs_md/img/DataFlow.png)
 The architecture supporting *OpenFactory* is organized into five distinct layers, with *OpenFactory* taking care of the first three:

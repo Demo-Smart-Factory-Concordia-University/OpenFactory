@@ -20,6 +20,8 @@ and their capabilities. Its technical design choices, such as distributed deploy
 and support for both modern and legacy equipment, are driven by the need for robustness and scalability
 in real-world industrial environments.
 
+For a clear vision and guiding principles of OpenFactory, see the :doc:`OpenFactory Manifesto <MANIFESTO>`.
+
 API Reference
 -------------
 
@@ -29,4 +31,5 @@ API Reference
 .. toctree::
    :hidden:
 
+   about
    api/index

@@ -62,7 +62,7 @@ html_theme_options = {
         },
     ],
     "show_prev_next": False,
-    "show_toc_level": 2,
+    "navigation_depth": 2,
     "use_edit_page_button": True,
 }
 
