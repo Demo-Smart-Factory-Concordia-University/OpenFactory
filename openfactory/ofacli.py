@@ -14,6 +14,7 @@ or (during development)
 > pip install -e .
 """
 
+import sys
 import paramiko.ssh_exception
 from openfactory.ofa.cli import cli
 from openfactory.models.user_notifications import user_notify
@@ -50,8 +51,14 @@ def init_environment() -> bool:
 
 def main():
     """ Command line interface of OpenFactory. """
+    skip_env_commands = {"--help", "version", "config"}
+    if len(sys.argv) == 1 or sys.argv[1] in skip_env_commands:
+        cli()
+        return
+
     if not init_environment():
         exit(1)
+
     cli()
 
 

@@ -53,19 +53,53 @@ class TestOFAEntryPoint(unittest.TestCase):
     @patch('openfactory.ofacli.init_environment', return_value=True)
     def test_main_runs_cli_if_env_init_ok(self, mock_init_env, mock_cli):
         """ main() calls cli() if init_environment() is successful """
-        main()
-
-        mock_init_env.assert_called_once()
-        mock_cli.assert_called_once()
+        with patch.object(sys, 'argv', ['ofa', 'node']):  # A command that does NOT skip env setup
+            main()
+            mock_init_env.assert_called_once()
+            mock_cli.assert_called_once()
 
     @patch('openfactory.ofacli.init_environment', return_value=False)
     @patch('openfactory.ofacli.exit', side_effect=SystemExit(1))
     def test_main_exits_on_failed_env_init(self, mock_exit, mock_init_env):
         """ main() exits if init_environment() fails """
-        with patch.object(sys, 'argv', ['ofa']):
+        with patch.object(sys, 'argv', ['ofa', 'nodes', 'ls']):
             with self.assertRaises(SystemExit) as cm:
                 main()
 
             mock_init_env.assert_called_once()
             mock_exit.assert_called_once_with(1)
             self.assertEqual(cm.exception.code, 1)
+
+    @patch('openfactory.ofacli.cli')
+    @patch('openfactory.ofacli.init_environment')
+    def test_main_skips_env_setup_on_version(self, mock_init_env, mock_cli):
+        """ main() skips init_environment() if command is 'version' """
+        with patch.object(sys, 'argv', ['ofa', 'version']):
+            main()
+            mock_init_env.assert_not_called()
+            mock_cli.assert_called_once()
+
+    @patch('openfactory.ofacli.cli')
+    @patch('openfactory.ofacli.init_environment')
+    def test_main_skips_env_setup_on_help(self, mock_init_env, mock_cli):
+        """ main() skips init_environment() if --help is used """
+        with patch.object(sys, 'argv', ['ofa', '--help']):
+            main()
+            mock_init_env.assert_not_called()
+            mock_cli.assert_called_once()
+
+    @patch('openfactory.ofacli.cli')
+    @patch('openfactory.ofacli.init_environment')
+    def test_main_skips_env_setup_on_config(self, mock_init_env, mock_cli):
+        """ main() skips init_environment() if config is used """
+        with patch.object(sys, 'argv', ['ofa', 'config']):
+            main()
+            mock_init_env.assert_not_called()
+            mock_cli.assert_called_once()
+
+        mock_init_env.reset_mock()
+        mock_cli.reset_mock()
+        with patch.object(sys, 'argv', ['ofa', 'config', 'ls']):
+            main()
+            mock_init_env.assert_not_called()
+            mock_cli.assert_called_once()
