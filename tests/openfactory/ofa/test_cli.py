@@ -1,4 +1,5 @@
 import unittest
+import openfactory
 from unittest.mock import patch
 from click.testing import CliRunner
 from openfactory.ofa.cli import cli
@@ -121,3 +122,9 @@ class TestCLI(unittest.TestCase):
 
         self.assertEqual(result.exit_code, 0)
         mock_deregister_callback.assert_called_once_with(asset_uuid='uuid-123')
+
+    def test_version_command(self):
+        """ Test 'ofa version' prints the correct version """
+        result = self.runner.invoke(cli, ['version'])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn(openfactory.__version__, result.output)
