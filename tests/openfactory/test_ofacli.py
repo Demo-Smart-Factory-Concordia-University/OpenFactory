@@ -1,5 +1,7 @@
 import unittest
 import sys
+import paramiko
+import socket
 from unittest.mock import patch
 from openfactory.ofacli import init_environment, main
 from openfactory.kafka.ksql import KSQLDBClientException
@@ -25,12 +27,27 @@ class TestOFAEntryPoint(unittest.TestCase):
     @patch('openfactory.ofacli.ksql.connect', side_effect=KSQLDBClientException("Connection failed"))
     @patch('openfactory.ofacli.dal.connect')
     @patch('openfactory.ofacli.user_notify')
-    def test_init_environment_failure(self, mock_notify, mock_dal_connect, mock_ksql_connect):
+    def test_init_environment_failure_ksql(self, mock_notify, mock_dal_connect, mock_ksql_connect):
         """ init_environment returns False if ksql.connect fails """
         result = init_environment()
 
         self.assertFalse(result)
         mock_notify.fail.assert_called_once_with('Failed to connect to ksqlDB server')
+
+    @patch('openfactory.ofacli.ksql.connect')
+    @patch(
+        'openfactory.ofacli.dal.connect',
+        side_effect=paramiko.ssh_exception.NoValidConnectionsError(
+            errors={('127.0.0.1', 22): socket.error("Connection refused")}
+        )
+    )
+    @patch('openfactory.ofacli.user_notify')
+    def test_init_environment_dal_ssh_exception(self, mock_notify, mock_dal_connect, mock_ksql_connect):
+        """ init_environment returns False if dal.connect fails due to SSH connection issues """
+        result = init_environment()
+
+        self.assertFalse(result)
+        mock_notify.fail.assert_called_once()
 
     @patch('openfactory.ofacli.cli')
     @patch('openfactory.ofacli.init_environment', return_value=True)
