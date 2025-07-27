@@ -34,12 +34,29 @@ class TestOpenFactoryCluster(TestCase):
 
         user_notify.setup(success_msg=Mock(),
                           fail_msg=Mock(),
-                          info_msg=Mock())
+                          info_msg=Mock(),
+                          warning_msg=Mock())
 
     def setUp(self):
         """ Reset mocks and initialize cluster """
         mock_node.update.reset_mock()
+
+        # Save original info mock
+        original_info = dal.docker_client.info
+
+        # Patch it temporarily just for construction
+        dal.docker_client.info = Mock(return_value={
+            "Name": "mock-node",
+            "Swarm": {
+                "LocalNodeState": "active",
+                "ControlAvailable": True,
+                "NodeID": "mock-node-id"
+            }
+        })
         self.cluster = OpenFactoryCluster()
+
+        # Restore it back before setUp finishes
+        dal.docker_client.info = original_info
 
     def test_add_label_no_label(self, *args):
         """ Test add_label when no explicit label is added """
@@ -147,7 +164,6 @@ class TestOpenFactoryCluster(TestCase):
     @patch('openfactory.openfactory_cluster.user_notify')
     def test_remove_workers_success(self, mock_user_notify, mock_config, mock_dal, mock_docker_client):
         """ Test successful removal of a worker node """
-        cluster = OpenFactoryCluster()
         mock_config.OPENFACTORY_USER = 'testuser'
 
         workers = {
@@ -169,7 +185,7 @@ class TestOpenFactoryCluster(TestCase):
         mock_ssh_client = Mock()
         mock_docker_client.return_value = mock_ssh_client
 
-        cluster.remove_workers(workers, node_ip_map)
+        self.cluster.remove_workers(workers, node_ip_map)
 
         # Assert node was drained
         mock_user_notify.info.assert_any_call('Draining node worker1 ...')
@@ -190,8 +206,6 @@ class TestOpenFactoryCluster(TestCase):
     @patch('openfactory.openfactory_cluster.docker.DockerClient')
     def test_remove_workers_missing_ip(self, mock_docker_client, mock_user_notify, mock_config, *args):
         """ Test worker removal is skipped if IP not in node_ip_map """
-        cluster = OpenFactoryCluster()
-
         workers = {
             'worker1': {'ip': '192.168.1.10'}
         }
@@ -199,7 +213,7 @@ class TestOpenFactoryCluster(TestCase):
             '192.168.1.99': 'node_id_1'
         }
 
-        cluster.remove_workers(workers, node_ip_map)
+        self.cluster.remove_workers(workers, node_ip_map)
 
         mock_user_notify.info.assert_not_called()
         mock_user_notify.success.assert_not_called()
@@ -209,7 +223,6 @@ class TestOpenFactoryCluster(TestCase):
     @patch('openfactory.openfactory_cluster.user_notify')
     def test_remove_workers_api_error(self, mock_user_notify, mock_config, mock_docker_client):
         """ Test APIError during node removal is handled gracefully """
-        cluster = OpenFactoryCluster()
         mock_config.OPENFACTORY_USER = 'testuser'
 
         workers = {
@@ -222,7 +235,7 @@ class TestOpenFactoryCluster(TestCase):
         # Simulate failure
         dal.docker_client.nodes.get = Mock(side_effect=APIError("API failed"))
 
-        cluster.remove_workers(workers, node_ip_map)
+        self.cluster.remove_workers(workers, node_ip_map)
 
         mock_user_notify.fail.assert_called()
         msg = mock_user_notify.fail.call_args[0][0]
@@ -232,7 +245,6 @@ class TestOpenFactoryCluster(TestCase):
     @patch("openfactory.openfactory_cluster.config")
     def test_remove_infrastack_from_config_file(self, mock_config, mock_get_config, mock_docker_client, *args):
         """ Test teardown of infrastack using a mocked config structure """
-        cluster = OpenFactoryCluster()
         mock_config.OPENFACTORY_USER = 'mock_user'
 
         mock_get_config.return_value = {
@@ -251,7 +263,7 @@ class TestOpenFactoryCluster(TestCase):
         dal.docker_client.nodes.list = Mock(return_value=[mock_node])
         dal.docker_client.nodes.get = Mock(return_value=mock_node)
 
-        cluster.remove_infrastack_from_config_file('fake/path/to/config.yml')
+        self.cluster.remove_infrastack_from_config_file('fake/path/to/config.yml')
 
         # Assert node was drained
         mock_node.update.assert_called_once()
