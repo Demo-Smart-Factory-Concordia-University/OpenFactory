@@ -65,6 +65,7 @@ INFLUXDB_URL: ${INFLUXDB_URL}
 INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
 
 # Colors for ofa cli
-OFA_SUCCSESS: "\e[0;32m"
-OFA_FAIL: "\e[0;31m"
-OFA_END: "\e[0m"
+OFA_SUCCSESS: "\e[0;32m"   # Green for success
+OFA_FAIL: "\e[0;31m"       # Red for failure
+OFA_WARNING: "\e[0;33m"    # Yellow for warning
+OFA_END: "\e[0m"           # Reset color

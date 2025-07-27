@@ -15,10 +15,12 @@ class TestUserNotifications(TestCase):
         n = UserNotifications()
         n.setup(success_msg='test success',
                 fail_msg='test fail',
-                info_msg='test info')
+                info_msg='test info',
+                warning_msg='test warning')
         self.assertEqual(n.success, 'test success')
         self.assertEqual(n.fail, 'test fail')
         self.assertEqual(n.info, 'test info')
+        self.assertEqual(n.warning, 'test warning')
 
     def test_default(self):
         """
