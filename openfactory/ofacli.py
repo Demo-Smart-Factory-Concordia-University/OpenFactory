@@ -14,6 +14,7 @@ or (during development)
 > pip install -e .
 """
 
+import paramiko.ssh_exception
 from openfactory.ofa.cli import cli
 from openfactory.models.user_notifications import user_notify
 from openfactory.docker.docker_access_layer import dal
@@ -27,10 +28,16 @@ def init_environment() -> bool:
     user_notify.setup(
         success_msg=lambda msg: print(f"{Config.OFA_SUCCSESS}{msg}{Config.OFA_END}"),
         fail_msg=lambda msg: print(f"{Config.OFA_FAIL}{msg}{Config.OFA_END}"),
-        info_msg=print
+        info_msg=print,
+        warning_msg=lambda msg: print(f"{Config.OFA_WARNING}{msg}{Config.OFA_END}")
     )
 
-    dal.connect()
+    try:
+        dal.connect()
+    except (paramiko.ssh_exception.AuthenticationException,
+            paramiko.ssh_exception.NoValidConnectionsError) as e:
+        user_notify.fail(f"Connection to {Config.OPENFACTORY_MANAGER_NODE_DOCKER_URL} failed: {e}")
+        return False
 
     try:
         ksql.connect(Config.KSQLDB_URL)
