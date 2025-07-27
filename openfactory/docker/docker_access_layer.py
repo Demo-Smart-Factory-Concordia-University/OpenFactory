@@ -2,7 +2,7 @@
 
 import docker
 import openfactory.config as config
-from openfactory.exceptions import OFAException
+from openfactory.models.user_notifications import user_notify
 from typing import List, Optional
 
 
@@ -35,17 +35,28 @@ class DockerAccesLayer:
         """
         Connects to the Docker engine via the OpenFactory Manager Node.
 
-        Sets up the Docker client, verifies that the manager node is in swarm mode,
-        and retrieves the join tokens for workers and managers.
+        Initializes the Docker client using the manager node's Docker URL.
+        If the manager node is not in Swarm mode, join tokens are marked as unavailable,
+        and a warning is issued. Otherwise, retrieves and stores the Swarm join tokens
+        for worker and manager nodes.
 
-        Raises:
-            OFAException: If the Docker instance is not part of a swarm cluster.
+        Side Effects:
+            Logs a warning if the manager node is not in Swarm mode.
+
+        Sets:
+            self.docker_client: Initialized Docker client instance.
+            self.worker_token: Worker join token or 'UNAVAILABLE'.
+            self.manager_token: Manager join token or 'UNAVAILABLE'.
+            self.ip: IP address of the manager node.
         """
         self.docker_url = config.OPENFACTORY_MANAGER_NODE_DOCKER_URL
         self.ip = config.OPENFACTORY_MANAGER_NODE
         self.docker_client = docker.DockerClient(base_url=self.docker_url)
         if 'JoinTokens' not in self.docker_client.swarm.attrs:
-            raise OFAException(f'Docker running on {config.OPENFACTORY_MANAGER_NODE_DOCKER_URL} is not in Swarm mode')
+            user_notify.warning(f'WARNING: Docker running on {config.OPENFACTORY_MANAGER_NODE_DOCKER_URL} is not a Swarm manager')
+            self.worker_token = 'UNAVAILABLE'
+            self.manager_token = 'UNAVAILABLE'
+            return
         self.worker_token = self.docker_client.swarm.attrs['JoinTokens']['Worker']
         self.manager_token = self.docker_client.swarm.attrs['JoinTokens']['Manager']
 
