@@ -2,6 +2,8 @@
 
 import click
 from openfactory import OpenFactoryCluster
+from openfactory.models.user_notifications import user_notify
+from openfactory.exceptions import OFAConfigurationException, OFAException
 
 
 @click.command(name='down')
@@ -15,5 +17,8 @@ def click_down(yaml_config_file: str) -> None:
     Args:
         yaml_config_file (str): Path to the YAML configuration file.
     """
-    ofa = OpenFactoryCluster()
-    ofa.remove_infrastack_from_config_file(yaml_config_file)
+    try:
+        ofa = OpenFactoryCluster()
+        ofa.remove_infrastack_from_config_file(yaml_config_file)
+    except (OFAConfigurationException, OFAException) as err:
+        user_notify.fail(err)

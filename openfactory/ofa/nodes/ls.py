@@ -1,8 +1,10 @@
 """ ofa nodes listing command. """
 
 import click
+import docker
 from datetime import datetime, timezone
 from openfactory.docker.docker_access_layer import dal
+from openfactory.models.user_notifications import user_notify
 
 
 def print_services(node_id: str) -> None:
@@ -50,7 +52,11 @@ def click_ls(verbose: bool) -> None:
     if not verbose:
         print(f"{'Hostname':<12} {'IP Address':<15} {'CPUs':>6} {'RAM (GB)':>8}   {'Role':<10} {'Availability':<15} {'State':<10}")
         print("-" * 80)
-    nodes = dal.docker_client.nodes.list()
+    try:
+        nodes = dal.docker_client.nodes.list()
+    except docker.errors.APIError as e:
+        user_notify.fail(e)
+        exit(1)
     for node in nodes:
         cpus = node.attrs['Description']['Resources']['NanoCPUs'] / 1E9
         ram = node.attrs['Description']['Resources']['MemoryBytes'] / (1024 ** 3)

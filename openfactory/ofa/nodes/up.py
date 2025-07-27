@@ -2,7 +2,7 @@
 
 import click
 from openfactory.models.user_notifications import user_notify
-from openfactory.exceptions import OFAConfigurationException
+from openfactory.exceptions import OFAConfigurationException, OFAException
 from openfactory import OpenFactoryCluster
 
 
@@ -20,8 +20,8 @@ def click_up(yaml_config_file: str) -> None:
     Raises:
         OFAConfigurationException: If there is an error in the configuration.
     """
-    ofa = OpenFactoryCluster()
     try:
+        ofa = OpenFactoryCluster()
         ofa.create_infrastack_from_config_file(yaml_config_file)
-    except OFAConfigurationException as err:
+    except (OFAConfigurationException, OFAException) as err:
         user_notify.fail(err)
