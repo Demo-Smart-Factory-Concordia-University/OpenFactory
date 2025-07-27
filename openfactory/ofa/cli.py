@@ -2,6 +2,7 @@
 
 import click
 import openfactory.ofa as ofa
+from openfactory import __version__
 
 
 @click.group()
@@ -64,3 +65,9 @@ apps.add_command(ofa.app.click_down)
 
 asset.add_command(ofa.asset.register)
 asset.add_command(ofa.asset.deregister)
+
+
+@cli.command(name='version')
+def version() -> None:
+    """ Returns OpenFactory version. """
+    print(__version__)
