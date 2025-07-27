@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from openfactory.docker.docker_access_layer import DockerAccesLayer
-from openfactory.exceptions import OFAException
 
 
 class TestDockerAccessLayer(unittest.TestCase):
@@ -36,13 +35,16 @@ class TestDockerAccessLayer(unittest.TestCase):
     def test_connect_swarm_mode_exception(self, mock_docker_client, mock_config):
         """ Test connection to Docker engine in Swarm mode with exception """
         mock_config.OPENFACTORY_MANAGER_NODE_DOCKER_URL = 'tcp://127.0.0.1:2375'
-        mock_docker_client.return_value.swarm.attrs = {}
+        mock_config.OPENFACTORY_MANAGER_NODE = '127.0.0.1'
+        mock_client_instance = mock_docker_client.return_value
+        mock_client_instance.swarm.attrs = {}  # Simulate not in swarm mode
 
         dal = DockerAccesLayer()
-        with self.assertRaises(OFAException) as context:
-            dal.connect()
+        dal.connect()
 
-        self.assertIn('Docker running on tcp://127.0.0.1:2375 is not in Swarm mode', str(context.exception))
+        # Expect join tokens to be marked as unavailable
+        self.assertEqual(dal.worker_token, 'UNAVAILABLE')
+        self.assertEqual(dal.manager_token, 'UNAVAILABLE')
 
     @patch('openfactory.docker.docker_access_layer.docker.DockerClient')
     def test_get_node_name_labels(self, mock_docker_client):

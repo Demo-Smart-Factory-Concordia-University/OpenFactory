@@ -10,6 +10,7 @@ from openfactory.models.user_notifications import user_notify
 from openfactory.docker.docker_access_layer import dal
 from openfactory.schemas.infra import get_infrastructure_from_config_file
 from openfactory.schemas.infra import Managers, Workers
+from openfactory.exceptions import OFAException
 
 
 class OpenFactoryCluster():
@@ -22,6 +23,26 @@ class OpenFactoryCluster():
         User requires Docker access on all nodes of the OpenFactory cluster
         and ssh access to all nodes using the config.OPENFACTORY_USER.
     """
+
+    def __init__(self):
+        """
+        Initialize the OpenFactoryCluster instance.
+
+        Performs a check to ensure the current Docker host is part of a Swarm
+        and is a Swarm Manager. This is required for cluster management operations.
+
+        Raises:
+            OFAException: If the Docker host is not part of a Swarm, is not a manager,
+                          or if the Swarm status cannot be verified.
+        """
+        try:
+            info = dal.docker_client.info()
+            if not info.get('Swarm', {}).get('LocalNodeState') == 'active':
+                raise OFAException(f"Host {info['Name']} is not part of a Swarm.")
+            if not info.get('Swarm', {}).get('ControlAvailable', False):
+                raise OFAException(f"Node {info['Name']} is not a Swarm Manager.")
+        except Exception as e:
+            raise OFAException(str(e))
 
     def add_label(self, node_name: str, node_details: Dict[str, Any]) -> None:
         """
