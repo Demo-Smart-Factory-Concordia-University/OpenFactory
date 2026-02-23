@@ -2,7 +2,15 @@
 [![Lint with Flake8](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/lint.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/lint.yml)
 [![Unit tests](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml/badge.svg)](https://github.com/Demo-Smart-Factory-Concordia-University/OpenFactory/actions/workflows/unittests.yml)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen)](https://openfactory-doc.readthedocs.io/en/latest/index.html)
+![Status](https://img.shields.io/badge/status-archived-red)
 
+# 🚨 Repository Archived
+
+> This repository is archived and no longer maintained.
+> Active development has moved to:
+> https://github.com/openfactoryio/openfactory-core
+
+---
 
 ## What is OpenFactory?
 
